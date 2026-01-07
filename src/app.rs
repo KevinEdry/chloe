@@ -71,6 +71,10 @@ impl App {
 
     pub fn switch_tab(&mut self, tab: Tab) {
         self.active_tab = tab;
+
+        if tab == Tab::Worktree {
+            self.worktree.mark_needs_refresh();
+        }
     }
 
     pub fn next_tab(&mut self) {
@@ -80,6 +84,10 @@ impl App {
             Tab::Roadmap => Tab::Worktree,
             Tab::Worktree => Tab::Kanban,
         };
+
+        if self.active_tab == Tab::Worktree {
+            self.worktree.mark_needs_refresh();
+        }
     }
 
     /// Auto-create instances for tasks in "In Progress" that don't have one

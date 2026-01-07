@@ -1,5 +1,8 @@
 use super::state::Worktree;
 use serde::{Deserialize, Serialize};
+use std::time::Instant;
+
+pub const REFRESH_INTERVAL_SECONDS: u64 = 2;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorktreeTabState {
@@ -8,6 +11,10 @@ pub struct WorktreeTabState {
     pub mode: WorktreeMode,
     #[serde(skip)]
     pub error_message: Option<String>,
+    #[serde(skip)]
+    pub(super) last_refresh: Option<Instant>,
+    #[serde(skip)]
+    pub(super) needs_initial_refresh: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,12 +31,18 @@ impl WorktreeTabState {
             selected_index: None,
             mode: WorktreeMode::Normal,
             error_message: None,
+            last_refresh: None,
+            needs_initial_refresh: true,
         }
     }
 
     #[must_use]
     pub fn get_selected_worktree(&self) -> Option<&Worktree> {
         self.selected_index.and_then(|idx| self.worktrees.get(idx))
+    }
+
+    pub fn mark_needs_refresh(&mut self) {
+        self.needs_initial_refresh = true;
     }
 }
 

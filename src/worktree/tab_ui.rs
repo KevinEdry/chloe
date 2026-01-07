@@ -40,7 +40,7 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
     }
 
     if state.worktrees.is_empty() {
-        let empty_text = Paragraph::new("No worktrees found. Press 'r' to refresh.")
+        let empty_text = Paragraph::new("No worktrees found.")
             .style(Style::default().fg(Color::Gray))
             .alignment(Alignment::Center)
             .block(
@@ -75,7 +75,7 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
                     branch_style.add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(
-                    format!("→ {}", path_display),
+                    format!("→ {path_display}"),
                     Style::default().fg(Color::Gray),
                 ),
             ]);
@@ -117,19 +117,19 @@ fn render_status_bar(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
 
     let help_text = if area.width < STATUS_BAR_WIDTH_THRESHOLD {
         match state.mode {
-            WorktreeMode::Normal => "jk:navigate  r:refresh  d:delete",
+            WorktreeMode::Normal => "jk:navigate  d:delete",
             WorktreeMode::ConfirmDelete { .. } => "y:yes  n:no",
         }
     } else {
         match state.mode {
-            WorktreeMode::Normal => "↑↓/jk:navigate  r:refresh  d:delete  Tab:switch-tabs  q:quit",
+            WorktreeMode::Normal => "↑↓/jk:navigate  d:delete  Tab:switch-tabs  q:quit",
             WorktreeMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
         }
     };
 
     let status = Paragraph::new(Line::from(vec![
         Span::styled(
-            format!("[{}] ", mode_text),
+            format!("[{mode_text}] "),
             Style::default().fg(mode_color).add_modifier(Modifier::BOLD),
         ),
         Span::styled(help_text, Style::default().fg(Color::DarkGray)),
@@ -154,9 +154,8 @@ fn render_delete_confirmation(
 
     let popup_area = centered_rect(POPUP_WIDTH_PERCENT, POPUP_HEIGHT, area);
 
-    let worktree = match state.worktrees.get(worktree_index) {
-        Some(wt) => wt,
-        None => return,
+    let Some(worktree) = state.worktrees.get(worktree_index) else {
+        return;
     };
 
     let confirmation_text = vec![

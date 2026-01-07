@@ -87,6 +87,11 @@ fn run_app<B: ratatui::backend::Backend>(
         // Always poll instances, not just when tab is active, to catch output from background instances
         app.instances.poll_pty_output();
 
+        // Poll for worktree updates when worktree tab is active
+        if app.active_tab == Tab::Worktree {
+            app.worktree.poll_worktrees();
+        }
+
         // Auto-transition completed tasks from In Progress to Review
         app.auto_transition_completed_tasks();
 
