@@ -285,4 +285,28 @@ impl KanbanState {
 
         true
     }
+
+    /// Move a task from Review to Done by task index in Review column
+    pub fn move_task_to_done(&mut self, task_idx: usize) {
+        let review_column_index = 2;
+        let done_column_index = 3;
+
+        if self.columns.len() <= done_column_index {
+            return;
+        }
+
+        if task_idx >= self.columns[review_column_index].tasks.len() {
+            return;
+        }
+
+        let task = self.columns[review_column_index].tasks.remove(task_idx);
+        self.columns[done_column_index].tasks.push(task);
+
+        let review_tasks_remaining = self.columns[review_column_index].tasks.len();
+        if review_tasks_remaining == 0 {
+            self.selected_task = None;
+        } else if task_idx >= review_tasks_remaining {
+            self.selected_task = Some(review_tasks_remaining - 1);
+        }
+    }
 }

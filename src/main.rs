@@ -139,6 +139,18 @@ fn run_app<B: ratatui::backend::Backend>(
                                             app.instances.close_pane_by_id(instance_id);
                                         }
 
+                                        // Handle pending IDE open action
+                                        if let Some(task_idx) = app.kanban.pending_ide_open.take() {
+                                            app.open_task_in_ide(task_idx);
+                                        }
+
+                                        // Handle pending terminal switch action
+                                        if let Some(task_idx) =
+                                            app.kanban.pending_terminal_switch.take()
+                                        {
+                                            app.switch_to_task_instance(task_idx);
+                                        }
+
                                         // Auto-create instances for tasks in "In Progress"
                                         app.sync_task_instances();
                                     }

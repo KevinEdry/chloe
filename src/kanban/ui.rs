@@ -55,8 +55,12 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         KanbanMode::ReviewPopup {
             task_idx,
             scroll_offset,
+            selected_action,
         } => {
-            render_review_popup(f, app, *task_idx, *scroll_offset, area);
+            render_review_popup(f, app, *task_idx, *scroll_offset, *selected_action, area);
+        }
+        KanbanMode::ReviewRequestChanges { input, .. } => {
+            render_input_dialog(f, "Request Changes", input, area);
         }
         KanbanMode::Normal => {}
     }
@@ -346,6 +350,7 @@ fn render_status_bar(f: &mut Frame, state: &KanbanState, area: Rect) {
         KanbanMode::ConfirmMoveBack { .. } => Color::LightRed,
         KanbanMode::ClassifyingTask { .. } => Color::Magenta,
         KanbanMode::ReviewPopup { .. } => Color::Cyan,
+        KanbanMode::ReviewRequestChanges { .. } => Color::Yellow,
     };
 
     let mode_text = match &state.mode {
@@ -356,6 +361,7 @@ fn render_status_bar(f: &mut Frame, state: &KanbanState, area: Rect) {
         KanbanMode::ConfirmMoveBack { .. } => "CONFIRM MOVE BACK",
         KanbanMode::ClassifyingTask { .. } => "AI CLASSIFYING",
         KanbanMode::ReviewPopup { .. } => "REVIEW OUTPUT",
+        KanbanMode::ReviewRequestChanges { .. } => "REQUEST CHANGES",
     };
 
     let help_text = if area.width < 100 {
@@ -367,7 +373,8 @@ fn render_status_bar(f: &mut Frame, state: &KanbanState, area: Rect) {
             }
             KanbanMode::ConfirmDelete { .. } => "y:yes  n:no",
             KanbanMode::ConfirmMoveBack { .. } => "y:yes  n:no",
-            KanbanMode::ReviewPopup { .. } => "jk/arrows:scroll  q/Esc:close",
+            KanbanMode::ReviewPopup { .. } => "jk:scroll  hl/Tab:button  Enter:action",
+            KanbanMode::ReviewRequestChanges { .. } => "Enter:save  Esc:cancel",
         }
     } else {
         match &state.mode {
@@ -380,7 +387,12 @@ fn render_status_bar(f: &mut Frame, state: &KanbanState, area: Rect) {
             KanbanMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
             KanbanMode::ConfirmMoveBack { .. } => "y:yes  n:no  Esc:cancel",
             KanbanMode::ClassifyingTask { .. } => "Press Esc to cancel classification",
-            KanbanMode::ReviewPopup { .. } => "↑↓/jk:scroll  PgUp/PgDown:fast-scroll  q/Esc:close",
+            KanbanMode::ReviewPopup { .. } => {
+                "jk:scroll  ←→/hl/Tab:select-button  Enter:execute-action  q/Esc:close"
+            }
+            KanbanMode::ReviewRequestChanges { .. } => {
+                "Type your change request  Enter:save  Esc:cancel"
+            }
         }
     };
 
@@ -578,6 +590,7 @@ fn render_review_popup(
     app: &App,
     task_idx: usize,
     scroll_offset: usize,
+    selected_action: super::ReviewAction,
     area: Rect,
 ) {
     let dialog_area = centered_rect(90, 90, area);
@@ -591,6 +604,11 @@ fn render_review_popup(
         Block::default().style(Style::default().bg(Color::Black)),
         dialog_area,
     );
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(0), Constraint::Length(3)])
+        .split(dialog_area);
 
     let review_column_index = 2;
     let task = app
@@ -631,7 +649,7 @@ fn render_review_popup(
                 format!(
                     " Lines {}-{} of {} ",
                     scroll_offset + 1,
-                    (scroll_offset + dialog_area.height as usize).min(total_lines),
+                    (scroll_offset + chunks[0].height as usize).min(total_lines),
                     total_lines
                 ),
                 Style::default().fg(Color::DarkGray),
@@ -640,8 +658,8 @@ fn render_review_popup(
         )
         .style(Style::default().bg(Color::Black));
 
-    let inner_area = block.inner(dialog_area);
-    f.render_widget(block, dialog_area);
+    let inner_area = block.inner(chunks[0]);
+    f.render_widget(block, chunks[0]);
 
     let visible_lines: Vec<Line> = output_lines
         .iter()
@@ -655,6 +673,47 @@ fn render_review_popup(
         .wrap(Wrap { trim: false });
 
     f.render_widget(text, inner_area);
+
+    render_action_buttons(f, selected_action, chunks[1]);
+}
+
+fn render_action_buttons(f: &mut Frame, selected_action: super::ReviewAction, area: Rect) {
+    let actions = super::ReviewAction::all();
+    let button_constraints = vec![Constraint::Percentage(25); 4];
+
+    let button_areas = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(button_constraints)
+        .split(area);
+
+    for (index, action) in actions.iter().enumerate() {
+        let is_selected = *action == selected_action;
+        let style = if is_selected {
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Cyan)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Cyan).bg(Color::Black)
+        };
+
+        let button = Paragraph::new(action.label())
+            .alignment(Alignment::Center)
+            .style(style)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(if is_selected {
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::DarkGray)
+                    }),
+            );
+
+        f.render_widget(button, button_areas[index]);
+    }
 }
 
 /// Helper function to create a centered rectangle

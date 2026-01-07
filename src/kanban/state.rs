@@ -13,6 +13,12 @@ pub struct KanbanState {
     pub classification_request: Option<super::ai_classifier::ClassificationRequest>,
     #[serde(skip)]
     pub pending_instance_termination: Option<Uuid>,
+    #[serde(skip)]
+    pub pending_ide_open: Option<usize>,
+    #[serde(skip)]
+    pub pending_terminal_switch: Option<usize>,
+    #[serde(skip)]
+    pub pending_change_request: Option<(usize, String)>,
 }
 
 impl KanbanState {
@@ -41,6 +47,9 @@ impl KanbanState {
             mode: KanbanMode::Normal,
             classification_request: None,
             pending_instance_termination: None,
+            pending_ide_open: None,
+            pending_terminal_switch: None,
+            pending_change_request: None,
         }
     }
 
@@ -139,6 +148,34 @@ impl Task {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ReviewAction {
+    ReviewInIDE,
+    ReviewInTerminal,
+    RequestChanges,
+    MarkComplete,
+}
+
+impl ReviewAction {
+    pub const fn all() -> [Self; 4] {
+        [
+            Self::ReviewInIDE,
+            Self::ReviewInTerminal,
+            Self::RequestChanges,
+            Self::MarkComplete,
+        ]
+    }
+
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::ReviewInIDE => "Review in IDE",
+            Self::ReviewInTerminal => "Review in Terminal",
+            Self::RequestChanges => "Request Changes",
+            Self::MarkComplete => "Mark Complete",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum KanbanMode {
     Normal,
@@ -161,5 +198,10 @@ pub enum KanbanMode {
     ReviewPopup {
         task_idx: usize,
         scroll_offset: usize,
+        selected_action: ReviewAction,
+    },
+    ReviewRequestChanges {
+        task_idx: usize,
+        input: String,
     },
 }

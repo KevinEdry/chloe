@@ -144,6 +144,41 @@ impl App {
             .find(|pane| pane.id == instance_id)
             .map(|pane| pane.output_buffer.as_str())
     }
+
+    /// Open the project in the default IDE for a task in Review column
+    pub fn open_task_in_ide(&self, task_idx: usize) {
+        let review_column_index = 2;
+        if let Some(task) = self
+            .kanban
+            .columns
+            .get(review_column_index)
+            .and_then(|col| col.tasks.get(task_idx))
+        {
+            if let Some(instance_id) = task.instance_id {
+                if let Some(pane) = self.instances.panes.iter().find(|p| p.id == instance_id) {
+                    let working_dir = &pane.working_directory;
+                    let _ = std::process::Command::new("open").arg(working_dir).spawn();
+                }
+            }
+        }
+    }
+
+    /// Switch to instances tab and focus the instance for a task in Review column
+    pub fn switch_to_task_instance(&mut self, task_idx: usize) -> bool {
+        let review_column_index = 2;
+        if let Some(task) = self
+            .kanban
+            .columns
+            .get(review_column_index)
+            .and_then(|col| col.tasks.get(task_idx))
+        {
+            if let Some(instance_id) = task.instance_id {
+                self.active_tab = Tab::Instances;
+                return self.instances.select_pane_by_id(instance_id);
+            }
+        }
+        false
+    }
 }
 
 impl Default for App {
