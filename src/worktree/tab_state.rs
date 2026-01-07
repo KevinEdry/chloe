@@ -15,6 +15,10 @@ pub struct WorktreeTabState {
     pub(super) last_refresh: Option<Instant>,
     #[serde(skip)]
     pub(super) needs_initial_refresh: bool,
+    #[serde(skip)]
+    pub pending_ide_open: Option<usize>,
+    #[serde(skip)]
+    pub pending_terminal_open: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,6 +37,8 @@ impl WorktreeTabState {
             error_message: None,
             last_refresh: None,
             needs_initial_refresh: true,
+            pending_ide_open: None,
+            pending_terminal_open: None,
         }
     }
 

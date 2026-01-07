@@ -233,6 +233,19 @@ fn run_app<B: ratatui::backend::Backend>(
                                 }
                                 Tab::Worktree => {
                                     app.worktree.handle_key_event(key);
+
+                                    // Handle pending IDE open action
+                                    if let Some(worktree_idx) = app.worktree.pending_ide_open.take()
+                                    {
+                                        app.open_worktree_in_ide(worktree_idx);
+                                    }
+
+                                    // Handle pending terminal open action
+                                    if let Some(worktree_idx) =
+                                        app.worktree.pending_terminal_open.take()
+                                    {
+                                        app.open_worktree_in_terminal(worktree_idx);
+                                    }
                                 }
                             }
                         }

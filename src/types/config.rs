@@ -19,6 +19,7 @@ pub enum Theme {
 pub enum IdeCommand {
     Cursor,
     VSCode,
+    WebStorm,
     Custom(String),
 }
 
@@ -40,6 +41,14 @@ impl IdeCommand {
             return Self::VSCode;
         }
 
+        if std::process::Command::new("webstorm")
+            .arg("--version")
+            .output()
+            .is_ok()
+        {
+            return Self::WebStorm;
+        }
+
         Self::Cursor
     }
 
@@ -47,6 +56,7 @@ impl IdeCommand {
         match self {
             Self::Cursor => "cursor",
             Self::VSCode => "code",
+            Self::WebStorm => "webstorm",
             Self::Custom(cmd) => cmd,
         }
     }

@@ -117,12 +117,12 @@ fn render_status_bar(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
 
     let help_text = if area.width < STATUS_BAR_WIDTH_THRESHOLD {
         match state.mode {
-            WorktreeMode::Normal => "jk:navigate  d:delete",
+            WorktreeMode::Normal => "jk:navigate  o:open  r:refresh  d:delete",
             WorktreeMode::ConfirmDelete { .. } => "y:yes  n:no",
         }
     } else {
         match state.mode {
-            WorktreeMode::Normal => "↑↓/jk:navigate  d:delete  Tab:switch-tabs  q:quit",
+            WorktreeMode::Normal => "↑↓/jk:navigate  o:open  r:refresh  d:delete  Tab:switch-tabs  q:quit",
             WorktreeMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
         }
     };
