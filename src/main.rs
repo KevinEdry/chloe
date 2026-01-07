@@ -179,7 +179,7 @@ fn run_app<B: ratatui::backend::Backend>(
                                         if let Some(task_idx) =
                                             app.kanban.pending_terminal_switch.take()
                                         {
-                                            app.switch_to_task_instance(task_idx);
+                                            app.open_task_in_terminal(task_idx);
                                         }
 
                                         // Handle pending change request

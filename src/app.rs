@@ -89,23 +89,24 @@ impl App {
         }
 
         let in_progress_column = &self.kanban.columns[1];
-        let tasks_needing_instances: Vec<(
-            uuid::Uuid,
-            String,
-            String,
-            Option<std::path::PathBuf>,
-        )> = in_progress_column
-            .tasks
-            .iter()
-            .filter(|task| task.instance_id.is_none())
-            .map(|task| {
-                let worktree_path = task
-                    .worktree_info
-                    .as_ref()
-                    .map(|info| info.worktree_path.clone());
-                (task.id, task.title.clone(), task.description.clone(), worktree_path)
-            })
-            .collect();
+        let tasks_needing_instances: Vec<(uuid::Uuid, String, String, Option<std::path::PathBuf>)> =
+            in_progress_column
+                .tasks
+                .iter()
+                .filter(|task| task.instance_id.is_none())
+                .map(|task| {
+                    let worktree_path = task
+                        .worktree_info
+                        .as_ref()
+                        .map(|info| info.worktree_path.clone());
+                    (
+                        task.id,
+                        task.title.clone(),
+                        task.description.clone(),
+                        worktree_path,
+                    )
+                })
+                .collect();
 
         for (task_id, task_title, task_description, working_directory) in tasks_needing_instances {
             let instance_id = self.instances.create_pane_for_task(
@@ -194,12 +195,47 @@ impl App {
             .get(review_column_index)
             .and_then(|col| col.tasks.get(task_idx))
         {
-            if let Some(instance_id) = task.instance_id {
+            let path_to_open = if let Some(worktree_info) = &task.worktree_info {
+                &worktree_info.worktree_path
+            } else if let Some(instance_id) = task.instance_id {
                 if let Some(pane) = self.instances.panes.iter().find(|p| p.id == instance_id) {
-                    let working_dir = &pane.working_directory;
-                    let _ = std::process::Command::new("open").arg(working_dir).spawn();
+                    &pane.working_directory
+                } else {
+                    return;
                 }
-            }
+            } else {
+                return;
+            };
+
+            let ide_command = self.config.ide_command.command_name();
+            let _ = std::process::Command::new(ide_command)
+                .arg(path_to_open)
+                .spawn();
+        }
+    }
+
+    /// Open external terminal at the task's path (worktree or working directory)
+    pub fn open_task_in_terminal(&self, task_idx: usize) {
+        let review_column_index = 2;
+        if let Some(task) = self
+            .kanban
+            .columns
+            .get(review_column_index)
+            .and_then(|col| col.tasks.get(task_idx))
+        {
+            let path_to_open = if let Some(worktree_info) = &task.worktree_info {
+                &worktree_info.worktree_path
+            } else if let Some(instance_id) = task.instance_id {
+                if let Some(pane) = self.instances.panes.iter().find(|p| p.id == instance_id) {
+                    &pane.working_directory
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            };
+
+            let _ = self.config.terminal_command.open_at_path(path_to_open);
         }
     }
 
