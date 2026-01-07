@@ -1,10 +1,19 @@
 use super::state::{Worktree, WorktreeInfo};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use git2::{BranchType, Repository};
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 const MAX_SLUG_LENGTH: usize = 50;
+
+/// Result of attempting to merge a worktree branch
+#[derive(Debug)]
+pub enum MergeResult {
+    /// Merge completed successfully
+    Success,
+    /// Merge has conflicts that need resolution
+    Conflicts { conflicted_files: Vec<String> },
+}
 
 /// Check if the current directory is inside a git repository
 #[must_use]
@@ -27,9 +36,7 @@ pub fn find_repository_root(path: &Path) -> Result<PathBuf> {
 pub fn list_worktrees(repository_path: &Path) -> Result<Vec<Worktree>> {
     let repository = Repository::open(repository_path).context("Failed to open git repository")?;
 
-    let worktree_list = repository
-        .worktrees()
-        .context("Failed to list worktrees")?;
+    let worktree_list = repository.worktrees().context("Failed to list worktrees")?;
 
     let mut worktrees = Vec::new();
 
@@ -41,8 +48,8 @@ pub fn list_worktrees(repository_path: &Path) -> Result<Vec<Worktree>> {
 
         let path = worktree.path().to_path_buf();
 
-        let branch_name =
-            extract_branch_name_from_worktree(&repository, &path).unwrap_or_else(|| "(detached)".to_string());
+        let branch_name = extract_branch_name_from_worktree(&repository, &path)
+            .unwrap_or_else(|| "(detached)".to_string());
 
         worktrees.push(Worktree {
             path,
@@ -88,7 +95,11 @@ pub fn generate_branch_name(task_title: &str) -> String {
 
 /// Create a new worktree for a task
 /// Returns `WorktreeInfo` with the branch name and path
-pub fn create_worktree(repository_path: &Path, task_title: &str, task_id: &Uuid) -> Result<WorktreeInfo> {
+pub fn create_worktree(
+    repository_path: &Path,
+    task_title: &str,
+    task_id: &Uuid,
+) -> Result<WorktreeInfo> {
     let repository = Repository::open(repository_path).context("Failed to open git repository")?;
 
     let branch_name = generate_branch_name(task_title);
@@ -128,6 +139,97 @@ pub fn create_worktree(repository_path: &Path, task_title: &str, task_id: &Uuid)
     Ok(WorktreeInfo::new(final_branch_name, worktree_path))
 }
 
+/// Merge a worktree branch into main
+/// Returns MergeResult indicating success or conflicts
+pub fn merge_worktree_to_main(
+    repository_path: &Path,
+    worktree_info: &WorktreeInfo,
+) -> Result<MergeResult> {
+    let branch_name = &worktree_info.branch_name;
+
+    let stash_output = std::process::Command::new("git")
+        .arg("stash")
+        .arg("--include-untracked")
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to stash changes")?;
+
+    if !stash_output.status.success() {
+        let error_message = String::from_utf8_lossy(&stash_output.stderr);
+        return Err(anyhow!("Git stash failed: {error_message}"));
+    }
+
+    let checkout_output = std::process::Command::new("git")
+        .arg("checkout")
+        .arg("main")
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to checkout main branch")?;
+
+    if !checkout_output.status.success() {
+        let error_message = String::from_utf8_lossy(&checkout_output.stderr);
+        return Err(anyhow!("Git checkout main failed: {error_message}"));
+    }
+
+    let merge_output = std::process::Command::new("git")
+        .arg("merge")
+        .arg(branch_name)
+        .arg("--no-edit")
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to execute git merge")?;
+
+    if !merge_output.status.success() {
+        let stderr = String::from_utf8_lossy(&merge_output.stderr);
+
+        if stderr.contains("CONFLICT") || stderr.contains("conflict") {
+            let conflicted_files = get_conflicted_files(repository_path)?;
+            return Ok(MergeResult::Conflicts { conflicted_files });
+        }
+
+        let error_message = String::from_utf8_lossy(&merge_output.stderr);
+        return Err(anyhow!("Git merge failed: {error_message}"));
+    }
+
+    let push_output = std::process::Command::new("git")
+        .arg("push")
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to push to remote")?;
+
+    if !push_output.status.success() {
+        let error_message = String::from_utf8_lossy(&push_output.stderr);
+        return Err(anyhow!("Git push failed: {error_message}"));
+    }
+
+    Ok(MergeResult::Success)
+}
+
+/// Get list of conflicted files from git status
+fn get_conflicted_files(repository_path: &Path) -> Result<Vec<String>> {
+    let status_output = std::process::Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to get git status")?;
+
+    if !status_output.status.success() {
+        return Err(anyhow!("Git status failed"));
+    }
+
+    let status_text = String::from_utf8_lossy(&status_output.stdout);
+    let conflicted_files: Vec<String> = status_text
+        .lines()
+        .filter(|line| {
+            line.starts_with("UU ") || line.starts_with("AA ") || line.starts_with("DD ")
+        })
+        .map(|line| line[3..].to_string())
+        .collect();
+
+    Ok(conflicted_files)
+}
+
 /// Delete a worktree (cleanup)
 pub fn delete_worktree(repository_path: &Path, worktree_info: &WorktreeInfo) -> Result<()> {
     let output = std::process::Command::new("git")
@@ -155,7 +257,10 @@ pub fn delete_worktree(repository_path: &Path, worktree_info: &WorktreeInfo) -> 
     Ok(())
 }
 
-fn extract_branch_name_from_worktree(_repository: &Repository, worktree_path: &Path) -> Option<String> {
+fn extract_branch_name_from_worktree(
+    _repository: &Repository,
+    worktree_path: &Path,
+) -> Option<String> {
     let worktree_repository = Repository::open(worktree_path).ok()?;
     let head = worktree_repository.head().ok()?;
 
