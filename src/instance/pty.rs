@@ -1,4 +1,4 @@
-use portable_pty::{CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySystem};
+use portable_pty::{Child, CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySystem};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::mpsc::{Receiver, TryRecvError, channel};
@@ -10,6 +10,7 @@ pub struct PtySession {
     master: Box<dyn MasterPty + Send>,
     writer: Box<dyn Write + Send>,
     receiver: Receiver<Vec<u8>>,
+    child: Option<Box<dyn Child + Send>>,
 }
 
 impl PtySession {
@@ -33,7 +34,7 @@ impl PtySession {
         let mut command = CommandBuilder::new(shell);
         command.cwd(working_directory);
 
-        let _child = pair.slave.spawn_command(command)?;
+        let child = pair.slave.spawn_command(command)?;
         drop(pair.slave);
 
         let writer = pair.master.take_writer()?;
@@ -62,6 +63,7 @@ impl PtySession {
             master: pair.master,
             writer,
             receiver,
+            child: Some(child),
         })
     }
 
@@ -104,6 +106,24 @@ impl PtySession {
         self.writer.write_all(data)?;
         self.writer.flush()?;
         Ok(())
+    }
+
+    pub fn check_process_exit(&mut self) -> bool {
+        if let Some(child) = &mut self.child {
+            match child.try_wait() {
+                Ok(Some(_exit_status)) => {
+                    self.child = None;
+                    true
+                }
+                Ok(None) => false,
+                Err(_) => {
+                    self.child = None;
+                    true
+                }
+            }
+        } else {
+            false
+        }
     }
 }
 
