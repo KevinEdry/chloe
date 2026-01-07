@@ -189,14 +189,11 @@ impl KanbanState {
             Err(_) => return,
         };
 
-        let worktree_info = match crate::worktree::create_worktree(
-            &repository_root,
-            &task.title,
-            &task.id,
-        ) {
-            Ok(info) => info,
-            Err(_) => return,
-        };
+        let worktree_info =
+            match crate::worktree::create_worktree(&repository_root, &task.title, &task.id) {
+                Ok(info) => info,
+                Err(_) => return,
+            };
 
         task.worktree_info = Some(worktree_info);
     }
@@ -371,6 +368,8 @@ impl KanbanState {
     }
 
     /// Move a task from Review to Done by task index in Review column
+    /// This will attempt to merge the worktree branch to main first
+    /// If there are conflicts, the task will be moved back to In Progress
     pub fn move_task_to_done(&mut self, task_idx: usize) {
         let review_column_index = 2;
         let done_column_index = 3;
@@ -381,6 +380,26 @@ impl KanbanState {
 
         if task_idx >= self.columns[review_column_index].tasks.len() {
             return;
+        }
+
+        let task = &self.columns[review_column_index].tasks[task_idx];
+
+        let has_worktree_to_merge = task.worktree_info.is_some();
+        if has_worktree_to_merge {
+            let merge_result = self.try_merge_worktree(task);
+
+            match merge_result {
+                Some(crate::worktree::MergeResult::Success) => {}
+                Some(crate::worktree::MergeResult::Conflicts { conflicted_files }) => {
+                    let conflict_message = format!(
+                        "Merge conflicts detected in the following files:\n{}\n\nPlease resolve these conflicts and commit the changes.",
+                        conflicted_files.join("\n")
+                    );
+                    self.pending_change_request = Some((task_idx, conflict_message));
+                    return;
+                }
+                None => {}
+            }
         }
 
         let task = &self.columns[review_column_index].tasks[task_idx];
@@ -395,6 +414,23 @@ impl KanbanState {
         } else if task_idx >= review_tasks_remaining {
             self.selected_task = Some(review_tasks_remaining - 1);
         }
+    }
+
+    fn try_merge_worktree(
+        &self,
+        task: &super::state::Task,
+    ) -> Option<crate::worktree::MergeResult> {
+        let worktree_info = task.worktree_info.as_ref()?;
+
+        let was_auto_created = worktree_info.auto_created;
+        if !was_auto_created {
+            return None;
+        }
+
+        let current_dir = std::env::current_dir().ok()?;
+        let repository_root = crate::worktree::find_repository_root(&current_dir).ok()?;
+
+        crate::worktree::merge_worktree_to_main(&repository_root, worktree_info).ok()
     }
 
     fn try_cleanup_worktree(&self, task: &super::state::Task) {
