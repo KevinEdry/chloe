@@ -309,4 +309,32 @@ impl KanbanState {
             self.selected_task = Some(review_tasks_remaining - 1);
         }
     }
+
+    /// Move a task from Review back to In Progress by task index in Review column
+    /// Returns the instance_id if the task has one
+    pub fn move_task_to_in_progress(&mut self, task_idx: usize) -> Option<uuid::Uuid> {
+        let review_column_index = 2;
+        let in_progress_column_index = 1;
+
+        if self.columns.len() <= review_column_index {
+            return None;
+        }
+
+        if task_idx >= self.columns[review_column_index].tasks.len() {
+            return None;
+        }
+
+        let task = self.columns[review_column_index].tasks.remove(task_idx);
+        let instance_id = task.instance_id;
+        self.columns[in_progress_column_index].tasks.push(task);
+
+        let review_tasks_remaining = self.columns[review_column_index].tasks.len();
+        if review_tasks_remaining == 0 {
+            self.selected_task = None;
+        } else if task_idx >= review_tasks_remaining {
+            self.selected_task = Some(review_tasks_remaining - 1);
+        }
+
+        instance_id
+    }
 }

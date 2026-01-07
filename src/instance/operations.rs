@@ -233,4 +233,23 @@ impl InstanceState {
 
         last_text.contains("$ ") || last_text.contains("% ") || last_text.contains("❯ ")
     }
+
+    /// Send input to an instance by its ID
+    /// Returns true if the instance was found and input was sent successfully
+    pub fn send_input_to_instance(&mut self, instance_id: uuid::Uuid, input: &str) -> bool {
+        let pane = match self.panes.iter_mut().find(|p| p.id == instance_id) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        if let Some(session) = &mut pane.pty_session {
+            let input_with_newline = format!("{}\n", input);
+            if session.write_input(input_with_newline.as_bytes()).is_ok() {
+                pane.claude_state = super::ClaudeState::Running;
+                return true;
+            }
+        }
+
+        false
+    }
 }

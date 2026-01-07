@@ -151,6 +151,20 @@ fn run_app<B: ratatui::backend::Backend>(
                                             app.switch_to_task_instance(task_idx);
                                         }
 
+                                        // Handle pending change request
+                                        if let Some((task_idx, change_request)) =
+                                            app.kanban.pending_change_request.take()
+                                        {
+                                            let instance_id =
+                                                app.kanban.move_task_to_in_progress(task_idx);
+                                            if let Some(instance_id) = instance_id {
+                                                app.instances.send_input_to_instance(
+                                                    instance_id,
+                                                    &change_request,
+                                                );
+                                            }
+                                        }
+
                                         // Auto-create instances for tasks in "In Progress"
                                         app.sync_task_instances();
                                     }
