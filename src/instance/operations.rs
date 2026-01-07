@@ -254,5 +254,4 @@ impl InstanceState {
 
         false
     }
-
 }
