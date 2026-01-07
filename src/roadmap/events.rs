@@ -5,6 +5,7 @@ pub enum RoadmapAction {
     None,
     ConvertToTask(usize),
     SaveState,
+    GenerateRoadmap,
 }
 
 pub fn handle_key_event(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction {
@@ -17,6 +18,7 @@ pub fn handle_key_event(state: &mut RoadmapState, key: KeyEvent) -> RoadmapActio
         }
         RoadmapMode::ConfirmDelete { item_index } => handle_confirm_delete(state, key, *item_index),
         RoadmapMode::ConvertToTask { item_index } => handle_convert_to_task(state, key, *item_index),
+        RoadmapMode::Generating => handle_generating_mode(state, key),
     }
 }
 
@@ -97,6 +99,7 @@ fn handle_normal_mode(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction 
             }
             RoadmapAction::None
         }
+        KeyCode::Char('g') | KeyCode::Char('G') => RoadmapAction::GenerateRoadmap,
         _ => RoadmapAction::None,
     }
 }
@@ -249,6 +252,17 @@ fn handle_convert_to_task(
             RoadmapAction::ConvertToTask(item_index)
         }
         KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+            state.mode = RoadmapMode::Normal;
+            RoadmapAction::None
+        }
+        _ => RoadmapAction::None,
+    }
+}
+
+fn handle_generating_mode(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction {
+    match key.code {
+        KeyCode::Esc => {
+            state.generation_request = None;
             state.mode = RoadmapMode::Normal;
             RoadmapAction::None
         }

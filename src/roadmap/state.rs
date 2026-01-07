@@ -8,6 +8,8 @@ pub struct RoadmapState {
     pub items: Vec<RoadmapItem>,
     pub selected_item: Option<usize>,
     pub mode: RoadmapMode,
+    #[serde(skip)]
+    pub generation_request: Option<super::generator::RoadmapGenerationRequest>,
 }
 
 impl RoadmapState {
@@ -16,6 +18,7 @@ impl RoadmapState {
             items: Vec::new(),
             selected_item: None,
             mode: RoadmapMode::Normal,
+            generation_request: None,
         }
     }
 
@@ -164,4 +167,5 @@ pub enum RoadmapMode {
     ConvertToTask {
         item_index: usize,
     },
+    Generating,
 }

@@ -1,3 +1,4 @@
+use super::generator::{GeneratedRoadmap, RoadmapGenerationRequest};
 use super::state::{RoadmapItem, RoadmapPriority, RoadmapState, RoadmapStatus};
 use chrono::Utc;
 use uuid::Uuid;
@@ -119,5 +120,37 @@ impl RoadmapState {
 
     pub fn find_item_by_id(&self, id: Uuid) -> Option<&RoadmapItem> {
         self.items.iter().find(|item| item.id == id)
+    }
+
+    pub fn start_generation(&mut self, project_path: String) {
+        self.generation_request = Some(RoadmapGenerationRequest::spawn(project_path));
+        self.mode = super::state::RoadmapMode::Generating;
+    }
+
+    pub fn poll_generation(&mut self) {
+        if let Some(ref request) = self.generation_request {
+            if let Some(result) = request.try_recv() {
+                self.generation_request = None;
+                self.mode = super::state::RoadmapMode::Normal;
+
+                match result {
+                    Ok(generated) => {
+                        self.apply_generated_roadmap(generated);
+                    }
+                    Err(_) => {}
+                }
+            }
+        }
+    }
+
+    fn apply_generated_roadmap(&mut self, generated: GeneratedRoadmap) {
+        for generated_item in generated.items {
+            let item = generated_item.to_roadmap_item();
+            self.items.push(item);
+        }
+
+        if !self.items.is_empty() {
+            self.selected_item = Some(0);
+        }
     }
 }

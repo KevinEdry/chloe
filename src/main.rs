@@ -74,6 +74,11 @@ fn run_app<B: ratatui::backend::Backend>(
             app.kanban.poll_classification();
         }
 
+        // Poll for roadmap generation completion
+        if app.active_tab == Tab::Roadmap {
+            app.roadmap.poll_generation();
+        }
+
         // Poll for instance PTY output on every loop iteration
         // Always poll instances, not just when tab is active, to catch output from background instances
         app.instances.poll_pty_output();
@@ -200,6 +205,11 @@ fn run_app<B: ratatui::backend::Backend>(
                                         }
                                         roadmap::events::RoadmapAction::SaveState => {
                                             let _ = app.save();
+                                        }
+                                        roadmap::events::RoadmapAction::GenerateRoadmap => {
+                                            if let Ok(current_dir) = std::env::current_dir() {
+                                                app.roadmap.start_generation(current_dir.to_string_lossy().to_string());
+                                            }
                                         }
                                         roadmap::events::RoadmapAction::None => {}
                                     }

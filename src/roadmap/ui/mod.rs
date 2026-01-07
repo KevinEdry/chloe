@@ -44,6 +44,9 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         RoadmapMode::ConvertToTask { item_index } => {
             render_convert_dialog(f, state, *item_index, area);
         }
+        RoadmapMode::Generating => {
+            render_confirm_dialog(f, "Generating roadmap with AI... (press Esc to cancel)", area);
+        }
         RoadmapMode::Normal => {}
     }
 }
@@ -56,6 +59,7 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
         RoadmapMode::ViewingDetails { .. } => Color::Cyan,
         RoadmapMode::ConfirmDelete { .. } => Color::Red,
         RoadmapMode::ConvertToTask { .. } => Color::Magenta,
+        RoadmapMode::Generating => Color::Magenta,
     };
 
     let mode_text = match &state.mode {
@@ -65,22 +69,24 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
         RoadmapMode::ViewingDetails { .. } => "VIEW DETAILS",
         RoadmapMode::ConfirmDelete { .. } => "CONFIRM DELETE",
         RoadmapMode::ConvertToTask { .. } => "CONVERT TO TASK",
+        RoadmapMode::Generating => "GENERATING",
     };
 
     let help_text = if area.width < STATUS_BAR_WIDTH_THRESHOLD {
         match &state.mode {
-            RoadmapMode::Normal => "jk:navigate  a:add  e:edit  d:delete  t:convert",
+            RoadmapMode::Normal => "jk:navigate  a:add  g:generate  e:edit  d:delete  t:convert",
             RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {
                 "Enter:save  Esc:cancel"
             }
             RoadmapMode::ViewingDetails { .. } => "jk:scroll  q/Esc:close",
             RoadmapMode::ConfirmDelete { .. } => "y:yes  n:no",
             RoadmapMode::ConvertToTask { .. } => "y:yes  n:no",
+            RoadmapMode::Generating => "Esc:cancel",
         }
     } else {
         match &state.mode {
             RoadmapMode::Normal => {
-                "↑↓/jk:navigate  a:add  e:edit  d:delete  Enter:details  t:convert-to-task  p:priority  s:status  q:quit"
+                "↑↓/jk:navigate  a:add  g:generate-with-ai  e:edit  d:delete  Enter:details  t:convert-to-task  p:priority  s:status  q:quit"
             }
             RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {
                 "Type to enter text  Enter:save  Esc:cancel"
@@ -88,6 +94,7 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
             RoadmapMode::ViewingDetails { .. } => "↑↓/jk:scroll  q/Esc:close",
             RoadmapMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
             RoadmapMode::ConvertToTask { .. } => "y:yes  n:no  Esc:cancel",
+            RoadmapMode::Generating => "AI is analyzing your project... Press Esc to cancel",
         }
     };
 
