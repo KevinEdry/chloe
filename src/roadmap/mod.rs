@@ -4,5 +4,5 @@ mod operations;
 mod state;
 pub mod ui;
 
-pub use generator::{RoadmapGenerationRequest, GeneratedRoadmap};
+pub use generator::{GeneratedRoadmap, RoadmapGenerationRequest};
 pub use state::{RoadmapItem, RoadmapMode, RoadmapPriority, RoadmapState, RoadmapStatus};

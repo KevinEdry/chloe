@@ -41,11 +41,13 @@ impl InstanceState {
         &mut self,
         task_title: &str,
         task_description: &str,
+        working_directory: Option<PathBuf>,
         rows: u16,
         columns: u16,
     ) -> uuid::Uuid {
         let (actual_rows, actual_columns) = self.calculate_pane_dimensions(rows, columns);
-        let working_directory = env::current_dir().unwrap_or_else(|_| PathBuf::from("/"));
+        let working_directory = working_directory
+            .unwrap_or_else(|| env::current_dir().unwrap_or_else(|_| PathBuf::from("/")));
         let mut pane = InstancePane::new(working_directory.clone(), actual_rows, actual_columns);
 
         if let Ok(mut session) =
@@ -252,4 +254,5 @@ impl InstanceState {
 
         false
     }
+
 }

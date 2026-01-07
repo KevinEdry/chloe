@@ -4,7 +4,6 @@ use std::fmt;
 pub enum AppError {
     Io(std::io::Error),
     Serialization(serde_json::Error),
-    Pty(String),
     Config(String),
 }
 
@@ -13,8 +12,7 @@ impl fmt::Display for AppError {
         match self {
             Self::Io(e) => write!(f, "IO error: {e}"),
             Self::Serialization(e) => write!(f, "Serialization error: {e}"),
-            Self::Pty(msg) => write!(f, "PTY error: {msg}"),
-            Self::Config(msg) => write!(f, "Configuration error: {msg}"),
+            Self::Config(message) => write!(f, "Configuration error: {message}"),
         }
     }
 }

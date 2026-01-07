@@ -1,7 +1,6 @@
 use crate::app::App;
 use crate::types::Result;
 use std::fs;
-use std::path::Path;
 
 /// Save the application state to disk
 pub fn save_state(app: &App) -> Result<()> {
@@ -37,10 +36,4 @@ pub fn load_state() -> Result<App> {
     let app: App = serde_json::from_str(&json)?;
 
     Ok(app)
-}
-
-/// Check if a saved state file exists
-pub fn state_exists() -> bool {
-    let path = super::paths::get_state_path();
-    path.exists()
 }

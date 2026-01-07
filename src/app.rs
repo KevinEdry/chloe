@@ -2,6 +2,7 @@ use crate::instance::InstanceState;
 use crate::kanban::{KanbanState, TaskType};
 use crate::roadmap::RoadmapState;
 use crate::types::Config;
+use crate::worktree::WorktreeTabState;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -9,6 +10,7 @@ pub enum Tab {
     Kanban,
     Instances,
     Roadmap,
+    Worktree,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,6 +19,7 @@ pub struct App {
     pub kanban: KanbanState,
     pub instances: InstanceState,
     pub roadmap: RoadmapState,
+    pub worktree: WorktreeTabState,
     #[serde(skip)]
     pub config: Config,
     #[serde(skip)]
@@ -30,6 +33,7 @@ impl App {
             kanban: KanbanState::new(),
             instances: InstanceState::new(),
             roadmap: RoadmapState::new(),
+            worktree: WorktreeTabState::new(),
             config: Config::default(),
             showing_exit_confirmation: false,
         }
@@ -39,18 +43,20 @@ impl App {
     pub fn load_or_default() -> Self {
         match crate::persistence::storage::load_state() {
             Ok(mut app) => {
-                // Restore config since it's skipped in serialization
                 app.config = Config::default();
-                // Clear instance panes since PTY sessions can't be persisted
-                app.instances.panes.clear();
-                app.instances.selected_pane = 0;
-                // Clear instance links from tasks since instances are gone
+
+                let active_instance_ids: Vec<uuid::Uuid> =
+                    app.instances.panes.iter().map(|p| p.id).collect();
                 for column in &mut app.kanban.columns {
                     for task in &mut column.tasks {
-                        task.instance_id = None;
+                        if let Some(instance_id) = task.instance_id {
+                            if !active_instance_ids.contains(&instance_id) {
+                                task.instance_id = None;
+                            }
+                        }
                     }
                 }
-                // Sort roadmap items by priority
+
                 app.roadmap.sort_items_by_priority();
                 app
             }
@@ -71,7 +77,8 @@ impl App {
         self.active_tab = match self.active_tab {
             Tab::Kanban => Tab::Instances,
             Tab::Instances => Tab::Roadmap,
-            Tab::Roadmap => Tab::Kanban,
+            Tab::Roadmap => Tab::Worktree,
+            Tab::Worktree => Tab::Kanban,
         };
     }
 
@@ -82,17 +89,32 @@ impl App {
         }
 
         let in_progress_column = &self.kanban.columns[1];
-        let tasks_needing_instances: Vec<(uuid::Uuid, String, String)> = in_progress_column
+        let tasks_needing_instances: Vec<(
+            uuid::Uuid,
+            String,
+            String,
+            Option<std::path::PathBuf>,
+        )> = in_progress_column
             .tasks
             .iter()
             .filter(|task| task.instance_id.is_none())
-            .map(|task| (task.id, task.title.clone(), task.description.clone()))
+            .map(|task| {
+                let worktree_path = task
+                    .worktree_info
+                    .as_ref()
+                    .map(|info| info.worktree_path.clone());
+                (task.id, task.title.clone(), task.description.clone(), worktree_path)
+            })
             .collect();
 
-        for (task_id, task_title, task_description) in tasks_needing_instances {
-            let instance_id =
-                self.instances
-                    .create_pane_for_task(&task_title, &task_description, 24, 80);
+        for (task_id, task_title, task_description, working_directory) in tasks_needing_instances {
+            let instance_id = self.instances.create_pane_for_task(
+                &task_title,
+                &task_description,
+                working_directory,
+                24,
+                80,
+            );
             self.kanban.link_task_to_instance(task_id, instance_id);
         }
     }
@@ -103,14 +125,22 @@ impl App {
             let task_id = task.id;
             let task_title = task.title.clone();
             let task_description = task.description.clone();
+            let working_directory = task
+                .worktree_info
+                .as_ref()
+                .map(|info| info.worktree_path.clone());
 
             if let Some(instance_id) = task.instance_id {
                 self.active_tab = Tab::Instances;
                 return self.instances.select_pane_by_id(instance_id);
             } else {
-                let instance_id =
-                    self.instances
-                        .create_pane_for_task(&task_title, &task_description, 24, 80);
+                let instance_id = self.instances.create_pane_for_task(
+                    &task_title,
+                    &task_description,
+                    working_directory,
+                    24,
+                    80,
+                );
                 self.kanban.link_task_to_instance(task_id, instance_id);
                 self.active_tab = Tab::Instances;
                 return true;
@@ -195,7 +225,8 @@ impl App {
         if let Some(item) = self.roadmap.items.get(item_index) {
             let title = item.title.clone();
             let description = item.description.clone();
-            self.kanban.add_task_to_planning(title, description, TaskType::Task);
+            self.kanban
+                .add_task_to_planning(title, description, TaskType::Task);
         }
     }
 }

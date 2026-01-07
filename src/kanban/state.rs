@@ -132,6 +132,8 @@ pub struct Task {
     pub instance_id: Option<Uuid>,
     #[serde(default)]
     pub is_paused: bool,
+    #[serde(default)]
+    pub worktree_info: Option<crate::worktree::WorktreeInfo>,
 }
 
 impl Task {
@@ -144,6 +146,7 @@ impl Task {
             task_type,
             instance_id: None,
             is_paused: false,
+            worktree_info: None,
         }
     }
 }
@@ -194,6 +197,7 @@ pub enum KanbanMode {
     },
     ClassifyingTask {
         raw_input: String,
+        edit_task_idx: Option<usize>,
     },
     ReviewPopup {
         task_idx: usize,

@@ -35,10 +35,7 @@ impl RoadmapState {
     }
 
     fn select_item_by_id(&mut self, id: Uuid) {
-        self.selected_item = self
-            .items
-            .iter()
-            .position(|item| item.id == id);
+        self.selected_item = self.items.iter().position(|item| item.id == id);
     }
 
     pub fn delete_item(&mut self, index: usize) -> Option<RoadmapItem> {

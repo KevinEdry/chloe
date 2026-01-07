@@ -52,6 +52,7 @@ impl Default for ClaudeState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstancePane {
     pub id: Uuid,
+    pub name: Option<String>,
     pub working_directory: PathBuf,
     pub rows: u16,
     pub columns: u16,
@@ -67,6 +68,7 @@ impl InstancePane {
     pub fn new(working_directory: PathBuf, rows: u16, columns: u16) -> Self {
         Self {
             id: Uuid::new_v4(),
+            name: None,
             working_directory,
             rows,
             columns,

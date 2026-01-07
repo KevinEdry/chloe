@@ -18,13 +18,14 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .split(f.area());
 
     // Render tab bar
-    let tab_titles = vec!["Kanban", "Instances", "Roadmap"];
+    let tab_titles = vec!["Kanban", "Instances", "Roadmap", "Worktree"];
     let tabs = RatTabs::new(tab_titles)
         .block(Block::default().borders(Borders::ALL).title("Chloe"))
         .select(match app.active_tab {
             Tab::Kanban => 0,
             Tab::Instances => 1,
             Tab::Roadmap => 2,
+            Tab::Worktree => 3,
         })
         .style(Style::default().fg(Color::White))
         .highlight_style(
@@ -40,6 +41,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         Tab::Kanban => crate::kanban::ui::render(f, app, chunks[1]),
         Tab::Instances => crate::instance::ui::render(f, &mut app.instances, chunks[1]),
         Tab::Roadmap => crate::roadmap::ui::render(f, app, chunks[1]),
+        Tab::Worktree => crate::worktree::tab_ui::render(f, chunks[1], &app.worktree),
     }
 
     // Render exit confirmation dialog on top if showing

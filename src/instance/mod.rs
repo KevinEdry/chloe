@@ -1,7 +1,10 @@
-pub mod state;
 pub mod events;
-pub mod pty;
 pub mod layout;
+pub mod operations;
+pub mod pty;
+pub mod state;
 pub mod ui;
 
-pub use state::{TerminalState, TerminalPane, LayoutMode};
+pub use state::{
+    ClaudeState, InstanceMode, InstancePane, InstanceState, LayoutMode,
+};

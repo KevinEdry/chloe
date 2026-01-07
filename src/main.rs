@@ -21,6 +21,7 @@ mod persistence;
 mod roadmap;
 mod types;
 mod ui;
+mod worktree;
 
 use app::{App, Tab};
 use crossterm::{
@@ -144,6 +145,9 @@ fn run_app<B: ratatui::backend::Backend>(
                         KeyCode::Char('3') if !instance_is_focused => {
                             app.switch_tab(Tab::Roadmap);
                         }
+                        KeyCode::Char('4') if !instance_is_focused => {
+                            app.switch_tab(Tab::Worktree);
+                        }
                         _ => {
                             // Route to active tab
                             match app.active_tab {
@@ -200,9 +204,12 @@ fn run_app<B: ratatui::backend::Backend>(
                                     instance::events::handle_key_event(&mut app.instances, key)
                                 }
                                 Tab::Roadmap => {
-                                    let action = roadmap::events::handle_key_event(&mut app.roadmap, key);
+                                    let action =
+                                        roadmap::events::handle_key_event(&mut app.roadmap, key);
                                     match action {
-                                        roadmap::events::RoadmapAction::ConvertToTask(item_index) => {
+                                        roadmap::events::RoadmapAction::ConvertToTask(
+                                            item_index,
+                                        ) => {
                                             app.convert_roadmap_item_to_task(item_index);
                                             app.active_tab = Tab::Kanban;
                                         }
@@ -211,11 +218,16 @@ fn run_app<B: ratatui::backend::Backend>(
                                         }
                                         roadmap::events::RoadmapAction::GenerateRoadmap => {
                                             if let Ok(current_dir) = std::env::current_dir() {
-                                                app.roadmap.start_generation(current_dir.to_string_lossy().to_string());
+                                                app.roadmap.start_generation(
+                                                    current_dir.to_string_lossy().to_string(),
+                                                );
                                             }
                                         }
                                         roadmap::events::RoadmapAction::None => {}
                                     }
+                                }
+                                Tab::Worktree => {
+                                    app.worktree.handle_key_event(key);
                                 }
                             }
                         }

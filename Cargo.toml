@@ -22,6 +22,12 @@ vt100 = "0.15"
 anyhow = "1.0"
 dirs = "5.0"
 
+# Git operations
+git2 = "0.18"
+
+# HTTP Client for AI Classification
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+
 [lints.rust]
 # SAFETY: This project forbids ALL unsafe code
 unsafe_code = "forbid"
@@ -39,7 +45,3 @@ missing_panics_doc = "allow"
 # SAFETY: Enforce thread safety
 # Forbid unsafe threading patterns
 undocumented_unsafe_blocks = "forbid"
-
-# CODE QUALITY: No magic numbers
-# All numeric literals should be named constants
-magic_numbers = "warn"

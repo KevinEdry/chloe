@@ -12,7 +12,11 @@ const TITLE_ELLIPSIS_THRESHOLD: usize = 40;
 pub fn render_items_list(f: &mut Frame, state: &RoadmapState, area: Rect) {
     let mut block = Block::default()
         .title("Roadmap Items")
-        .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
 
@@ -94,10 +98,7 @@ pub fn render_items_list(f: &mut Frame, state: &RoadmapState, area: Rect) {
             } else {
                 Line::from(vec![
                     Span::raw("  "),
-                    Span::styled(
-                        priority_char,
-                        Style::default().fg(item.priority.color()),
-                    ),
+                    Span::styled(priority_char, Style::default().fg(item.priority.color())),
                     Span::raw(" "),
                     Span::styled(title_text, Style::default().fg(Color::Gray)),
                 ])

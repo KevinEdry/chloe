@@ -87,9 +87,8 @@ fn handle_text_input_mode(state: &mut KanbanState, key: KeyEvent, is_editing: bo
             if !title.is_empty() {
                 if is_editing {
                     if let Some(idx) = task_idx {
-                        state.edit_task(idx, title, String::new());
+                        state.start_classification_for_edit(title, idx);
                     }
-                    state.mode = KanbanMode::Normal;
                 } else {
                     state.start_classification(title);
                 }

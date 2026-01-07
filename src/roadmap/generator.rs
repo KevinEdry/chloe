@@ -175,12 +175,7 @@ impl GeneratedRoadmapItem {
             _ => RoadmapPriority::Medium,
         };
 
-        let mut item = RoadmapItem::new(
-            self.title,
-            self.description,
-            self.rationale,
-            priority,
-        );
+        let mut item = RoadmapItem::new(self.title, self.description, self.rationale, priority);
 
         item.user_stories = self.user_stories;
         item.acceptance_criteria = self.acceptance_criteria;

@@ -50,8 +50,7 @@ impl RoadmapState {
     }
 
     pub fn get_selected_item(&self) -> Option<&RoadmapItem> {
-        self.selected_item
-            .and_then(|index| self.items.get(index))
+        self.selected_item.and_then(|index| self.items.get(index))
     }
 
     pub fn get_selected_item_mut(&mut self) -> Option<&mut RoadmapItem> {
@@ -177,18 +176,9 @@ impl Default for RoadmapPriority {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum RoadmapMode {
     Normal,
-    AddingItem {
-        input: String,
-    },
-    EditingItem {
-        item_index: usize,
-        input: String,
-    },
-    ConfirmDelete {
-        item_index: usize,
-    },
-    ConvertToTask {
-        item_index: usize,
-    },
+    AddingItem { input: String },
+    EditingItem { item_index: usize, input: String },
+    ConfirmDelete { item_index: usize },
+    ConvertToTask { item_index: usize },
     Generating,
 }

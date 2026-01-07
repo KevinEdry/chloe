@@ -1,4 +1,4 @@
-use super::state::{RoadmapMode, RoadmapPriority, RoadmapState, RoadmapStatus};
+use super::state::{RoadmapMode, RoadmapPriority, RoadmapState};
 use crossterm::event::{KeyCode, KeyEvent};
 
 pub enum RoadmapAction {
@@ -14,7 +14,9 @@ pub fn handle_key_event(state: &mut RoadmapState, key: KeyEvent) -> RoadmapActio
         RoadmapMode::AddingItem { .. } => handle_adding_item(state, key),
         RoadmapMode::EditingItem { .. } => handle_editing_item(state, key),
         RoadmapMode::ConfirmDelete { item_index } => handle_confirm_delete(state, key, *item_index),
-        RoadmapMode::ConvertToTask { item_index } => handle_convert_to_task(state, key, *item_index),
+        RoadmapMode::ConvertToTask { item_index } => {
+            handle_convert_to_task(state, key, *item_index)
+        }
         RoadmapMode::Generating => handle_generating_mode(state, key),
     }
 }
@@ -67,21 +69,6 @@ fn handle_normal_mode(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction 
                         RoadmapPriority::High => RoadmapPriority::Low,
                     };
                     state.update_item_priority(index, new_priority);
-                    return RoadmapAction::SaveState;
-                }
-            }
-            RoadmapAction::None
-        }
-        KeyCode::Char('s') => {
-            if let Some(index) = state.selected_item {
-                if let Some(item) = state.items.get(index) {
-                    let new_status = match item.status {
-                        RoadmapStatus::Planned => RoadmapStatus::InProgress,
-                        RoadmapStatus::InProgress => RoadmapStatus::Completed,
-                        RoadmapStatus::Completed => RoadmapStatus::Cancelled,
-                        RoadmapStatus::Cancelled => RoadmapStatus::Planned,
-                    };
-                    state.update_item_status(index, new_status);
                     return RoadmapAction::SaveState;
                 }
             }

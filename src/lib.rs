@@ -16,6 +16,7 @@ pub mod persistence;
 pub mod roadmap;
 pub mod types;
 pub mod ui;
+pub mod worktree;
 
 #[cfg(test)]
 mod tests {

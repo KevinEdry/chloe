@@ -15,11 +15,24 @@ impl KanbanState {
         self.selected_task = Some(self.columns[0].tasks.len() - 1);
     }
 
-    /// Start AI classification of user input
+    /// Start AI classification of user input for a new task
     pub fn start_classification(&mut self, raw_input: String) {
+        self.start_classification_internal(raw_input, None);
+    }
+
+    /// Start AI classification of user input for editing an existing task
+    pub fn start_classification_for_edit(&mut self, raw_input: String, task_idx: usize) {
+        self.start_classification_internal(raw_input, Some(task_idx));
+    }
+
+    /// Internal classification starter
+    fn start_classification_internal(&mut self, raw_input: String, edit_task_idx: Option<usize>) {
         let request = ClassificationRequest::spawn(raw_input.clone());
         self.classification_request = Some(request);
-        self.mode = super::KanbanMode::ClassifyingTask { raw_input };
+        self.mode = super::KanbanMode::ClassifyingTask {
+            raw_input,
+            edit_task_idx,
+        };
     }
 
     /// Poll classification result (called every event cycle)
@@ -33,7 +46,7 @@ impl KanbanState {
                         self.apply_classification(classified);
                     }
                     Err(_) => {
-                        if let super::KanbanMode::ClassifyingTask { raw_input } = &self.mode {
+                        if let super::KanbanMode::ClassifyingTask { raw_input, .. } = &self.mode {
                             self.fallback_to_manual(raw_input.clone());
                         }
                     }
@@ -57,13 +70,31 @@ impl KanbanState {
             _ => TaskType::Task,
         };
 
-        self.add_task_to_planning(classified.title, classified.description, task_type);
+        if let super::KanbanMode::ClassifyingTask { edit_task_idx, .. } = self.mode {
+            if let Some(task_idx) = edit_task_idx {
+                self.edit_task_with_classification(
+                    task_idx,
+                    classified.title,
+                    classified.description,
+                    task_type,
+                );
+            } else {
+                self.add_task_to_planning(classified.title, classified.description, task_type);
+            }
+        }
+
         self.mode = super::KanbanMode::Normal;
     }
 
     /// Fallback to manual entry if classification fails
     pub fn fallback_to_manual(&mut self, raw_input: String) {
-        self.add_task_to_planning(raw_input, String::new(), TaskType::Task);
+        if let super::KanbanMode::ClassifyingTask { edit_task_idx, .. } = self.mode {
+            if let Some(task_idx) = edit_task_idx {
+                self.edit_task(task_idx, raw_input, String::new());
+            } else {
+                self.add_task_to_planning(raw_input, String::new(), TaskType::Task);
+            }
+        }
         self.mode = super::KanbanMode::Normal;
     }
 
@@ -72,6 +103,21 @@ impl KanbanState {
         if let Some(task) = self.selected_column_mut().tasks.get_mut(task_idx) {
             task.title = title;
             task.description = description;
+        }
+    }
+
+    /// Edit an existing task with AI classification results
+    fn edit_task_with_classification(
+        &mut self,
+        task_idx: usize,
+        title: String,
+        description: String,
+        task_type: TaskType,
+    ) {
+        if let Some(task) = self.selected_column_mut().tasks.get_mut(task_idx) {
+            task.title = title;
+            task.description = description;
+            task.task_type = task_type;
         }
     }
 
@@ -101,6 +147,11 @@ impl KanbanState {
             None => return,
         };
 
+        let is_entering_in_progress = self.selected_column == 0 && self.selected_column + 1 == 1;
+        if is_entering_in_progress {
+            self.try_create_worktree_for_task(task_index);
+        }
+
         let task = match self.columns[self.selected_column]
             .tasks
             .get(task_index)
@@ -115,6 +166,39 @@ impl KanbanState {
 
         self.selected_column += 1;
         self.selected_task = Some(self.columns[self.selected_column].tasks.len() - 1);
+    }
+
+    fn try_create_worktree_for_task(&mut self, task_index: usize) {
+        let task = match self.columns[self.selected_column].tasks.get_mut(task_index) {
+            Some(t) => t,
+            None => return,
+        };
+
+        let already_has_worktree = task.worktree_info.is_some();
+        if already_has_worktree {
+            return;
+        }
+
+        let current_dir = match std::env::current_dir() {
+            Ok(dir) => dir,
+            Err(_) => return,
+        };
+
+        let repository_root = match crate::worktree::find_repository_root(&current_dir) {
+            Ok(root) => root,
+            Err(_) => return,
+        };
+
+        let worktree_info = match crate::worktree::create_worktree(
+            &repository_root,
+            &task.title,
+            &task.id,
+        ) {
+            Ok(info) => info,
+            Err(_) => return,
+        };
+
+        task.worktree_info = Some(worktree_info);
     }
 
     /// Move task to the previous column
@@ -299,6 +383,9 @@ impl KanbanState {
             return;
         }
 
+        let task = &self.columns[review_column_index].tasks[task_idx];
+        self.try_cleanup_worktree(task);
+
         let task = self.columns[review_column_index].tasks.remove(task_idx);
         self.columns[done_column_index].tasks.push(task);
 
@@ -308,6 +395,30 @@ impl KanbanState {
         } else if task_idx >= review_tasks_remaining {
             self.selected_task = Some(review_tasks_remaining - 1);
         }
+    }
+
+    fn try_cleanup_worktree(&self, task: &super::state::Task) {
+        let worktree_info = match &task.worktree_info {
+            Some(info) => info,
+            None => return,
+        };
+
+        let was_auto_created = worktree_info.auto_created;
+        if !was_auto_created {
+            return;
+        }
+
+        let current_dir = match std::env::current_dir() {
+            Ok(dir) => dir,
+            Err(_) => return,
+        };
+
+        let repository_root = match crate::worktree::find_repository_root(&current_dir) {
+            Ok(root) => root,
+            Err(_) => return,
+        };
+
+        let _ = crate::worktree::delete_worktree(&repository_root, worktree_info);
     }
 
     /// Move a task from Review back to In Progress by task index in Review column

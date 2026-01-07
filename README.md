@@ -1,6 +1,6 @@
 # Chloe - Auto Claude CLI
 
-A powerful terminal-based CLI application built with Rust that provides kanban task management and multiple interactive terminal panes.
+A powerful terminal-based CLI application built with Rust that provides kanban task management and multiple interactive instance panes.
 
 ## Features
 
@@ -10,12 +10,17 @@ A powerful terminal-based CLI application built with Rust that provides kanban t
 - Persistent task storage across sessions
 - Task metadata (creation timestamps, descriptions)
 
-### 💻 Interactive Terminals
-- Multiple terminal panes in split view
+### 💻 Interactive Instances
+- Multiple instance panes in split view
 - Full interactive PTY sessions - run any command
+- **Advanced Session Management** with tmux backend:
+  - Sessions persist across app restarts
+  - Detach/reattach sessions without losing state
+  - Background processes survive app closure
+  - Resume exactly where you left off
 - Horizontal and vertical layouts
 - Switch between panes with keyboard shortcuts
-- Working directories persist across restarts
+- Session naming and metadata support
 
 ### 🎨 Modern TUI Interface
 - Tab-based navigation
@@ -33,6 +38,7 @@ A powerful terminal-based CLI application built with Rust that provides kanban t
 
 ### Prerequisites
 - Rust 1.70+ (2024 edition support)
+- tmux 2.0+ (optional, required for persistent sessions)
 
 ### Build from Source
 
@@ -54,7 +60,7 @@ cargo run
 
 ### Basic Navigation
 
-- **Tab** or **1-2**: Switch between Kanban and Terminals tabs
+- **Tab** or **1-2**: Switch between Kanban and Instances tabs
 - **q** or **Ctrl+C**: Quit application
 - **?**: Show help overlay
 
@@ -76,19 +82,27 @@ cargo run
 - **Enter**: Save
 - **Esc**: Cancel
 
-### Terminals Tab
+### Instances Tab
 
 **Pane Management:**
-- **Ctrl+N**: Create new terminal pane
-- **Ctrl+W**: Close active pane
-- **Ctrl+]**: Switch to next pane
-- **Ctrl+[**: Switch to previous pane
-- **Ctrl+H**: Switch to horizontal layout
-- **Ctrl+V**: Switch to vertical layout
+- **c**: Create new direct PTY pane (not persistent)
+- **t**: Create new tmux-backed pane (persistent)
+- **x**: Close active pane
+- **Arrow Keys**: Navigate between panes
+- **Enter**: Focus on pane (all keys sent to instance)
+- **Esc**: Exit focus mode (return to navigation)
 
-**Terminal Input:**
-- All keyboard input is forwarded to the active terminal
-- Use Tab key to exit terminal mode and switch tabs
+**Session Management:**
+- **d**: Detach from current tmux session (keeps it running)
+- **a**: Reattach to detached tmux session
+- Session status indicators:
+  - **[📎]**: Attached to tmux session
+  - **[💤]**: Detached (session running in background)
+  - **[💀]**: Session terminated
+
+**Instance Input:**
+- When focused, all keyboard input is forwarded to the instance
+- Special key sequences (Ctrl+C, arrow keys, etc.) work correctly
 
 ## Configuration
 
@@ -110,13 +124,13 @@ Chloe follows a modular architecture with code locality principles:
 src/
 ├── types/         # Shared types (errors, config)
 ├── kanban/        # Kanban feature (logic + UI)
-├── terminal/      # Terminal feature (logic + UI)
+├── instance/      # Instance feature (logic + UI)
 ├── ui/            # Shared UI components
 ├── persistence/   # State serialization
 └── common/        # Shared utilities
 ```
 
-See [claude.md](./claude.md) for detailed architecture documentation, [docs/safety.md](./docs/safety.md) for our comprehensive safety policy, and [docs/code-style.md](./docs/code-style.md) for code quality standards.
+See [claude.md](./claude.md) for detailed architecture documentation, safety policy, and code quality standards.
 
 ## Development
 
@@ -141,9 +155,10 @@ cargo test
 ## Known Limitations
 
 - Terminal emulation doesn't support full VT100 spec (no images, limited Unicode)
-- Some TUI programs (vim, emacs) may not render perfectly
-- PTY sessions don't persist across app restarts (only working directory saved)
-- Maximum practical terminal panes: 4-6 before UI becomes crowded
+- Some TUI programs (vim, emacs) may not render perfectly in direct PTY mode
+- Direct PTY sessions don't persist across app restarts (use tmux-backed panes for persistence)
+- Maximum practical instance panes: 4-6 before UI becomes crowded
+- tmux must be installed for session persistence features
 
 ## Dependencies
 

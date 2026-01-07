@@ -10,7 +10,3 @@ pub fn get_config_dir() -> PathBuf {
 pub fn get_state_path() -> PathBuf {
     get_config_dir().join("state.json")
 }
-
-pub fn get_config_path() -> PathBuf {
-    get_config_dir().join("config.toml")
-}

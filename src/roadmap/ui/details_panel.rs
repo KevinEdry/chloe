@@ -10,7 +10,11 @@ use ratatui::{
 pub fn render_details_panel(f: &mut Frame, state: &RoadmapState, area: Rect) {
     let block = Block::default()
         .title("Details")
-        .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
 
@@ -32,14 +36,6 @@ pub fn render_details_panel(f: &mut Frame, state: &RoadmapState, area: Rect) {
                     item.priority.label(),
                     Style::default()
                         .fg(item.priority.color())
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::raw("  "),
-                Span::styled("Status: ", Style::default().fg(Color::DarkGray)),
-                Span::styled(
-                    item.status.label(),
-                    Style::default()
-                        .fg(item.status.color())
                         .add_modifier(Modifier::BOLD),
                 ),
             ]),

@@ -5,7 +5,9 @@ mod items;
 use crate::app::App;
 use crate::roadmap::{RoadmapMode, RoadmapState};
 use details_panel::render_details_panel;
-use dialogs::{render_confirm_dialog, render_convert_dialog, render_input_dialog, render_loading_dialog};
+use dialogs::{
+    render_confirm_dialog, render_convert_dialog, render_input_dialog, render_loading_dialog,
+};
 use items::render_items_list;
 use ratatui::{
     Frame,
@@ -86,7 +88,7 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
     } else {
         match &state.mode {
             RoadmapMode::Normal => {
-                "↑↓/jk:navigate  a:add  g:generate-with-ai  e:edit  d:delete  t:convert-to-task  p:priority  s:status  q:quit"
+                "↑↓/jk:navigate  a:add  g:generate-with-ai  e:edit  d:delete  t:convert-to-task  p:priority  q:quit"
             }
             RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {
                 "Type to enter text  Enter:save  Esc:cancel"

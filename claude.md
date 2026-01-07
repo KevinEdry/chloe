@@ -4,29 +4,104 @@
 
 Chloe is a terminal-based CLI application that mimics Auto Claude functionality, providing:
 - **Kanban Board**: Task management with To Do, In Progress, and Done columns
-- **Interactive Terminals**: Multiple terminal panes running actual shell sessions
-- **Persistent State**: Tasks and terminal configurations saved across sessions
+- **Interactive Instances**: Multiple instance panes running actual shell sessions
+- **Persistent State**: Tasks and instance configurations saved across sessions
 
-## Safety Guarantees
+## Safety Policy
 
-**This project maintains a STRICT NO UNSAFE CODE policy:**
+### Zero-Tolerance for Unsafe Code
 
-- ✅ **100% Safe Rust** - No `unsafe` blocks anywhere in the codebase
-- ✅ **Thread Safety** - All concurrency patterns use safe Rust primitives
-- ✅ **Memory Safety** - Compiler-enforced memory safety guarantees
-- ✅ **Static Enforcement** - `#![forbid(unsafe_code)]` prevents any unsafe code
-- ✅ **Dependency Audit** - Only dependencies with safe public APIs
+**All code in this project MUST be 100% safe Rust. No exceptions.**
 
-This eliminates entire classes of bugs:
+This means:
+- ❌ NO `unsafe` blocks
+- ❌ NO `unsafe fn` definitions
+- ❌ NO `unsafe impl`
+- ❌ NO unsafe threading patterns
+- ❌ NO raw pointer manipulation
+- ❌ NO unchecked operations
+
+### Enforcement
+
+**Compiler-Level:**
+```rust
+// src/main.rs
+#![forbid(unsafe_code)]
+```
+
+The `forbid` directive (stronger than `deny`) prevents ANY unsafe code, even if explicitly allowed elsewhere.
+
+**Static Analysis:**
+```toml
+# Cargo.toml
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "forbid"
+```
+
+### Benefits
+
+**Memory Safety** - Rust's ownership system guarantees:
 - No use-after-free
+- No double-free
+- No dangling pointers
 - No buffer overflows
 - No data races
-- No null pointer dereferences
-- No undefined behavior
 
-All dependencies (ratatui, crossterm, portable-pty, vt100) use safe Rust interfaces.
+**Thread Safety** - Safe Rust ensures:
+- `Send`/`Sync` traits enforced by compiler
+- No shared mutable state without synchronization
+- Channels and mutexes are safe by default
 
-**For complete safety policy details, see [docs/safety.md](./docs/safety.md)**
+**Security** - Safe Rust eliminates:
+- **70% of CVEs** that affect C/C++ programs
+- Entire CWE categories (CWE-119, CWE-416, CWE-476, etc.)
+- Memory corruption exploits
+- Race condition vulnerabilities
+
+**Maintainability**:
+- No need to audit unsafe blocks
+- Refactoring is safe by default
+- New contributors can't introduce memory bugs
+- Compiler is your safety net
+
+### Dependencies Using Unsafe
+
+Some dependencies (like `portable-pty`) internally use `unsafe` to interact with OS APIs. This is acceptable when:
+
+1. **Public API is safe**: We only call safe functions
+2. **Well-maintained**: Dependency is actively maintained
+3. **Necessary**: No safe alternative exists for OS interaction
+4. **Encapsulated**: Unsafe code is isolated and reviewed by experts
+
+We **never** call:
+- `unsafe` functions from dependencies
+- FFI functions directly
+- C libraries without safe wrappers
+
+### Verification
+
+```bash
+# Should compile (no unsafe code)
+cargo build
+
+# Should pass (static analysis)
+cargo clippy
+
+# Grep for unsafe (should find nothing in src/)
+grep -r "unsafe" src/
+```
+
+### There Are NO Exceptions
+
+If you believe you need unsafe code:
+1. You're probably wrong - find a safe alternative
+2. If truly necessary, move it to a separate crate with extensive documentation
+3. That crate will NOT be part of this repository
+
+**Remember: If it doesn't compile with `#![forbid(unsafe_code)]`, it doesn't ship.**
 
 ## Code Quality Standards
 
@@ -99,6 +174,7 @@ let context = AppContext::new();
 - `io` (input/output) - standard library convention
 - `uuid` (Universally Unique Identifier) - standard acronym
 - `pty` (pseudo-terminal) - standard Unix term
+- `terminal` (when referring to terminal emulator/UI) - standard term
 
 **Common violations to avoid:**
 - ❌ `num` → ✅ `number` or `count`
@@ -129,28 +205,64 @@ If you're writing a comment to explain what code does, the code is too complex. 
 
 ### Never Nester: Return Early
 
-Avoid deep nesting - return early and keep the happy path at the lowest indentation:
+**CRITICAL RULE: Maximum nesting depth is 2 levels. NO EXCEPTIONS.**
+
+Nested ifs are unreadable. Use early returns and descriptive variable names:
 
 ```rust
-// ❌ BAD: Deep nesting
-if let Some(task) = task {
-    if task.is_valid() {
-        if let Some(assignee) = task.assignee {
-            // do work
+// ❌ BAD: Nested ifs to oblivion - WHO CAN READ THIS?
+if self.selected_column == 1 {
+    if let Some(task_idx) = self.selected_task {
+        if let Some(task) = self.columns[self.selected_column].tasks.get_mut(task_idx) {
+            if let Some(instance_id) = task.instance_id {
+                task.is_paused = !task.is_paused;
+                return Some((instance_id, task.is_paused));
+            }
+        }
+    }
+}
+None
+
+// ✅ GOOD: Early returns with descriptive checks
+let is_in_progress_column = self.selected_column == 1;
+if !is_in_progress_column {
+    return None;
+}
+
+let task_index = self.selected_task?;
+let task = self.columns[self.selected_column].tasks.get_mut(task_index)?;
+let instance_id = task.instance_id?;
+
+task.is_paused = !task.is_paused;
+Some((instance_id, task.is_paused))
+```
+
+**Key techniques:**
+1. **Use descriptive variable names for conditions** - `is_in_progress_column` instead of `self.selected_column == 1`
+2. **Early return/guard clauses** - Check failure conditions first and return
+3. **Use `?` operator** - Convert `Option`/`Result` to early returns automatically
+4. **Invert conditions** - `if !condition { return }` keeps happy path unindented
+
+```rust
+// ❌ BAD: Triple nested
+if user.is_admin {
+    if project.is_active {
+        if has_permission {
+            do_work();
         }
     }
 }
 
-// ✅ GOOD: Early returns
-let task = task.ok_or("No task")?;
-if !task.is_valid() {
-    return Err("Invalid task".into());
-}
-let assignee = task.assignee.ok_or("No assignee")?;
-// do work - happy path at lowest indentation
-```
+// ✅ GOOD: Flat with descriptive checks
+let is_admin = user.is_admin;
+let is_active = project.is_active;
 
-**Rule: Maximum nesting depth is 2 levels.**
+if !is_admin || !is_active || !has_permission {
+    return;
+}
+
+do_work();
+```
 
 ### Functional Core, Imperative Shell
 
@@ -182,7 +294,182 @@ fn apply_discount_and_save(user_id: Uuid, amount: f64) -> Result<()> {
 - Side effects are isolated and explicit
 - Easier to reason about code behavior
 
-See [docs/code-style.md](./docs/code-style.md) for complete guidelines.
+**Functional Core Rules:**
+- ✅ Take data as parameters
+- ✅ Return computed results
+- ✅ No I/O (files, network, database)
+- ✅ No mutation of external state
+- ✅ No `Utc::now()` or random numbers (pass as parameter)
+- ✅ Deterministic: same input → same output
+
+**Imperative Shell Rules:**
+- ✅ Handle I/O operations
+- ✅ Manage state changes
+- ✅ Call pure functions
+- ✅ Keep thin - delegate logic to core
+- ✅ Coordinate side effects
+
+### Code Locality: Keep Things Together
+
+**CRITICAL PRINCIPLE: Code should live close to where it's used.**
+
+Don't create centralized files for things that aren't truly shared. This applies to:
+- Constants
+- Helper functions
+- Type definitions
+- Configuration
+
+```rust
+// ❌ BAD: Centralized constants file for unshared values
+// src/constants.rs
+pub const DIALOG_WIDTH: u16 = 60;
+pub const COLUMN_HEIGHT: u16 = 7;
+pub const BUTTON_COUNT: usize = 4;
+
+// src/dialogs.rs
+use crate::constants::DIALOG_WIDTH;  // Has to jump to another file
+
+// src/columns.rs
+use crate::constants::COLUMN_HEIGHT; // Has to jump to another file
+
+// ✅ GOOD: Constants live with the code that uses them
+// src/dialogs.rs
+const DIALOG_WIDTH: u16 = 60;
+const BUTTON_COUNT: usize = 4;
+
+fn render_dialog() {
+    // Constants are right here!
+}
+
+// src/columns.rs
+const COLUMN_HEIGHT: u16 = 7;
+
+fn render_column() {
+    // Constants are right here!
+}
+```
+
+**When to centralize:**
+Only create a shared module when code is **actually used in 2+ places**:
+
+```rust
+// ✅ GOOD: Truly shared constants
+// src/ui/colors.rs
+pub const PRIMARY_COLOR: Color = Color::Cyan;
+pub const ERROR_COLOR: Color = Color::Red;
+
+// Used in multiple modules
+// src/dialogs.rs
+use crate::ui::colors::{PRIMARY_COLOR, ERROR_COLOR};
+
+// src/status_bar.rs
+use crate::ui::colors::{PRIMARY_COLOR, ERROR_COLOR};
+```
+
+**Benefits:**
+- **Easier to understand** - No jumping between files to find definitions
+- **Easier to modify** - Change constants without hunting through centralized files
+- **Better encapsulation** - Each module owns its configuration
+- **No false abstraction** - No "shared" files that aren't actually shared
+
+**File Size Guideline:**
+Keep files under 250-300 lines. If a file grows too large:
+1. Split by **feature/responsibility**, not by "type of thing"
+2. Keep related code together in the split modules
+
+```
+❌ BAD split:
+ui/
+  constants.rs      (all constants)
+  helpers.rs        (all helpers)
+  types.rs          (all types)
+
+✅ GOOD split:
+ui/
+  dialogs.rs        (dialog constants, helpers, types, rendering)
+  columns.rs        (column constants, helpers, types, rendering)
+  status_bar.rs     (status constants, helpers, types, rendering)
+```
+
+### No Magic Numbers
+
+**All numeric literals must be named constants with descriptive names.**
+
+Magic numbers are unnamed numeric literals scattered through code. They make code hard to understand and maintain.
+
+```rust
+// ❌ BAD: What do these numbers mean?
+if area.width < 80 {
+    let size = 60;
+} else {
+    let size = 50;
+}
+let padding = 2;
+let offset = padding * 2;
+
+// ✅ GOOD: Self-documenting named constants
+const SMALL_SCREEN_THRESHOLD: u16 = 80;
+const DIALOG_WIDTH_SMALL: u16 = 60;
+const DIALOG_WIDTH_NORMAL: u16 = 50;
+const DIALOG_PADDING: u16 = 2;
+const DIALOG_PADDING_DOUBLE: u16 = 4;
+
+if area.width < SMALL_SCREEN_THRESHOLD {
+    let size = DIALOG_WIDTH_SMALL;
+} else {
+    let size = DIALOG_WIDTH_NORMAL;
+}
+let padding = DIALOG_PADDING;
+let offset = DIALOG_PADDING_DOUBLE;
+```
+
+**Exceptions (literals that are OK):**
+- `0` and `1` in common contexts (array indexing, initialization, increment/decrement)
+- `-1` for error codes or "not found" sentinels (when idiomatic)
+- `2` in `x / 2` for simple halving
+- Simple calculations: `100 - percent` for percentage complement
+
+**When naming constants:**
+- Use descriptive names that explain **what** the value represents
+- Use units in the name: `TIMEOUT_MS`, `WIDTH_PIXELS`, `MAX_COUNT`
+- Group related constants together
+
+```rust
+// ✅ GOOD: Clear naming with units and grouping
+// Dialog dimensions
+const DIALOG_WIDTH_THRESHOLD: u16 = 80;
+const DIALOG_WIDTH_SMALL: u16 = 80;
+const DIALOG_WIDTH_NORMAL: u16 = 60;
+
+// Animation timing (milliseconds)
+const SPINNER_FRAME_DURATION_MS: u128 = 100;
+const SPINNER_FRAME_COUNT: u128 = 10;
+
+// Layout percentages
+const BUTTON_WIDTH_PERCENT: u16 = 25;
+const REVIEW_POPUP_HEIGHT_PERCENT: u16 = 90;
+```
+
+**Where to put constants:**
+Remember **Code Locality** - constants go in the file that uses them, not in a centralized constants file (unless truly shared across files).
+
+### Code Review Checklist
+
+Before submitting code, verify:
+
+- [ ] No "what" or "how" comments (only "why")
+- [ ] No abbreviations in identifiers
+- [ ] All functions have clear, descriptive names
+- [ ] Complex logic extracted to named functions
+- [ ] Magic numbers replaced with named constants
+- [ ] Constants live in the file that uses them (code locality)
+- [ ] Boolean expressions named for clarity
+- [ ] Early returns used, maximum 2 levels of nesting
+- [ ] Pure functions separated from side effects
+- [ ] Functions under 50 lines
+- [ ] Files under 250-300 lines (split by feature if larger)
+- [ ] No code repetition
+- [ ] No `unsafe` code anywhere
 
 ## Architecture
 
@@ -201,7 +488,7 @@ See [docs/code-style.md](./docs/code-style.md) for complete guidelines.
 └──────┬────────────────────────┬─────────────────┘
        │                        │
 ┌──────▼──────┐          ┌──────▼──────┐
-│ Kanban      │          │ Terminals   │
+│ Kanban      │          │ Instances   │
 │ Feature     │          │ Feature     │
 ├─────────────┤          ├─────────────┤
 │ • state.rs  │          │ • state.rs  │
@@ -226,12 +513,12 @@ See [docs/code-style.md](./docs/code-style.md) for complete guidelines.
 - `operations.rs`: Business logic (add/edit/delete/move tasks)
 - `ui.rs`: **Kanban-specific rendering** (stays with feature)
 
-#### `src/terminal/` - Terminal Feature
-- `state.rs`: TerminalState, TerminalPane, LayoutMode
+#### `src/instance/` - Instance Feature
+- `state.rs`: InstanceState, InstancePane, LayoutMode
 - `events.rs`: Event routing to PTY sessions
 - `pty.rs`: PTY lifecycle management using portable-pty
 - `layout.rs`: Pane splitting algorithms
-- `ui.rs`: **Terminal-specific rendering** (stays with feature)
+- `ui.rs`: **Instance-specific rendering** (stays with feature)
 
 #### `src/ui/` - Shared UI Components
 - `mod.rs`: Main UI dispatcher and tab bar rendering
@@ -247,17 +534,17 @@ See [docs/code-style.md](./docs/code-style.md) for complete guidelines.
 - `migrations.rs`: Schema version handling
 
 #### `src/common/` - Shared Utilities
-- `input.rs`: InputMode enum (Normal, TextEntry, Terminal)
+- `input.rs`: InputMode enum (Normal, TextEntry, Instance)
 - `keybindings.rs`: Centralized keybinding configuration
 
 ## Key Design Decisions
 
 ### 1. Code Locality
-Each feature module (`kanban/`, `terminal/`) contains **both** its logic AND its specific UI rendering code. This makes the codebase easier to navigate and maintain - everything related to a feature lives in one place.
+Each feature module (`kanban/`, `instance/`) contains **both** its logic AND its specific UI rendering code. This makes the codebase easier to navigate and maintain - everything related to a feature lives in one place.
 
 ### 2. Event Routing Strategy
 ```
-User Input → main.rs → app.rs → [Kanban|Terminal]::events → State Mutation → UI Rendering
+User Input → main.rs → app.rs → [Kanban|Instance]::events → State Mutation → UI Rendering
 ```
 
 Events flow from the main loop to the active tab's event handler, which mutates state. The UI is then re-rendered based on the new state.
@@ -273,7 +560,7 @@ Events flow from the main loop to the active tab's event handler, which mutates 
 - Save to `~/.config/chloe/state.json`
 - Auto-save on state changes + on graceful shutdown
 - Kanban tasks fully serializable
-- Terminal panes: only save working directory and layout
+- Instance panes: only save working directory and layout
 
 ## Navigation Guide
 
@@ -281,13 +568,13 @@ Events flow from the main loop to the active tab's event handler, which mutates 
 
 **Need to add a new keybinding?**
 - Global: `src/common/keybindings.rs`
-- Feature-specific: `src/kanban/events.rs` or `src/terminal/events.rs`
+- Feature-specific: `src/kanban/events.rs` or `src/instance/events.rs`
 
 **Need to change kanban UI rendering?**
 - `src/kanban/ui.rs` (NOT in src/ui/)
 
-**Need to change terminal UI rendering?**
-- `src/terminal/ui.rs` (NOT in src/ui/)
+**Need to change instance UI rendering?**
+- `src/instance/ui.rs` (NOT in src/ui/)
 
 **Need to add a shared widget?**
 - `src/ui/widgets/` (e.g., for confirmation dialogs, modals)
@@ -306,11 +593,11 @@ Events flow from the main loop to the active tab's event handler, which mutates 
 3. Update UI rendering in `src/kanban/ui.rs`
 4. Update add/edit logic in `src/kanban/operations.rs`
 
-**Add a new terminal pane layout:**
-1. Add variant to `LayoutMode` enum in `src/terminal/state.rs`
-2. Implement layout logic in `src/terminal/layout.rs`
-3. Update rendering in `src/terminal/ui.rs`
-4. Add keybinding in `src/terminal/events.rs`
+**Add a new instance pane layout:**
+1. Add variant to `LayoutMode` enum in `src/instance/state.rs`
+2. Implement layout logic in `src/instance/layout.rs`
+3. Update rendering in `src/instance/ui.rs`
+4. Add keybinding in `src/instance/events.rs`
 
 **Add a new tab:**
 1. Add variant to `Tab` enum in `src/app.rs`
@@ -354,3 +641,45 @@ Events flow from the main loop to the active tab's event handler, which mutates 
 - [ ] Split terminal panes dynamically
 - [ ] Search/filter tasks in kanban
 - [ ] Export kanban board to markdown/CSV
+
+## Agent Workflow
+
+This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+
+### Quick Reference
+
+```bash
+bd ready              # Find available work
+bd show <id>          # View issue details
+bd update <id> --status in_progress  # Claim work
+bd close <id>         # Complete work
+bd sync               # Sync with git
+```
+
+### Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
+
+Use 'bd' for task tracking

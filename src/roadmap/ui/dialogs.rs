@@ -68,12 +68,7 @@ pub fn render_confirm_dialog(f: &mut Frame, message: &str, area: Rect) {
     f.render_widget(text, inner_area);
 }
 
-pub fn render_convert_dialog(
-    f: &mut Frame,
-    state: &RoadmapState,
-    item_index: usize,
-    area: Rect,
-) {
+pub fn render_convert_dialog(f: &mut Frame, state: &RoadmapState, item_index: usize, area: Rect) {
     let dialog_width = if area.width < DIALOG_WIDTH_THRESHOLD {
         DIALOG_WIDTH_SMALL
     } else {
@@ -141,8 +136,18 @@ pub fn render_details_view(
     if let Some(item) = state.items.get(item_index) {
         let mut lines = vec![
             Line::from(vec![
-                Span::styled("Title: ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD)),
-                Span::styled(&item.title, Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    "Title: ",
+                    Style::default()
+                        .fg(Color::DarkGray)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    &item.title,
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD),
+                ),
             ]),
             Line::from(""),
             Line::from(vec![
@@ -165,7 +170,9 @@ pub fn render_details_view(
         if !item.description.is_empty() {
             lines.push(Line::from(vec![Span::styled(
                 "Description:",
-                Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::BOLD),
             )]));
             lines.push(Line::from(Span::styled(
                 &item.description,
@@ -177,7 +184,9 @@ pub fn render_details_view(
         if !item.rationale.is_empty() {
             lines.push(Line::from(vec![Span::styled(
                 "Rationale:",
-                Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::BOLD),
             )]));
             lines.push(Line::from(Span::styled(
                 &item.rationale,
@@ -189,7 +198,9 @@ pub fn render_details_view(
         if !item.user_stories.is_empty() {
             lines.push(Line::from(vec![Span::styled(
                 "User Stories:",
-                Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::BOLD),
             )]));
             for story in &item.user_stories {
                 lines.push(Line::from(vec![
@@ -203,7 +214,9 @@ pub fn render_details_view(
         if !item.acceptance_criteria.is_empty() {
             lines.push(Line::from(vec![Span::styled(
                 "Acceptance Criteria:",
-                Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::BOLD),
             )]));
             for criterion in &item.acceptance_criteria {
                 lines.push(Line::from(vec![
@@ -217,7 +230,9 @@ pub fn render_details_view(
         if !item.tags.is_empty() {
             lines.push(Line::from(vec![Span::styled(
                 "Tags:",
-                Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::DarkGray)
+                    .add_modifier(Modifier::BOLD),
             )]));
             let tags_text = item.tags.join(", ");
             lines.push(Line::from(Span::styled(
