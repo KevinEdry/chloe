@@ -1,9 +1,11 @@
+mod details_panel;
 mod dialogs;
 mod items;
 
 use crate::app::App;
 use crate::roadmap::{RoadmapMode, RoadmapState};
-use dialogs::{render_confirm_dialog, render_convert_dialog, render_details_view, render_input_dialog, render_loading_dialog};
+use details_panel::render_details_panel;
+use dialogs::{render_confirm_dialog, render_convert_dialog, render_input_dialog, render_loading_dialog};
 use items::render_items_list;
 use ratatui::{
     Frame,
@@ -17,13 +19,20 @@ const STATUS_BAR_WIDTH_THRESHOLD: u16 = 100;
 
 pub fn render(f: &mut Frame, app: &App, area: Rect) {
     let state = &app.roadmap;
-    let chunks = Layout::default()
+
+    let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(0), Constraint::Length(3)])
         .split(area);
 
-    render_items_list(f, state, chunks[0]);
-    render_status_bar(f, state, chunks[1]);
+    let content_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)])
+        .split(main_chunks[0]);
+
+    render_items_list(f, state, content_chunks[0]);
+    render_details_panel(f, state, content_chunks[1]);
+    render_status_bar(f, state, main_chunks[1]);
 
     match &state.mode {
         RoadmapMode::AddingItem { input } => {
@@ -31,12 +40,6 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
         }
         RoadmapMode::EditingItem { input, .. } => {
             render_input_dialog(f, "Edit Roadmap Item", input, area);
-        }
-        RoadmapMode::ViewingDetails {
-            item_index,
-            scroll_offset,
-        } => {
-            render_details_view(f, state, *item_index, *scroll_offset, area);
         }
         RoadmapMode::ConfirmDelete { .. } => {
             render_confirm_dialog(f, "Delete this roadmap item? (y/n)", area);
@@ -56,7 +59,6 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
         RoadmapMode::Normal => Color::Cyan,
         RoadmapMode::AddingItem { .. } => Color::Green,
         RoadmapMode::EditingItem { .. } => Color::Yellow,
-        RoadmapMode::ViewingDetails { .. } => Color::Cyan,
         RoadmapMode::ConfirmDelete { .. } => Color::Red,
         RoadmapMode::ConvertToTask { .. } => Color::Magenta,
         RoadmapMode::Generating => Color::Magenta,
@@ -66,7 +68,6 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
         RoadmapMode::Normal => "NORMAL",
         RoadmapMode::AddingItem { .. } => "ADD ITEM",
         RoadmapMode::EditingItem { .. } => "EDIT ITEM",
-        RoadmapMode::ViewingDetails { .. } => "VIEW DETAILS",
         RoadmapMode::ConfirmDelete { .. } => "CONFIRM DELETE",
         RoadmapMode::ConvertToTask { .. } => "CONVERT TO TASK",
         RoadmapMode::Generating => "GENERATING",
@@ -78,7 +79,6 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
             RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {
                 "Enter:save  Esc:cancel"
             }
-            RoadmapMode::ViewingDetails { .. } => "jk:scroll  q/Esc:close",
             RoadmapMode::ConfirmDelete { .. } => "y:yes  n:no",
             RoadmapMode::ConvertToTask { .. } => "y:yes  n:no",
             RoadmapMode::Generating => "Esc:cancel",
@@ -86,12 +86,11 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
     } else {
         match &state.mode {
             RoadmapMode::Normal => {
-                "↑↓/jk:navigate  a:add  g:generate-with-ai  e:edit  d:delete  Enter:details  t:convert-to-task  p:priority  s:status  q:quit"
+                "↑↓/jk:navigate  a:add  g:generate-with-ai  e:edit  d:delete  t:convert-to-task  p:priority  s:status  q:quit"
             }
             RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {
                 "Type to enter text  Enter:save  Esc:cancel"
             }
-            RoadmapMode::ViewingDetails { .. } => "↑↓/jk:scroll  q/Esc:close",
             RoadmapMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
             RoadmapMode::ConvertToTask { .. } => "y:yes  n:no  Esc:cancel",
             RoadmapMode::Generating => "AI is analyzing your project... Press Esc to cancel",

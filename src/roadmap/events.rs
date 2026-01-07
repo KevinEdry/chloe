@@ -13,9 +13,6 @@ pub fn handle_key_event(state: &mut RoadmapState, key: KeyEvent) -> RoadmapActio
         RoadmapMode::Normal => handle_normal_mode(state, key),
         RoadmapMode::AddingItem { .. } => handle_adding_item(state, key),
         RoadmapMode::EditingItem { .. } => handle_editing_item(state, key),
-        RoadmapMode::ViewingDetails { item_index, scroll_offset } => {
-            handle_viewing_details(state, key, *item_index, *scroll_offset)
-        }
         RoadmapMode::ConfirmDelete { item_index } => handle_confirm_delete(state, key, *item_index),
         RoadmapMode::ConvertToTask { item_index } => handle_convert_to_task(state, key, *item_index),
         RoadmapMode::Generating => handle_generating_mode(state, key),
@@ -52,15 +49,6 @@ fn handle_normal_mode(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction 
         KeyCode::Char('d') => {
             if let Some(index) = state.selected_item {
                 state.mode = RoadmapMode::ConfirmDelete { item_index: index };
-            }
-            RoadmapAction::None
-        }
-        KeyCode::Enter => {
-            if let Some(index) = state.selected_item {
-                state.mode = RoadmapMode::ViewingDetails {
-                    item_index: index,
-                    scroll_offset: 0,
-                };
             }
             RoadmapAction::None
         }
@@ -181,41 +169,6 @@ fn handle_editing_item(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction
                 item_index,
                 input: new_input,
             };
-            RoadmapAction::None
-        }
-        _ => RoadmapAction::None,
-    }
-}
-
-fn handle_viewing_details(
-    state: &mut RoadmapState,
-    key: KeyEvent,
-    item_index: usize,
-    scroll_offset: usize,
-) -> RoadmapAction {
-    const MAX_SCROLL: usize = 20;
-
-    match key.code {
-        KeyCode::Esc | KeyCode::Char('q') => {
-            state.mode = RoadmapMode::Normal;
-            RoadmapAction::None
-        }
-        KeyCode::Char('j') | KeyCode::Down => {
-            if scroll_offset < MAX_SCROLL {
-                state.mode = RoadmapMode::ViewingDetails {
-                    item_index,
-                    scroll_offset: scroll_offset + 1,
-                };
-            }
-            RoadmapAction::None
-        }
-        KeyCode::Char('k') | KeyCode::Up => {
-            if scroll_offset > 0 {
-                state.mode = RoadmapMode::ViewingDetails {
-                    item_index,
-                    scroll_offset: scroll_offset.saturating_sub(1),
-                };
-            }
             RoadmapAction::None
         }
         _ => RoadmapAction::None,

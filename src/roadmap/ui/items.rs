@@ -4,28 +4,38 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Padding},
+    widgets::{Block, Borders, List, ListItem},
 };
 
-const CARD_PADDING: u16 = 2;
-const TITLE_ELLIPSIS_THRESHOLD: usize = 50;
+const TITLE_ELLIPSIS_THRESHOLD: usize = 40;
 
 pub fn render_items_list(f: &mut Frame, state: &RoadmapState, area: Rect) {
     let block = Block::default()
-        .title("Roadmap")
+        .title("Roadmap Items")
         .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan))
-        .padding(Padding::uniform(1));
+        .border_style(Style::default().fg(Color::Cyan));
 
     let inner_area = block.inner(area);
     f.render_widget(block, area);
 
     if state.items.is_empty() {
-        let empty_message = List::new(vec![ListItem::new(Line::from(vec![Span::styled(
-            "No roadmap items. Press 'a' to add one.",
-            Style::default().fg(Color::DarkGray),
-        )]))]);
+        let empty_message = List::new(vec![
+            ListItem::new(Line::from("")),
+            ListItem::new(Line::from(vec![Span::styled(
+                "No items yet",
+                Style::default().fg(Color::DarkGray),
+            )])),
+            ListItem::new(Line::from("")),
+            ListItem::new(Line::from(vec![Span::styled(
+                "Press 'a' to add",
+                Style::default().fg(Color::DarkGray),
+            )])),
+            ListItem::new(Line::from(vec![Span::styled(
+                "Press 'g' to generate",
+                Style::default().fg(Color::DarkGray),
+            )])),
+        ]);
         f.render_widget(empty_message, inner_area);
         return;
     }
@@ -37,8 +47,11 @@ pub fn render_items_list(f: &mut Frame, state: &RoadmapState, area: Rect) {
         .map(|(index, item)| {
             let is_selected = state.selected_item == Some(index);
 
-            let priority_badge = format!("[{}]", item.priority.label());
-            let status_badge = format!("[{}]", item.status.label());
+            let priority_char = match item.priority {
+                crate::roadmap::RoadmapPriority::High => "H",
+                crate::roadmap::RoadmapPriority::Medium => "M",
+                crate::roadmap::RoadmapPriority::Low => "L",
+            };
 
             let title_text = if item.title.len() > TITLE_ELLIPSIS_THRESHOLD {
                 format!("{}...", &item.title[..TITLE_ELLIPSIS_THRESHOLD])
@@ -46,28 +59,34 @@ pub fn render_items_list(f: &mut Frame, state: &RoadmapState, area: Rect) {
                 item.title.clone()
             };
 
-            let line = Line::from(vec![
-                Span::styled(
-                    priority_badge,
-                    Style::default().fg(item.priority.color()).add_modifier(Modifier::BOLD),
-                ),
-                Span::raw(" "),
-                Span::styled(
-                    status_badge,
-                    Style::default().fg(item.status.color()),
-                ),
-                Span::raw(" "),
-                Span::styled(
-                    title_text,
-                    if is_selected {
+            let line = if is_selected {
+                Line::from(vec![
+                    Span::styled("▶ ", Style::default().fg(Color::Cyan)),
+                    Span::styled(
+                        priority_char,
+                        Style::default()
+                            .fg(item.priority.color())
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                    Span::raw(" "),
+                    Span::styled(
+                        title_text,
                         Style::default()
                             .fg(Color::White)
-                            .add_modifier(Modifier::BOLD | Modifier::REVERSED)
-                    } else {
-                        Style::default().fg(Color::White)
-                    },
-                ),
-            ]);
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                ])
+            } else {
+                Line::from(vec![
+                    Span::raw("  "),
+                    Span::styled(
+                        priority_char,
+                        Style::default().fg(item.priority.color()),
+                    ),
+                    Span::raw(" "),
+                    Span::styled(title_text, Style::default().fg(Color::Gray)),
+                ])
+            };
 
             ListItem::new(line)
         })

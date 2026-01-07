@@ -169,10 +169,6 @@ pub enum RoadmapMode {
         item_index: usize,
         input: String,
     },
-    ViewingDetails {
-        item_index: usize,
-        scroll_offset: usize,
-    },
     ConfirmDelete {
         item_index: usize,
     },
