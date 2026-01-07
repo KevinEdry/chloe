@@ -63,7 +63,7 @@ pub fn list_worktrees(repository_path: &Path) -> Result<Vec<Worktree>> {
 }
 
 /// Generate a valid git branch name from a task title
-/// Example: "Implement Worktree Support" -> "task/implement-worktree-support"
+/// Example: "Implement Worktree Support" -> "chloe/implement-worktree-support"
 #[must_use]
 pub fn generate_branch_name(task_title: &str) -> String {
     let slug = task_title
@@ -90,7 +90,7 @@ pub fn generate_branch_name(task_title: &str) -> String {
         &slug
     };
 
-    format!("task/{truncated_slug}")
+    format!("chloe/{truncated_slug}")
 }
 
 /// Create a new worktree for a task
@@ -119,7 +119,7 @@ pub fn create_worktree(
     let worktree_path = repository_path
         .parent()
         .unwrap_or(repository_path)
-        .join(format!(".worktrees/{worktree_dir_name}"));
+        .join(format!(".chloe/{worktree_dir_name}"));
 
     let output = std::process::Command::new("git")
         .arg("worktree")
@@ -278,25 +278,25 @@ mod tests {
     #[test]
     fn test_generate_branch_name_basic() {
         let result = generate_branch_name("Implement Worktree Support");
-        assert_eq!(result, "task/implement-worktree-support");
+        assert_eq!(result, "chloe/implement-worktree-support");
     }
 
     #[test]
     fn test_generate_branch_name_with_special_chars() {
         let result = generate_branch_name("Fix bug #123: API timeout");
-        assert_eq!(result, "task/fix-bug-123-api-timeout");
+        assert_eq!(result, "chloe/fix-bug-123-api-timeout");
     }
 
     #[test]
     fn test_generate_branch_name_truncation() {
         let long_title = "A".repeat(100);
         let result = generate_branch_name(&long_title);
-        assert!(result.len() <= 55);
+        assert!(result.len() <= 57);
     }
 
     #[test]
     fn test_generate_branch_name_with_consecutive_dashes() {
         let result = generate_branch_name("Multiple   spaces   and---dashes");
-        assert_eq!(result, "task/multiple-spaces-and-dashes");
+        assert_eq!(result, "chloe/multiple-spaces-and-dashes");
     }
 }
