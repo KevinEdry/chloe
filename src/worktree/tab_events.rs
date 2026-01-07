@@ -1,5 +1,6 @@
 use super::tab_state::{WorktreeMode, WorktreeTabState};
 use crossterm::event::{KeyCode, KeyEvent};
+use std::time::{Duration, Instant};
 
 impl WorktreeTabState {
     pub fn handle_key_event(&mut self, key: KeyEvent) -> bool {
@@ -19,10 +20,6 @@ impl WorktreeTabState {
             }
             KeyCode::Char('k') | KeyCode::Up => {
                 self.select_previous();
-                true
-            }
-            KeyCode::Char('r') => {
-                self.refresh_worktrees();
                 true
             }
             KeyCode::Char('d') => {
@@ -119,9 +116,8 @@ impl WorktreeTabState {
     }
 
     fn delete_worktree_at_index(&mut self, index: usize) {
-        let worktree = match self.worktrees.get(index) {
-            Some(wt) => wt,
-            None => return,
+        let Some(worktree) = self.worktrees.get(index) else {
+            return;
         };
 
         let worktree_info = super::WorktreeInfo {
@@ -155,5 +151,26 @@ impl WorktreeTabState {
                 self.error_message = Some(format!("Failed to delete worktree: {error}"));
             }
         }
+    }
+
+    pub fn poll_worktrees(&mut self) {
+        let should_refresh = self.needs_initial_refresh || self.should_refresh_now();
+
+        if !should_refresh {
+            return;
+        }
+
+        self.refresh_worktrees();
+        self.last_refresh = Some(Instant::now());
+        self.needs_initial_refresh = false;
+    }
+
+    fn should_refresh_now(&self) -> bool {
+        let Some(last_refresh_time) = self.last_refresh else {
+            return true;
+        };
+
+        let elapsed = Instant::now().duration_since(last_refresh_time);
+        elapsed >= Duration::from_secs(super::tab_state::REFRESH_INTERVAL_SECONDS)
     }
 }
