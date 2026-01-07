@@ -1,41 +1,26 @@
 use super::tab_state::{WorktreeMode, WorktreeTabState};
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame,
 };
 
-const HEADER_HEIGHT: u16 = 3;
-const HELP_HEIGHT: u16 = 3;
+const STATUS_BAR_WIDTH_THRESHOLD: u16 = 100;
 
 pub fn render(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(HEADER_HEIGHT),
-            Constraint::Min(0),
-            Constraint::Length(HELP_HEIGHT),
-        ])
+        .constraints([Constraint::Min(0), Constraint::Length(3)])
         .split(area);
 
-    render_header(frame, chunks[0]);
-    render_worktree_list(frame, chunks[1], state);
-    render_help(frame, chunks[2], state);
+    render_worktree_list(frame, chunks[0], state);
+    render_status_bar(frame, chunks[1], state);
 
     if let WorktreeMode::ConfirmDelete { worktree_index } = state.mode {
         render_delete_confirmation(frame, area, state, worktree_index);
     }
-}
-
-fn render_header(frame: &mut Frame, area: Rect) {
-    let title = Paragraph::new("Git Worktrees")
-        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
-        .alignment(Alignment::Center)
-        .block(Block::default().borders(Borders::ALL));
-
-    frame.render_widget(title, area);
 }
 
 fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
@@ -43,7 +28,12 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
         let error_text = Paragraph::new(error.as_str())
             .style(Style::default().fg(Color::Red))
             .alignment(Alignment::Center)
-            .block(Block::default().borders(Borders::ALL).title("Error"));
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Git Worktrees - Error")
+                    .border_style(Style::default().fg(Color::DarkGray)),
+            );
 
         frame.render_widget(error_text, area);
         return;
@@ -53,7 +43,12 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
         let empty_text = Paragraph::new("No worktrees found. Press 'r' to refresh.")
             .style(Style::default().fg(Color::Gray))
             .alignment(Alignment::Center)
-            .block(Block::default().borders(Borders::ALL).title("Worktrees"));
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Git Worktrees")
+                    .border_style(Style::default().fg(Color::DarkGray)),
+            );
 
         frame.render_widget(empty_text, area);
         return;
@@ -72,10 +67,7 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
                 Style::default().fg(Color::Green)
             };
 
-            let path_display = worktree
-                .path
-                .to_string_lossy()
-                .to_string();
+            let path_display = worktree.path.to_string_lossy().to_string();
 
             let content = Line::from(vec![
                 Span::styled(
@@ -105,26 +97,50 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
     let list = List::new(items).block(
         Block::default()
             .borders(Borders::ALL)
-            .title(format!("Worktrees ({})", state.worktrees.len())),
+            .title(format!("Git Worktrees ({})", state.worktrees.len()))
+            .border_style(Style::default().fg(Color::DarkGray)),
     );
 
     frame.render_widget(list, area);
 }
 
-fn render_help(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
-    let help_text = match state.mode {
-        WorktreeMode::Normal => {
-            "j/k: Navigate | r: Refresh | d: Delete | Tab: Switch tabs | q: Quit"
-        }
-        WorktreeMode::ConfirmDelete { .. } => "y: Confirm delete | n/Esc: Cancel",
+fn render_status_bar(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
+    let mode_color = match state.mode {
+        WorktreeMode::Normal => Color::Cyan,
+        WorktreeMode::ConfirmDelete { .. } => Color::Red,
     };
 
-    let help = Paragraph::new(help_text)
-        .style(Style::default().fg(Color::Gray))
-        .alignment(Alignment::Center)
-        .block(Block::default().borders(Borders::ALL));
+    let mode_text = match state.mode {
+        WorktreeMode::Normal => "NORMAL",
+        WorktreeMode::ConfirmDelete { .. } => "CONFIRM DELETE",
+    };
 
-    frame.render_widget(help, area);
+    let help_text = if area.width < STATUS_BAR_WIDTH_THRESHOLD {
+        match state.mode {
+            WorktreeMode::Normal => "jk:navigate  r:refresh  d:delete",
+            WorktreeMode::ConfirmDelete { .. } => "y:yes  n:no",
+        }
+    } else {
+        match state.mode {
+            WorktreeMode::Normal => "↑↓/jk:navigate  r:refresh  d:delete  Tab:switch-tabs  q:quit",
+            WorktreeMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
+        }
+    };
+
+    let status = Paragraph::new(Line::from(vec![
+        Span::styled(
+            format!("[{}] ", mode_text),
+            Style::default().fg(mode_color).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(help_text, Style::default().fg(Color::DarkGray)),
+    ]))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::DarkGray)),
+    );
+
+    frame.render_widget(status, area);
 }
 
 fn render_delete_confirmation(
@@ -147,9 +163,7 @@ fn render_delete_confirmation(
         Line::from(""),
         Line::from(Span::styled(
             "Delete worktree?",
-            Style::default()
-                .fg(Color::Red)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(Span::styled(

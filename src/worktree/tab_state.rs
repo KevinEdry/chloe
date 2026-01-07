@@ -29,8 +29,7 @@ impl WorktreeTabState {
 
     #[must_use]
     pub fn get_selected_worktree(&self) -> Option<&Worktree> {
-        self.selected_index
-            .and_then(|idx| self.worktrees.get(idx))
+        self.selected_index.and_then(|idx| self.worktrees.get(idx))
     }
 }
 
