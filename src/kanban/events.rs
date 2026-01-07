@@ -48,6 +48,8 @@ fn handle_normal_mode(state: &mut KanbanState, key: KeyEvent) {
         }
         KeyCode::Enter => {
             let is_review_column = state.selected_column == 2;
+            let is_in_progress_column = state.selected_column == 1;
+
             if is_review_column {
                 if let Some(task_idx) = state.selected_task {
                     state.mode = KanbanMode::ReviewPopup {
@@ -56,7 +58,7 @@ fn handle_normal_mode(state: &mut KanbanState, key: KeyEvent) {
                         selected_action: super::ReviewAction::ReviewInIDE,
                     };
                 }
-            } else {
+            } else if !is_in_progress_column {
                 state.move_task_next();
             }
         }

@@ -55,12 +55,12 @@ impl InstanceState {
         {
             let claude_command = if task_description.is_empty() {
                 format!(
-                    "claude --auto-approve-workspace \"{}\"\n",
+                    "claude \"{}\"\n",
                     task_title.replace('\"', "\\\"")
                 )
             } else {
                 format!(
-                    "claude --auto-approve-workspace \"Work on this task:\n\nTitle: {}\n\nDescription: {}\"\n",
+                    "claude \"Work on this task:\n\nTitle: {}\n\nDescription: {}\"\n",
                     task_title.replace('\"', "\\\""),
                     task_description.replace('\"', "\\\"")
                 )

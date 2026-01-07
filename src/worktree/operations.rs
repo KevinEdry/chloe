@@ -1,10 +1,40 @@
 use super::state::{Worktree, WorktreeInfo};
 use anyhow::{Context, Result, anyhow};
 use git2::{BranchType, Repository};
+use std::fs;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 const MAX_SLUG_LENGTH: usize = 50;
+
+/// Generate `.claude_settings.json` in the worktree to pre-configure permissions
+fn generate_claude_settings(worktree_path: &Path) -> Result<()> {
+    let settings = serde_json::json!({
+        "permissions": {
+            "Read": ["./**"],
+            "Write": ["./**"],
+            "Edit": ["./**"],
+            "Glob": ["./**"],
+            "Grep": ["./**"],
+            "Skill": ["./**"]
+        },
+        "sandbox": {
+            "enabled": true,
+            "autoAllowBashIfSandboxed": true
+        },
+        "includeCoAuthoredBy": false,
+        "gitAttribution": false
+    });
+
+    let settings_path = worktree_path.join(".claude_settings.json");
+    let settings_content = serde_json::to_string_pretty(&settings)
+        .context("Failed to serialize Claude settings")?;
+
+    fs::write(&settings_path, settings_content)
+        .context("Failed to write .claude_settings.json")?;
+
+    Ok(())
+}
 
 /// Result of attempting to merge a worktree branch
 #[derive(Debug)]
@@ -136,7 +166,11 @@ pub fn create_worktree(
         return Err(anyhow!("Git worktree add failed: {error_message}"));
     }
 
-    Ok(WorktreeInfo::new(final_branch_name, worktree_path))
+    let worktree_info = WorktreeInfo::new(final_branch_name, worktree_path.clone());
+
+    generate_claude_settings(&worktree_path)?;
+
+    Ok(worktree_info)
 }
 
 /// Merge a worktree branch into main

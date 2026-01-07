@@ -13,3 +13,6 @@
 # User config
 state.json
 config.toml
+
+# Auto-generated Claude settings for worktrees
+.claude_settings.json
