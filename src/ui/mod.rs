@@ -1,10 +1,14 @@
 pub mod widgets;
-pub mod styles;
 
 use crate::app::{App, Tab};
-use ratatui::{Frame, layout::{Constraint, Direction, Layout}, widgets::{Block, Borders, Tabs as RatTabs}, style::{Color, Modifier, Style}, text::Line};
+use ratatui::{
+    Frame,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Borders, Tabs as RatTabs},
+};
 
-pub fn render(f: &mut Frame, app: &App) {
+pub fn render(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -14,21 +18,32 @@ pub fn render(f: &mut Frame, app: &App) {
         .split(f.area());
 
     // Render tab bar
-    let tab_titles = vec!["Kanban", "Terminals"];
+    let tab_titles = vec!["Kanban", "Instances", "Roadmap"];
     let tabs = RatTabs::new(tab_titles)
         .block(Block::default().borders(Borders::ALL).title("Chloe"))
         .select(match app.active_tab {
             Tab::Kanban => 0,
-            Tab::Terminals => 1,
+            Tab::Instances => 1,
+            Tab::Roadmap => 2,
         })
         .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+        .highlight_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        );
 
     f.render_widget(tabs, chunks[0]);
 
     // Render active tab content
     match app.active_tab {
-        Tab::Kanban => crate::kanban::ui::render(f, &app.kanban),
-        Tab::Terminals => crate::terminal::ui::render(f, &app.terminals),
+        Tab::Kanban => crate::kanban::ui::render(f, app, chunks[1]),
+        Tab::Instances => crate::instance::ui::render(f, &mut app.instances, chunks[1]),
+        Tab::Roadmap => crate::roadmap::ui::render(f, app, chunks[1]),
+    }
+
+    // Render exit confirmation dialog on top if showing
+    if app.showing_exit_confirmation {
+        crate::kanban::ui::dialogs::render_exit_confirmation_dialog(f, f.area());
     }
 }

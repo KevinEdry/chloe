@@ -12,13 +12,13 @@
 
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
-#![warn(clippy::magic_numbers)]
 
 mod app;
 mod common;
 mod instance;
 mod kanban;
 mod persistence;
+mod roadmap;
 mod types;
 mod ui;
 
@@ -88,21 +88,37 @@ fn run_app<B: ratatui::backend::Backend>(
                     let instance_is_focused = app.active_tab == Tab::Instances
                         && app.instances.mode == instance::InstanceMode::Focused;
 
+                    // Handle exit confirmation dialog if showing
+                    if app.showing_exit_confirmation {
+                        match key.code {
+                            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                                return Ok(());
+                            }
+                            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                                app.showing_exit_confirmation = false;
+                            }
+                            _ => {}
+                        }
+                        continue;
+                    }
+
                     // Global keybindings
                     match key.code {
                         KeyCode::Char('q') | KeyCode::Char('Q') => {
                             if !instance_is_focused {
-                                return Ok(());
+                                app.showing_exit_confirmation = true;
+                            } else {
+                                instance::events::handle_key_event(&mut app.instances, key);
                             }
-                            instance::events::handle_key_event(&mut app.instances, key);
                         }
                         KeyCode::Char('c')
                             if key.modifiers.contains(event::KeyModifiers::CONTROL) =>
                         {
                             if !instance_is_focused {
-                                return Ok(());
+                                app.showing_exit_confirmation = true;
+                            } else {
+                                instance::events::handle_key_event(&mut app.instances, key);
                             }
-                            instance::events::handle_key_event(&mut app.instances, key);
                         }
                         KeyCode::Tab | KeyCode::BackTab => {
                             if !instance_is_focused && key.code == KeyCode::Tab {
@@ -116,6 +132,9 @@ fn run_app<B: ratatui::backend::Backend>(
                         }
                         KeyCode::Char('2') if !instance_is_focused => {
                             app.switch_tab(Tab::Instances);
+                        }
+                        KeyCode::Char('3') if !instance_is_focused => {
+                            app.switch_tab(Tab::Roadmap);
                         }
                         _ => {
                             // Route to active tab
@@ -171,6 +190,19 @@ fn run_app<B: ratatui::backend::Backend>(
                                 }
                                 Tab::Instances => {
                                     instance::events::handle_key_event(&mut app.instances, key)
+                                }
+                                Tab::Roadmap => {
+                                    let action = roadmap::events::handle_key_event(&mut app.roadmap, key);
+                                    match action {
+                                        roadmap::events::RoadmapAction::ConvertToTask(item_index) => {
+                                            app.convert_roadmap_item_to_task(item_index);
+                                            app.active_tab = Tab::Kanban;
+                                        }
+                                        roadmap::events::RoadmapAction::SaveState => {
+                                            let _ = app.save();
+                                        }
+                                        roadmap::events::RoadmapAction::None => {}
+                                    }
                                 }
                             }
                         }

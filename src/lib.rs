@@ -10,9 +10,10 @@
 // Re-export main modules for testing
 pub mod app;
 pub mod common;
+pub mod instance;
 pub mod kanban;
 pub mod persistence;
-pub mod terminal;
+pub mod roadmap;
 pub mod types;
 pub mod ui;
 

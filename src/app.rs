@@ -1,5 +1,6 @@
 use crate::instance::InstanceState;
-use crate::kanban::KanbanState;
+use crate::kanban::{KanbanState, TaskType};
+use crate::roadmap::RoadmapState;
 use crate::types::Config;
 use serde::{Deserialize, Serialize};
 
@@ -7,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub enum Tab {
     Kanban,
     Instances,
+    Roadmap,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -14,8 +16,11 @@ pub struct App {
     pub active_tab: Tab,
     pub kanban: KanbanState,
     pub instances: InstanceState,
+    pub roadmap: RoadmapState,
     #[serde(skip)]
     pub config: Config,
+    #[serde(skip)]
+    pub showing_exit_confirmation: bool,
 }
 
 impl App {
@@ -24,7 +29,9 @@ impl App {
             active_tab: Tab::Kanban,
             kanban: KanbanState::new(),
             instances: InstanceState::new(),
+            roadmap: RoadmapState::new(),
             config: Config::default(),
+            showing_exit_confirmation: false,
         }
     }
 
@@ -61,7 +68,8 @@ impl App {
     pub fn next_tab(&mut self) {
         self.active_tab = match self.active_tab {
             Tab::Kanban => Tab::Instances,
-            Tab::Instances => Tab::Kanban,
+            Tab::Instances => Tab::Roadmap,
+            Tab::Roadmap => Tab::Kanban,
         };
     }
 
@@ -178,6 +186,15 @@ impl App {
             }
         }
         false
+    }
+
+    /// Convert a roadmap item to a kanban task in Planning column
+    pub fn convert_roadmap_item_to_task(&mut self, item_index: usize) {
+        if let Some(item) = self.roadmap.items.get(item_index) {
+            let title = item.title.clone();
+            let description = item.description.clone();
+            self.kanban.add_task_to_planning(title, description, TaskType::Task);
+        }
     }
 }
 
