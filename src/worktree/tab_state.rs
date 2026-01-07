@@ -8,6 +8,10 @@ pub struct WorktreeTabState {
     pub mode: WorktreeMode,
     #[serde(skip)]
     pub error_message: Option<String>,
+    #[serde(skip)]
+    pub pending_ide_open: Option<usize>,
+    #[serde(skip)]
+    pub pending_terminal_open: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,6 +28,8 @@ impl WorktreeTabState {
             selected_index: None,
             mode: WorktreeMode::Normal,
             error_message: None,
+            pending_ide_open: None,
+            pending_terminal_open: None,
         }
     }
 

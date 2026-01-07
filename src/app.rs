@@ -265,6 +265,23 @@ impl App {
                 .add_task_to_planning(title, description, TaskType::Task);
         }
     }
+
+    /// Open a worktree in the configured IDE
+    pub fn open_worktree_in_ide(&self, worktree_index: usize) {
+        if let Some(worktree) = self.worktree.worktrees.get(worktree_index) {
+            let ide_command = self.config.ide_command.command_name();
+            let _ = std::process::Command::new(ide_command)
+                .arg(&worktree.path)
+                .spawn();
+        }
+    }
+
+    /// Open a worktree in the configured terminal
+    pub fn open_worktree_in_terminal(&self, worktree_index: usize) {
+        if let Some(worktree) = self.worktree.worktrees.get(worktree_index) {
+            let _ = self.config.terminal_command.open_at_path(&worktree.path);
+        }
+    }
 }
 
 impl Default for App {

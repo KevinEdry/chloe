@@ -33,6 +33,13 @@ impl WorktreeTabState {
                 }
                 true
             }
+            KeyCode::Char('o') => {
+                if let Some(index) = self.selected_index {
+                    self.pending_ide_open = Some(index);
+                    self.pending_terminal_open = Some(index);
+                }
+                true
+            }
             _ => false,
         }
     }
