@@ -10,6 +10,8 @@ pub struct RoadmapState {
     pub mode: RoadmapMode,
     #[serde(skip)]
     pub generation_request: Option<super::generator::RoadmapGenerationRequest>,
+    #[serde(skip)]
+    pub spinner_frame: usize,
 }
 
 impl RoadmapState {
@@ -19,7 +21,17 @@ impl RoadmapState {
             selected_item: None,
             mode: RoadmapMode::Normal,
             generation_request: None,
+            spinner_frame: 0,
         }
+    }
+
+    pub fn advance_spinner(&mut self) {
+        self.spinner_frame = (self.spinner_frame + 1) % 10;
+    }
+
+    pub fn get_spinner_char(&self) -> char {
+        const SPINNER_FRAMES: [char; 10] = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+        SPINNER_FRAMES[self.spinner_frame]
     }
 
     pub fn get_selected_item(&self) -> Option<&RoadmapItem> {

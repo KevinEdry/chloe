@@ -74,9 +74,12 @@ fn run_app<B: ratatui::backend::Backend>(
             app.kanban.poll_classification();
         }
 
-        // Poll for roadmap generation completion
+        // Poll for roadmap generation completion and advance spinner
         if app.active_tab == Tab::Roadmap {
             app.roadmap.poll_generation();
+            if app.roadmap.mode == roadmap::RoadmapMode::Generating {
+                app.roadmap.advance_spinner();
+            }
         }
 
         // Poll for instance PTY output on every loop iteration

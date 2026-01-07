@@ -3,7 +3,7 @@ use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
+    text::{Line, Span},
     widgets::{Block, Borders, Clear, Padding, Paragraph, Wrap},
 };
 
@@ -235,6 +235,65 @@ pub fn render_details_view(
 
         f.render_widget(text, inner_area);
     }
+}
+
+pub fn render_loading_dialog(f: &mut Frame, state: &RoadmapState, area: Rect) {
+    let dialog_width = if area.width < DIALOG_WIDTH_THRESHOLD {
+        DIALOG_WIDTH_SMALL
+    } else {
+        DIALOG_WIDTH_NORMAL
+    };
+
+    let popup_area = centered_rect(dialog_width, 10, area);
+
+    let block = Block::default()
+        .title("AI Roadmap Generation")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Magenta))
+        .padding(Padding::uniform(1));
+
+    let inner_area = block.inner(popup_area);
+
+    f.render_widget(Clear, popup_area);
+    f.render_widget(block, popup_area);
+
+    let spinner = state.get_spinner_char();
+
+    let message = vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::styled(
+                format!("  {}  ", spinner),
+                Style::default()
+                    .fg(Color::Magenta)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                "Analyzing your project...",
+                Style::default().fg(Color::White),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Claude is discovering features and creating",
+            Style::default().fg(Color::DarkGray),
+        )]),
+        Line::from(vec![Span::styled(
+            "a strategic roadmap for your project.",
+            Style::default().fg(Color::DarkGray),
+        )]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Press Esc to cancel",
+            Style::default().fg(Color::Yellow),
+        )]),
+    ];
+
+    let text = Paragraph::new(message)
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: false });
+
+    f.render_widget(text, inner_area);
 }
 
 fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {

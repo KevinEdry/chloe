@@ -3,7 +3,7 @@ mod items;
 
 use crate::app::App;
 use crate::roadmap::{RoadmapMode, RoadmapState};
-use dialogs::{render_confirm_dialog, render_convert_dialog, render_details_view, render_input_dialog};
+use dialogs::{render_confirm_dialog, render_convert_dialog, render_details_view, render_input_dialog, render_loading_dialog};
 use items::render_items_list;
 use ratatui::{
     Frame,
@@ -45,7 +45,7 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
             render_convert_dialog(f, state, *item_index, area);
         }
         RoadmapMode::Generating => {
-            render_confirm_dialog(f, "Generating roadmap with AI... (press Esc to cancel)", area);
+            render_loading_dialog(f, state, area);
         }
         RoadmapMode::Normal => {}
     }
