@@ -1,0 +1,45 @@
+[package]
+name = "chloe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# UI Framework
+ratatui = "0.29"
+crossterm = "0.28"
+
+# Serialization & Persistence
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Terminal Emulation
+portable-pty = "0.8"
+vt100 = "0.15"
+
+# Utilities
+anyhow = "1.0"
+dirs = "5.0"
+
+[lints.rust]
+# SAFETY: This project forbids ALL unsafe code
+unsafe_code = "forbid"
+
+[lints.clippy]
+# Pedantic lints for better code quality
+pedantic = { level = "warn", priority = -1 }
+# Specific lints to enable
+nursery = { level = "warn", priority = -1 }
+# Disable some overly pedantic lints
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+# SAFETY: Enforce thread safety
+# Forbid unsafe threading patterns
+undocumented_unsafe_blocks = "forbid"
+
+# CODE QUALITY: No magic numbers
+# All numeric literals should be named constants
+magic_numbers = "warn"
