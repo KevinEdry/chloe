@@ -16,9 +16,9 @@
 
 mod app;
 mod common;
+mod instance;
 mod kanban;
 mod persistence;
-mod terminal;
 mod types;
 mod ui;
 
@@ -69,33 +69,93 @@ fn run_app<B: ratatui::backend::Backend>(
     loop {
         terminal.draw(|f| ui::render(f, app))?;
 
+        // Poll for AI classification completion on every loop iteration
+        if app.active_tab == Tab::Kanban {
+            app.kanban.poll_classification();
+        }
+
+        // Poll for instance PTY output on every loop iteration
+        // Always poll instances, not just when tab is active, to catch output from background instances
+        app.instances.poll_pty_output();
+
+        // Auto-transition completed tasks from In Progress to Review
+        app.auto_transition_completed_tasks();
+
         if event::poll(std::time::Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                // Global keybindings
-                match key.code {
-                    KeyCode::Char('q') | KeyCode::Char('Q') => return Ok(()),
-                    KeyCode::Char('c') if key.modifiers.contains(event::KeyModifiers::CONTROL) => {
-                        return Ok(())
-                    }
-                    KeyCode::Tab => {
-                        app.next_tab();
-                    }
-                    KeyCode::Char('1') => {
-                        app.switch_tab(Tab::Kanban);
-                    }
-                    KeyCode::Char('2') => {
-                        app.switch_tab(Tab::Terminals);
-                    }
-                    _ => {
-                        // Route to active tab
-                        match app.active_tab {
-                            Tab::Kanban => kanban::events::handle_key_event(&mut app.kanban, key),
-                            Tab::Terminals => {
-                                terminal::events::handle_key_event(&mut app.terminals, key)
+            match event::read()? {
+                Event::Key(key) => {
+                    // Check if instance is focused - if so, don't catch Ctrl+C globally
+                    let instance_is_focused = app.active_tab == Tab::Instances
+                        && app.instances.mode == instance::InstanceMode::Focused;
+
+                    // Global keybindings
+                    match key.code {
+                        KeyCode::Char('q') | KeyCode::Char('Q') => {
+                            if !instance_is_focused {
+                                return Ok(());
+                            }
+                            instance::events::handle_key_event(&mut app.instances, key);
+                        }
+                        KeyCode::Char('c')
+                            if key.modifiers.contains(event::KeyModifiers::CONTROL) =>
+                        {
+                            if !instance_is_focused {
+                                return Ok(());
+                            }
+                            instance::events::handle_key_event(&mut app.instances, key);
+                        }
+                        KeyCode::Tab | KeyCode::BackTab => {
+                            if !instance_is_focused && key.code == KeyCode::Tab {
+                                app.next_tab();
+                            } else {
+                                instance::events::handle_key_event(&mut app.instances, key);
+                            }
+                        }
+                        KeyCode::Char('1') if !instance_is_focused => {
+                            app.switch_tab(Tab::Kanban);
+                        }
+                        KeyCode::Char('2') if !instance_is_focused => {
+                            app.switch_tab(Tab::Instances);
+                        }
+                        _ => {
+                            // Route to active tab
+                            match app.active_tab {
+                                Tab::Kanban => {
+                                    // Handle 'T' key to jump to task instance, but only in Normal mode
+                                    let is_normal_mode =
+                                        app.kanban.mode == kanban::KanbanMode::Normal;
+                                    if is_normal_mode
+                                        && (key.code == KeyCode::Char('t')
+                                            || key.code == KeyCode::Char('T'))
+                                    {
+                                        app.jump_to_task_instance();
+                                    } else {
+                                        kanban::events::handle_key_event(&mut app.kanban, key);
+
+                                        // Check if an instance needs to be terminated
+                                        if let Some(instance_id) =
+                                            app.kanban.pending_instance_termination.take()
+                                        {
+                                            app.instances.close_pane_by_id(instance_id);
+                                        }
+
+                                        // Auto-create instances for tasks in "In Progress"
+                                        app.sync_task_instances();
+                                    }
+                                }
+                                Tab::Instances => {
+                                    instance::events::handle_key_event(&mut app.instances, key)
+                                }
                             }
                         }
                     }
                 }
+                Event::Mouse(mouse_event) => {
+                    if app.active_tab == Tab::Instances {
+                        instance::events::handle_mouse_event(&mut app.instances, mouse_event);
+                    }
+                }
+                _ => {}
             }
         }
     }

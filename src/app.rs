@@ -1,19 +1,19 @@
+use crate::instance::InstanceState;
 use crate::kanban::KanbanState;
-use crate::terminal::TerminalState;
 use crate::types::Config;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tab {
     Kanban,
-    Terminals,
+    Instances,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct App {
     pub active_tab: Tab,
     pub kanban: KanbanState,
-    pub terminals: TerminalState,
+    pub instances: InstanceState,
     #[serde(skip)]
     pub config: Config,
 }
@@ -23,7 +23,7 @@ impl App {
         Self {
             active_tab: Tab::Kanban,
             kanban: KanbanState::new(),
-            terminals: TerminalState::new(),
+            instances: InstanceState::new(),
             config: Config::default(),
         }
     }
@@ -34,6 +34,15 @@ impl App {
             Ok(mut app) => {
                 // Restore config since it's skipped in serialization
                 app.config = Config::default();
+                // Clear instance panes since PTY sessions can't be persisted
+                app.instances.panes.clear();
+                app.instances.selected_pane = 0;
+                // Clear instance links from tasks since instances are gone
+                for column in &mut app.kanban.columns {
+                    for task in &mut column.tasks {
+                        task.instance_id = None;
+                    }
+                }
                 app
             }
             Err(_) => Self::default(),
@@ -51,9 +60,80 @@ impl App {
 
     pub fn next_tab(&mut self) {
         self.active_tab = match self.active_tab {
-            Tab::Kanban => Tab::Terminals,
-            Tab::Terminals => Tab::Kanban,
+            Tab::Kanban => Tab::Instances,
+            Tab::Instances => Tab::Kanban,
         };
+    }
+
+    /// Auto-create instances for tasks in "In Progress" that don't have one
+    pub fn sync_task_instances(&mut self) {
+        if self.kanban.columns.len() < 2 {
+            return;
+        }
+
+        let in_progress_column = &self.kanban.columns[1];
+        let tasks_needing_instances: Vec<(uuid::Uuid, String, String)> = in_progress_column
+            .tasks
+            .iter()
+            .filter(|task| task.instance_id.is_none())
+            .map(|task| (task.id, task.title.clone(), task.description.clone()))
+            .collect();
+
+        for (task_id, task_title, task_description) in tasks_needing_instances {
+            let instance_id =
+                self.instances
+                    .create_pane_for_task(&task_title, &task_description, 24, 80);
+            self.kanban.link_task_to_instance(task_id, instance_id);
+        }
+    }
+
+    /// Jump to a task's instance in the Instances tab
+    pub fn jump_to_task_instance(&mut self) -> bool {
+        if let Some(task) = self.kanban.get_selected_task() {
+            let task_id = task.id;
+            let task_title = task.title.clone();
+            let task_description = task.description.clone();
+
+            if let Some(instance_id) = task.instance_id {
+                self.active_tab = Tab::Instances;
+                return self.instances.select_pane_by_id(instance_id);
+            } else {
+                let instance_id =
+                    self.instances
+                        .create_pane_for_task(&task_title, &task_description, 24, 80);
+                self.kanban.link_task_to_instance(task_id, instance_id);
+                self.active_tab = Tab::Instances;
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Get the Claude state for an instance by its ID
+    pub fn get_instance_claude_state(
+        &self,
+        instance_id: uuid::Uuid,
+    ) -> Option<crate::instance::ClaudeState> {
+        self.instances
+            .panes
+            .iter()
+            .find(|pane| pane.id == instance_id)
+            .map(|pane| pane.claude_state)
+    }
+
+    /// Auto-transition tasks from In Progress to Review when Claude Code completes
+    pub fn auto_transition_completed_tasks(&mut self) {
+        let completed_instances: Vec<uuid::Uuid> = self
+            .instances
+            .panes
+            .iter()
+            .filter(|pane| pane.claude_state == crate::instance::ClaudeState::Done)
+            .map(|pane| pane.id)
+            .collect();
+
+        for instance_id in completed_instances {
+            self.kanban.move_task_to_review_by_instance(instance_id);
+        }
     }
 }
 
