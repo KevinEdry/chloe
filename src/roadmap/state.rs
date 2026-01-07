@@ -25,6 +25,21 @@ impl RoadmapState {
         }
     }
 
+    pub fn sort_items_by_priority(&mut self) {
+        self.items.sort_by(|a, b| {
+            use std::cmp::Ordering;
+            match (a.priority, b.priority) {
+                (RoadmapPriority::High, RoadmapPriority::High) => Ordering::Equal,
+                (RoadmapPriority::High, _) => Ordering::Less,
+                (_, RoadmapPriority::High) => Ordering::Greater,
+                (RoadmapPriority::Medium, RoadmapPriority::Medium) => Ordering::Equal,
+                (RoadmapPriority::Medium, RoadmapPriority::Low) => Ordering::Less,
+                (RoadmapPriority::Low, RoadmapPriority::Medium) => Ordering::Greater,
+                (RoadmapPriority::Low, RoadmapPriority::Low) => Ordering::Equal,
+            }
+        });
+    }
+
     pub fn advance_spinner(&mut self) {
         self.spinner_frame = (self.spinner_frame + 1) % 10;
     }

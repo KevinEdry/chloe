@@ -1,7 +1,7 @@
 use crate::roadmap::RoadmapState;
 use ratatui::{
     Frame,
-    layout::Rect,
+    layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem},
@@ -10,11 +10,26 @@ use ratatui::{
 const TITLE_ELLIPSIS_THRESHOLD: usize = 40;
 
 pub fn render_items_list(f: &mut Frame, state: &RoadmapState, area: Rect) {
-    let block = Block::default()
+    let mut block = Block::default()
         .title("Roadmap Items")
         .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
+
+    if !state.items.is_empty() {
+        if let Some(selected_idx) = state.selected_item {
+            let position_text = format!(" {} of {} ", selected_idx + 1, state.items.len());
+            block = block.title_bottom(
+                Line::from(vec![Span::styled(
+                    position_text,
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD),
+                )])
+                .alignment(Alignment::Right),
+            );
+        }
+    }
 
     let inner_area = block.inner(area);
     f.render_widget(block, area);

@@ -14,8 +14,31 @@ impl RoadmapState {
         let item = RoadmapItem::new(title, description, rationale, priority);
         let item_id = item.id;
         self.items.push(item);
-        self.selected_item = Some(self.items.len() - 1);
+        self.sort_by_priority();
+        self.select_item_by_id(item_id);
         item_id
+    }
+
+    fn sort_by_priority(&mut self) {
+        self.items.sort_by(|a, b| {
+            use std::cmp::Ordering;
+            match (a.priority, b.priority) {
+                (RoadmapPriority::High, RoadmapPriority::High) => Ordering::Equal,
+                (RoadmapPriority::High, _) => Ordering::Less,
+                (_, RoadmapPriority::High) => Ordering::Greater,
+                (RoadmapPriority::Medium, RoadmapPriority::Medium) => Ordering::Equal,
+                (RoadmapPriority::Medium, RoadmapPriority::Low) => Ordering::Less,
+                (RoadmapPriority::Low, RoadmapPriority::Medium) => Ordering::Greater,
+                (RoadmapPriority::Low, RoadmapPriority::Low) => Ordering::Equal,
+            }
+        });
+    }
+
+    fn select_item_by_id(&mut self, id: Uuid) {
+        self.selected_item = self
+            .items
+            .iter()
+            .position(|item| item.id == id);
     }
 
     pub fn delete_item(&mut self, index: usize) -> Option<RoadmapItem> {
@@ -57,8 +80,11 @@ impl RoadmapState {
 
     pub fn update_item_priority(&mut self, index: usize, priority: RoadmapPriority) {
         if let Some(item) = self.items.get_mut(index) {
+            let item_id = item.id;
             item.priority = priority;
             item.updated_at = Utc::now();
+            self.sort_by_priority();
+            self.select_item_by_id(item_id);
         }
     }
 
@@ -148,6 +174,8 @@ impl RoadmapState {
             let item = generated_item.to_roadmap_item();
             self.items.push(item);
         }
+
+        self.sort_by_priority();
 
         if !self.items.is_empty() {
             self.selected_item = Some(0);

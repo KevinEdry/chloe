@@ -50,6 +50,8 @@ impl App {
                         task.instance_id = None;
                     }
                 }
+                // Sort roadmap items by priority
+                app.roadmap.sort_items_by_priority();
                 app
             }
             Err(_) => Self::default(),
