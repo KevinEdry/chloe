@@ -4,7 +4,7 @@ use std::path::PathBuf;
 /// Metadata about a git worktree associated with a task
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WorktreeInfo {
-    /// The branch name (e.g., "task/implement-worktree-support")
+    /// The branch name (e.g., "chloe/implement-worktree-support")
     pub branch_name: String,
     /// Absolute path to the worktree directory
     pub worktree_path: PathBuf,
