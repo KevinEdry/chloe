@@ -7,6 +7,12 @@ pub fn handle_key_event(state: &mut KanbanState, key: KeyEvent) {
         KanbanMode::AddingTask { .. } => handle_text_input_mode(state, key, false),
         KanbanMode::EditingTask { .. } => handle_text_input_mode(state, key, true),
         KanbanMode::ConfirmDelete { task_idx } => handle_confirm_delete(state, key, *task_idx),
+        KanbanMode::ConfirmMoveBack { task_idx } => handle_confirm_move_back(state, key, *task_idx),
+        KanbanMode::ClassifyingTask { .. } => handle_classifying_mode(state, key),
+        KanbanMode::ReviewPopup {
+            task_idx,
+            scroll_offset,
+        } => handle_review_popup_mode(state, key, *task_idx, *scroll_offset),
     }
 }
 
@@ -39,7 +45,17 @@ fn handle_normal_mode(state: &mut KanbanState, key: KeyEvent) {
             }
         }
         KeyCode::Enter => {
-            state.move_task_next();
+            let is_review_column = state.selected_column == 2;
+            if is_review_column {
+                if let Some(task_idx) = state.selected_task {
+                    state.mode = KanbanMode::ReviewPopup {
+                        task_idx,
+                        scroll_offset: 0,
+                    };
+                }
+            } else {
+                state.move_task_next();
+            }
         }
         KeyCode::Backspace => {
             state.move_task_previous();
@@ -70,14 +86,25 @@ fn handle_text_input_mode(state: &mut KanbanState, key: KeyEvent, is_editing: bo
                     if let Some(idx) = task_idx {
                         state.edit_task(idx, title, String::new());
                     }
+                    state.mode = KanbanMode::Normal;
                 } else {
-                    state.add_task(title, String::new());
+                    state.start_classification(title);
                 }
+            } else {
+                state.mode = KanbanMode::Normal;
             }
-            state.mode = KanbanMode::Normal;
         }
         KeyCode::Esc => {
             state.mode = KanbanMode::Normal;
+        }
+        _ => {}
+    }
+}
+
+fn handle_classifying_mode(state: &mut KanbanState, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc => {
+            state.cancel_classification();
         }
         _ => {}
     }
@@ -91,6 +118,57 @@ fn handle_confirm_delete(state: &mut KanbanState, key: KeyEvent, task_idx: usize
         }
         KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
             state.mode = KanbanMode::Normal;
+        }
+        _ => {}
+    }
+}
+
+fn handle_confirm_move_back(state: &mut KanbanState, key: KeyEvent, _task_idx: usize) {
+    match key.code {
+        KeyCode::Char('y') | KeyCode::Char('Y') => {
+            state.execute_move_task_previous();
+            state.mode = KanbanMode::Normal;
+        }
+        KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+            state.mode = KanbanMode::Normal;
+        }
+        _ => {}
+    }
+}
+
+fn handle_review_popup_mode(
+    state: &mut KanbanState,
+    key: KeyEvent,
+    task_idx: usize,
+    scroll_offset: usize,
+) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            state.mode = KanbanMode::Normal;
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            state.mode = KanbanMode::ReviewPopup {
+                task_idx,
+                scroll_offset: scroll_offset.saturating_add(1),
+            };
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            state.mode = KanbanMode::ReviewPopup {
+                task_idx,
+                scroll_offset: scroll_offset.saturating_sub(1),
+            };
+        }
+        KeyCode::PageDown => {
+            state.mode = KanbanMode::ReviewPopup {
+                task_idx,
+                scroll_offset: scroll_offset.saturating_add(10),
+            };
+        }
+        KeyCode::PageUp => {
+            state.mode = KanbanMode::ReviewPopup {
+                task_idx,
+                scroll_offset: scroll_offset.saturating_sub(10),
+            };
         }
         _ => {}
     }

@@ -153,8 +153,32 @@ impl InstanceState {
 
         for pane in &mut self.panes {
             if pane.pty_session.is_some() {
+                Self::capture_output_buffer(pane);
                 Self::update_claude_state(pane);
             }
+        }
+    }
+
+    fn capture_output_buffer(pane: &mut InstancePane) {
+        let session = match &pane.pty_session {
+            Some(s) => s,
+            None => return,
+        };
+
+        if let Ok(parser) = session.screen().lock() {
+            let screen = parser.screen();
+            let mut screen_text = String::new();
+
+            for row in 0..screen.size().0 {
+                for col in 0..screen.size().1 {
+                    if let Some(cell) = screen.cell(row, col) {
+                        screen_text.push_str(&cell.contents());
+                    }
+                }
+                screen_text.push('\n');
+            }
+
+            pane.output_buffer = screen_text;
         }
     }
 

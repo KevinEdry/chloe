@@ -135,6 +135,15 @@ impl App {
             self.kanban.move_task_to_review_by_instance(instance_id);
         }
     }
+
+    /// Get the output buffer for an instance by its ID
+    pub fn get_instance_output(&self, instance_id: uuid::Uuid) -> Option<&str> {
+        self.instances
+            .panes
+            .iter()
+            .find(|pane| pane.id == instance_id)
+            .map(|pane| pane.output_buffer.as_str())
+    }
 }
 
 impl Default for App {
