@@ -206,27 +206,55 @@ impl InstanceState {
             let lower_text = screen_text.to_lowercase();
 
             if pane.claude_state == super::ClaudeState::Running {
-                if lower_text.contains("request requires user approval")
-                    || lower_text.contains("🔒")
-                    || lower_text.contains("do you want to proceed")
-                    || lower_text.contains("approve")
-                    || lower_text.contains("requires approval")
-                {
+                if Self::contains_permission_request(&lower_text) {
                     pane.claude_state = super::ClaudeState::NeedsPermissions;
                 } else if Self::is_claude_done(&screen_text) {
                     pane.claude_state = super::ClaudeState::Done;
                 }
             } else if pane.claude_state == super::ClaudeState::NeedsPermissions {
-                if !lower_text.contains("request requires user approval")
-                    && !lower_text.contains("approve")
-                    && !lower_text.contains("requires approval")
-                {
+                if !Self::contains_permission_request(&lower_text) {
                     pane.claude_state = super::ClaudeState::Running;
                 } else if Self::is_claude_done(&screen_text) {
                     pane.claude_state = super::ClaudeState::Done;
                 }
             }
         }
+    }
+
+    fn contains_permission_request(lower_text: &str) -> bool {
+        let has_warning_symbol = lower_text.contains("⚠️")
+            || lower_text.contains("⚠")
+            || lower_text.contains("[!]")
+            || lower_text.contains("warning:");
+
+        let has_permission_keywords = lower_text.contains("permission")
+            || lower_text.contains("approval")
+            || lower_text.contains("authorization")
+            || lower_text.contains("consent");
+
+        let has_action_prompt = lower_text.contains("(y/n)")
+            || lower_text.contains("[yes/no]")
+            || lower_text.contains("(yes/no)")
+            || lower_text.contains("allow?")
+            || lower_text.contains("proceed?")
+            || lower_text.contains("continue?");
+
+        let has_allow_deny_text = lower_text.contains("do you want to allow")
+            || lower_text.contains("do you want to proceed")
+            || lower_text.contains("would you like to allow")
+            || lower_text.contains("would you like to proceed");
+
+        let has_requires_pattern = lower_text.contains("requires permission")
+            || lower_text.contains("requires approval")
+            || lower_text.contains("needs permission")
+            || lower_text.contains("needs approval")
+            || lower_text.contains("requires your approval")
+            || lower_text.contains("requires user approval");
+
+        (has_warning_symbol && has_permission_keywords)
+            || (has_permission_keywords && has_action_prompt)
+            || has_allow_deny_text
+            || has_requires_pattern
     }
 
     fn is_claude_done(screen_text: &str) -> bool {
