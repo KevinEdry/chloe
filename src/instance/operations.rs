@@ -188,6 +188,17 @@ impl InstanceState {
     }
 
     fn update_claude_state(pane: &mut InstancePane) {
+        let process_has_exited = if let Some(session) = &mut pane.pty_session {
+            session.check_process_exit()
+        } else {
+            return;
+        };
+
+        if process_has_exited {
+            pane.claude_state = super::ClaudeState::Done;
+            return;
+        }
+
         let session = match &pane.pty_session {
             Some(s) => s,
             None => return,
