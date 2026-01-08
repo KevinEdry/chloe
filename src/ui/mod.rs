@@ -5,6 +5,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
+    text::{Line, Span},
     widgets::{Block, Borders, Tabs as RatTabs},
 };
 
@@ -17,10 +18,26 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ])
         .split(f.area());
 
-    // Render tab bar
+    // Render tab bar with current directory
+    let current_directory = std::env::current_dir()
+        .ok()
+        .and_then(|path| path.to_str().map(String::from))
+        .unwrap_or_else(|| String::from("?"));
+
     let tab_titles = vec!["Kanban", "Instances", "Roadmap", "Worktree"];
     let tabs = RatTabs::new(tab_titles)
-        .block(Block::default().borders(Borders::ALL).title("Chloe"))
+        .block(Block::default().borders(Borders::ALL).title(
+            Line::from(vec![
+                Span::raw("Chloe"),
+                Span::raw(" "),
+                Span::styled(
+                    current_directory,
+                    Style::default()
+                        .fg(Color::DarkGray)
+                        .add_modifier(Modifier::ITALIC),
+                ),
+            ])
+        ))
         .select(match app.active_tab {
             Tab::Kanban => 0,
             Tab::Instances => 1,
