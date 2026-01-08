@@ -77,11 +77,12 @@ impl InstanceState {
         pane_id
     }
 
-    /// Find and select a pane by its ID
+    /// Find and select a pane by its ID, automatically enabling focus mode
     pub fn select_pane_by_id(&mut self, instance_id: uuid::Uuid) -> bool {
         for (index, pane) in self.panes.iter().enumerate() {
             if pane.id == instance_id {
                 self.selected_pane = index;
+                self.mode = super::InstanceMode::Focused;
                 return true;
             }
         }

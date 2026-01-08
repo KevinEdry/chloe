@@ -151,6 +151,7 @@ impl App {
                 );
                 self.kanban.link_task_to_instance(task_id, instance_id);
                 self.active_tab = Tab::Instances;
+                self.instances.mode = crate::instance::InstanceMode::Focused;
                 return true;
             }
         }
