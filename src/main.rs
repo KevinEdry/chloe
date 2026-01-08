@@ -63,9 +63,11 @@ fn run_tui() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    let event_listener = events::EventListener::start()?;
+
     // Load state from disk
     let mut app = App::load_or_default();
-    let res = run_app(&mut terminal, &mut app);
+    let res = run_app(&mut terminal, &mut app, &event_listener);
 
     disable_raw_mode()?;
     execute!(
@@ -90,6 +92,7 @@ fn run_tui() -> Result<(), io::Error> {
 fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
+    event_listener: &events::EventListener,
 ) -> io::Result<()> {
     loop {
         terminal.draw(|f| ui::render(f, app))?;
@@ -117,10 +120,8 @@ fn run_app<B: ratatui::backend::Backend>(
         }
 
         // Poll for hook events from Claude Code and update instance states
-        if let Ok(events) = events::poll_events() {
-            for event in &events {
-                app.process_hook_event(event);
-            }
+        for event in event_listener.poll_events() {
+            app.process_hook_event(&event);
         }
 
         // Auto-transition completed tasks from In Progress to Review

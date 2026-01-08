@@ -1,6 +1,5 @@
 #![allow(clippy::all, clippy::pedantic, clippy::nursery, clippy::restriction)]
 
-use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::io::Read;
 use uuid::Uuid;
@@ -26,39 +25,29 @@ pub enum Commands {
     },
 }
 
-/// Handle the notify subcommand
-/// Reads hook data from stdin and writes an event file to ~/.chloe/events/
-pub fn handle_notify_command(event_type: String, worktree_id: Uuid) -> Result<()> {
+pub fn handle_notify_command(event_type: String, worktree_id: Uuid) -> Result<(), String> {
     let mut hook_data = String::new();
     std::io::stdin()
         .read_to_string(&mut hook_data)
-        .context("Failed to read hook data from stdin")?;
-
-    let events_dir = std::env::current_dir()
-        .context("Could not determine current directory")?
-        .join(".chloe")
-        .join("events");
-
-    std::fs::create_dir_all(&events_dir).context("Failed to create events directory")?;
+        .map_err(|error| format!("Failed to read hook data from stdin: {error}"))?;
 
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .context("System time error")?
+        .map_err(|error| format!("System time error: {error}"))?
         .as_nanos();
 
-    let unique_id = Uuid::new_v4();
-    let event_file = events_dir.join(format!("{}-{}-{}.json", worktree_id, timestamp, unique_id));
+    let hook_data_value = serde_json::from_str::<serde_json::Value>(&hook_data)
+        .unwrap_or_else(|_| serde_json::Value::String(hook_data));
 
-    let event_data = serde_json::json!({
-        "event": event_type,
-        "worktree_id": worktree_id,
-        "timestamp": timestamp,
-        "hook_data": serde_json::from_str::<serde_json::Value>(&hook_data)
-            .unwrap_or_else(|_| serde_json::Value::String(hook_data.clone()))
-    });
+    let event = crate::events::HookEvent {
+        event: event_type,
+        worktree_id,
+        timestamp,
+        hook_data: hook_data_value,
+    };
 
-    std::fs::write(&event_file, serde_json::to_string_pretty(&event_data)?)
-        .context("Failed to write event file")?;
+    // Silently ignore errors - Chloe TUI may not be running
+    let _ = crate::events::send_event(&event);
 
     Ok(())
 }

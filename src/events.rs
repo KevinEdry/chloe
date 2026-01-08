@@ -1,6 +1,9 @@
-use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::io::{BufRead, BufReader, Write};
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
+use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
+use std::thread;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,50 +41,103 @@ impl HookEvent {
     }
 }
 
-/// Poll for new hook events from the events directory
-/// Returns a list of events and deletes processed files
-pub fn poll_events() -> Result<Vec<HookEvent>> {
-    let events_dir = match std::env::current_dir() {
-        Ok(cwd) => cwd.join(".chloe").join("events"),
-        Err(_) => return Ok(Vec::new()),
-    };
+pub fn get_socket_path() -> PathBuf {
+    std::env::temp_dir().join("chloe.sock")
+}
 
-    if !events_dir.exists() {
-        return Ok(Vec::new());
-    }
+pub struct EventListener {
+    receiver: Receiver<HookEvent>,
+}
 
-    let mut events = Vec::new();
+impl EventListener {
+    pub fn start() -> std::io::Result<Self> {
+        let socket_path = get_socket_path();
 
-    let entries = std::fs::read_dir(&events_dir)
-        .context("Failed to read events directory")?;
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-
-        if !path.is_file() || path.extension().and_then(|s| s.to_str()) != Some("json") {
-            continue;
+        if socket_path.exists() {
+            std::fs::remove_file(&socket_path)?;
         }
 
-        match read_and_delete_event_file(&path) {
-            Ok(event) => events.push(event),
-            Err(error) => {
-                eprintln!("Warning: Failed to process event file {}: {}", path.display(), error);
+        let listener = UnixListener::bind(&socket_path)?;
+        listener.set_nonblocking(true)?;
+
+        let (sender, receiver) = channel();
+
+        thread::spawn(move || {
+            run_listener(listener, sender);
+        });
+
+        Ok(Self { receiver })
+    }
+
+    pub fn poll_events(&self) -> Vec<HookEvent> {
+        let mut events = Vec::new();
+
+        loop {
+            match self.receiver.try_recv() {
+                Ok(event) => events.push(event),
+                Err(TryRecvError::Empty) => break,
+                Err(TryRecvError::Disconnected) => break,
+            }
+        }
+
+        events
+    }
+}
+
+impl Drop for EventListener {
+    fn drop(&mut self) {
+        let socket_path = get_socket_path();
+        let _ = std::fs::remove_file(socket_path);
+    }
+}
+
+fn run_listener(listener: UnixListener, sender: Sender<HookEvent>) {
+    loop {
+        match listener.accept() {
+            Ok((stream, _)) => {
+                handle_connection(stream, &sender);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(_) => {
+                thread::sleep(std::time::Duration::from_millis(100));
             }
         }
     }
-
-    Ok(events)
 }
 
-fn read_and_delete_event_file(path: &PathBuf) -> Result<HookEvent> {
-    let content = std::fs::read_to_string(path)
-        .context("Failed to read event file")?;
+fn handle_connection(stream: UnixStream, sender: &Sender<HookEvent>) {
+    let reader = BufReader::new(stream);
 
-    let event: HookEvent = serde_json::from_str(&content)
-        .context("Failed to parse event JSON")?;
+    for line in reader.lines() {
+        let line = match line {
+            Ok(line) => line,
+            Err(_) => break,
+        };
 
-    std::fs::remove_file(path)
-        .context("Failed to delete event file")?;
+        if line.is_empty() {
+            continue;
+        }
 
-    Ok(event)
+        match serde_json::from_str::<HookEvent>(&line) {
+            Ok(event) => {
+                let _ = sender.send(event);
+            }
+            Err(_) => {}
+        }
+    }
+}
+
+pub fn send_event(event: &HookEvent) -> std::io::Result<()> {
+    let socket_path = get_socket_path();
+    let mut stream = UnixStream::connect(&socket_path)?;
+
+    let json = serde_json::to_string(event)
+        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+
+    writeln!(stream, "{}", json)?;
+    stream.flush()?;
+
+    Ok(())
 }
