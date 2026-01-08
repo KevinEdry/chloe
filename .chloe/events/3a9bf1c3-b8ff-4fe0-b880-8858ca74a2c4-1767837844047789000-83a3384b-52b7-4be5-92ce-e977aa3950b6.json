@@ -1,0 +1,27 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "file_path": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/Cargo.toml"
+    },
+    "tool_name": "Read",
+    "tool_response": {
+      "file": {
+        "content": "[package]\nname = \"chloe\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n# UI Framework\nratatui = \"0.29\"\ncrossterm = \"0.28\"\n\n# Serialization & Persistence\nserde = { version = \"1.0\", features = [\"derive\"] }\nserde_json = \"1.0\"\nuuid = { version = \"1.0\", features = [\"v4\", \"serde\"] }\nchrono = { version = \"0.4\", features = [\"serde\"] }\n\n# Terminal Emulation\nportable-pty = \"0.8\"\nvt100 = \"0.15\"\n\n# Utilities\nanyhow = \"1.0\"\ndirs = \"5.0\"\n\n# Git operations\ngit2 = \"0.18\"\n\n# HTTP Client for AI Classification\nreqwest = { version = \"0.11\", features = [\"blocking\", \"json\"] }\n\n[lints.rust]\n# SAFETY: This project forbids ALL unsafe code\nunsafe_code = \"forbid\"\n\n[lints.clippy]\n# Pedantic lints for better code quality\npedantic = { level = \"warn\", priority = -1 }\n# Specific lints to enable\nnursery = { level = \"warn\", priority = -1 }\n# Disable some overly pedantic lints\nmodule_name_repetitions = \"allow\"\nmissing_errors_doc = \"allow\"\nmissing_panics_doc = \"allow\"\n\n# SAFETY: Enforce thread safety\n# Forbid unsafe threading patterns\nundocumented_unsafe_blocks = \"forbid\"\n",
+        "filePath": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/Cargo.toml",
+        "numLines": 48,
+        "startLine": 1,
+        "totalLines": 48
+      },
+      "type": "text"
+    },
+    "tool_use_id": "toolu_01P5m2WYfrktj6e6RKy6Dtuh",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837844047789000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

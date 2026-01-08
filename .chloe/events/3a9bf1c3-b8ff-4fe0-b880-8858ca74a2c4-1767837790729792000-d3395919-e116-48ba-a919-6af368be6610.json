@@ -1,0 +1,35 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "-i": true,
+      "output_mode": "files_with_matches",
+      "pattern": "render.*footer|Footer|key.*bindings"
+    },
+    "tool_name": "Grep",
+    "tool_response": {
+      "filenames": [
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837785170864000-9e9139ae-4f3a-4ddf-8db0-c653d0779876.json",
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837780815149000-3f45dfb6-9a28-4fb8-8f5a-5ec81ecff1c8.json",
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837777422562000-850209f5-3311-472d-bc33-65ce8c068b2a.json",
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837772939094000-586fa1f9-3c34-4cb2-b52d-31da851f28b7.json",
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837765924553000-a2334480-703a-4982-92e5-9bf01548a2b1.json",
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837765537013000-eb48ce92-147d-4e3a-b8ac-e32a17224168.json",
+        "src/main.rs",
+        "src/common/input.rs",
+        "claude.md",
+        "README.md"
+      ],
+      "mode": "files_with_matches",
+      "numFiles": 10
+    },
+    "tool_use_id": "toolu_01XkrMs8RrPGsRgEkrYS7oHN",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837790729792000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

@@ -1,0 +1,27 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "-A": 30,
+      "output_mode": "content",
+      "path": "src/instance/ui.rs",
+      "pattern": "^fn render_status_bar"
+    },
+    "tool_name": "Grep",
+    "tool_response": {
+      "content": "257:fn render_status_bar(f: &mut Frame, state: &InstanceState, area: Rect) {\n258-    let (mode_text, mode_color) = match state.mode {\n259-        super::InstanceMode::Normal => (\"NAVIGATE\", Color::Cyan),\n260-        super::InstanceMode::Focused => (\"FOCUSED\", Color::Green),\n261-    };\n262-\n263-    let pane_count = state.panes.len();\n264-    let layout_name = match state.layout_mode {\n265-        super::LayoutMode::Single => \"Single\",\n266-        super::LayoutMode::HorizontalSplit => \"Horizontal\",\n267-        super::LayoutMode::VerticalSplit => \"Vertical\",\n268-        super::LayoutMode::Grid => \"Grid\",\n269-    };\n270-\n271-    let help_text = match state.mode {\n272-        super::InstanceMode::Normal => {\n273-            if pane_count == 0 {\n274-                \"c:create\"\n275-            } else if area.width < 80 {\n276-                \"Arrows:nav  Enter:focus  c:create  x:close\"\n277-            } else {\n278-                \"Arrow-Keys:navigate  Enter:focus  c:create-pane  x:close-pane\"\n279-            }\n280-        }\n281-        super::InstanceMode::Focused => {\n282-            if area.width < 80 {\n283-                \"Esc:unfocus\"\n284-            } else {\n285-                \"All keys sent to instance  Esc:back-to-navigation\"\n286-            }\n287-        }",
+      "filenames": [],
+      "mode": "content",
+      "numFiles": 0,
+      "numLines": 31
+    },
+    "tool_use_id": "toolu_016XwTq77PhxrGicbgSVvDfU",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837827366221000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

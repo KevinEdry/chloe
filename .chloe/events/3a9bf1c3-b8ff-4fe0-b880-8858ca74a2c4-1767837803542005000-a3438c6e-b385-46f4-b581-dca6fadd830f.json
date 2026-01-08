@@ -1,0 +1,29 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "-i": true,
+      "head_limit": 30,
+      "output_mode": "content",
+      "path": "src/kanban/ui",
+      "pattern": "Paragraph|footer|key.*help"
+    },
+    "tool_name": "Grep",
+    "tool_response": {
+      "appliedLimit": 30,
+      "content": "src/kanban/ui/columns.rs:11:    widgets::{Block, Borders, Paragraph},\nsrc/kanban/ui/columns.rs:238:    let text = Paragraph::new(lines);\nsrc/kanban/ui/dialogs.rs:8:    widgets::{Block, Borders, Paragraph, Wrap},\nsrc/kanban/ui/dialogs.rs:79:    let input_text = Paragraph::new(input)\nsrc/kanban/ui/dialogs.rs:117:    let text = Paragraph::new(message)\nsrc/kanban/ui/dialogs.rs:195:    let text = Paragraph::new(lines)\nsrc/kanban/ui/dialogs.rs:281:    let text = Paragraph::new(visible_lines)\nsrc/kanban/ui/dialogs.rs:310:        let button = Paragraph::new(action.label())\nsrc/kanban/ui/dialogs.rs:393:    let text = Paragraph::new(lines)\nsrc/kanban/ui/mod.rs:16:    widgets::{Block, Borders, Paragraph},\nsrc/kanban/ui/mod.rs:120:    let status = Paragraph::new(Line::from(vec![\nsrc/kanban/ui/helpers.rs:5:    widgets::{Clear, Paragraph},",
+      "filenames": [],
+      "mode": "content",
+      "numFiles": 0,
+      "numLines": 12
+    },
+    "tool_use_id": "toolu_01MPKD3cAvymo1N6ma1XPH4w",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837803542005000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

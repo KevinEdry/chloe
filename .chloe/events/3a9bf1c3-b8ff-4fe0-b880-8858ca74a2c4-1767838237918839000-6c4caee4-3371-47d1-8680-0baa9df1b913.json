@@ -1,0 +1,24 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "command": "cargo build 2>&1 | tail -20",
+      "description": "Build project and check final output"
+    },
+    "tool_name": "Bash",
+    "tool_response": {
+      "interrupted": false,
+      "isImage": false,
+      "stderr": "",
+      "stdout": "14 | const DETAILS_POPUP_HEIGHT_PERCENT: u16 = 90;\n   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nwarning: function `is_git_repository` is never used\n  --> src/worktree/operations.rs:49:8\n   |\n49 | pub fn is_git_repository(path: &Path) -> bool {\n   |        ^^^^^^^^^^^^^^^^^\n\nwarning: method `get_selected_worktree` is never used\n  --> src/worktree/tab_state.rs:46:12\n   |\n30 | impl WorktreeTabState {\n   | --------------------- method in this implementation\n...\n46 |     pub fn get_selected_worktree(&self) -> Option<&Worktree> {\n   |            ^^^^^^^^^^^^^^^^^^^^^\n\nwarning: `chloe` (bin \"chloe\") generated 14 warnings (3 duplicates) (run `cargo fix --bin \"chloe\"` to apply 3 suggestions)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.74s"
+    },
+    "tool_use_id": "toolu_01Qi3Rjpv9s6mfN9bV3LSjTe",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838237918839000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

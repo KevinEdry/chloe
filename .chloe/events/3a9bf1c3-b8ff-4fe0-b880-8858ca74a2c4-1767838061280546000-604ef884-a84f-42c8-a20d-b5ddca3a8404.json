@@ -1,0 +1,27 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "-A": 5,
+      "output_mode": "content",
+      "path": "src/worktree/tab_ui.rs",
+      "pattern": "^fn render_status_bar|render.*status"
+    },
+    "tool_name": "Grep",
+    "tool_response": {
+      "content": "19:    render_status_bar(frame, chunks[1], state);\n20-\n21-    if let WorktreeMode::ConfirmDelete { worktree_index } = state.mode {\n22-        render_delete_confirmation(frame, area, state, worktree_index);\n23-    }\n24-}\n--\n107:fn render_status_bar(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {\n108-    let mode_color = match state.mode {\n109-        WorktreeMode::Normal => Color::Cyan,\n110-        WorktreeMode::ConfirmDelete { .. } => Color::Red,\n111-    };\n112-\n--\n143:    frame.render_widget(status, area);\n144-}\n145-\n146-fn render_delete_confirmation(\n147-    frame: &mut Frame,\n148-    area: Rect,",
+      "filenames": [],
+      "mode": "content",
+      "numFiles": 0,
+      "numLines": 20
+    },
+    "tool_use_id": "toolu_01XUnH1zQ3k9prRHPfVQ9xVw",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838061280546000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

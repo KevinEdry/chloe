@@ -1,0 +1,27 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "file_path": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/ui/widgets/mod.rs"
+    },
+    "tool_name": "Read",
+    "tool_response": {
+      "file": {
+        "content": "// Placeholder for shared widgets\n// pub mod input_dialog;\n// pub mod help_overlay;\n// pub mod status_bar;\n",
+        "filePath": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/ui/widgets/mod.rs",
+        "numLines": 5,
+        "startLine": 1,
+        "totalLines": 5
+      },
+      "type": "text"
+    },
+    "tool_use_id": "toolu_01TsUhFCimBWHfGRbfe96aZi",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837785170864000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

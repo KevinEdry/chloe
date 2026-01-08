@@ -1,0 +1,29 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "file_path": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/worktree/tab_ui.rs",
+      "limit": 20,
+      "offset": 1
+    },
+    "tool_name": "Read",
+    "tool_response": {
+      "file": {
+        "content": "use super::tab_state::{WorktreeMode, WorktreeTabState};\nuse ratatui::{\n    Frame,\n    layout::{Alignment, Constraint, Direction, Layout, Rect},\n    style::{Color, Modifier, Style},\n    text::{Line, Span},\n    widgets::{Block, Borders, List, ListItem, Paragraph},\n};\n\nconst STATUS_BAR_WIDTH_THRESHOLD: u16 = 100;\n\npub fn render(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {\n    let chunks = Layout::default()\n        .direction(Direction::Vertical)\n        .constraints([Constraint::Min(0), Constraint::Length(3)])\n        .split(area);\n\n    render_worktree_list(frame, chunks[0], state);\n    render_status_bar(frame, chunks[1], state);\n",
+        "filePath": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/worktree/tab_ui.rs",
+        "numLines": 20,
+        "startLine": 1,
+        "totalLines": 209
+      },
+      "type": "text"
+    },
+    "tool_use_id": "toolu_01AsLxmQ9WxzVEnxua4sMkLp",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838068860129000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

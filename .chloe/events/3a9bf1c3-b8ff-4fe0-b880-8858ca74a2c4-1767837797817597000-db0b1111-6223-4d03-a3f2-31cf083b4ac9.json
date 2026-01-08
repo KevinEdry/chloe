@@ -1,0 +1,27 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "file_path": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/ui/mod.rs"
+    },
+    "tool_name": "Read",
+    "tool_response": {
+      "file": {
+        "content": "pub mod widgets;\n\nuse crate::app::{App, Tab};\nuse ratatui::{\n    Frame,\n    layout::{Constraint, Direction, Layout},\n    style::{Color, Modifier, Style},\n    widgets::{Block, Borders, Tabs as RatTabs},\n};\n\npub fn render(f: &mut Frame, app: &mut App) {\n    let chunks = Layout::default()\n        .direction(Direction::Vertical)\n        .constraints([\n            Constraint::Length(3), // Tab bar\n            Constraint::Min(0),    // Content\n        ])\n        .split(f.area());\n\n    // Render tab bar\n    let tab_titles = vec![\"Kanban\", \"Instances\", \"Roadmap\", \"Worktree\"];\n    let tabs = RatTabs::new(tab_titles)\n        .block(Block::default().borders(Borders::ALL).title(\"Chloe\"))\n        .select(match app.active_tab {\n            Tab::Kanban => 0,\n            Tab::Instances => 1,\n            Tab::Roadmap => 2,\n            Tab::Worktree => 3,\n        })\n        .style(Style::default().fg(Color::White))\n        .highlight_style(\n            Style::default()\n                .fg(Color::Yellow)\n                .add_modifier(Modifier::BOLD),\n        );\n\n    f.render_widget(tabs, chunks[0]);\n\n    // Render active tab content\n    match app.active_tab {\n        Tab::Kanban => crate::kanban::ui::render(f, app, chunks[1]),\n        Tab::Instances => crate::instance::ui::render(f, &mut app.instances, chunks[1]),\n        Tab::Roadmap => crate::roadmap::ui::render(f, app, chunks[1]),\n        Tab::Worktree => crate::worktree::tab_ui::render(f, chunks[1], &app.worktree),\n    }\n\n    // Render exit confirmation dialog on top if showing\n    if app.showing_exit_confirmation {\n        crate::kanban::ui::dialogs::render_exit_confirmation_dialog(f, f.area());\n    }\n}\n",
+        "filePath": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/ui/mod.rs",
+        "numLines": 52,
+        "startLine": 1,
+        "totalLines": 52
+      },
+      "type": "text"
+    },
+    "tool_use_id": "toolu_01FMf2XmFCgu81igEMejbTcj",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837797817597000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

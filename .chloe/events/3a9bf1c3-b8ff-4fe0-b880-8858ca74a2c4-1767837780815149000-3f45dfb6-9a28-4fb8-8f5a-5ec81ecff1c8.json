@@ -1,0 +1,23 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "pattern": "**/status_bar.rs"
+    },
+    "tool_name": "Glob",
+    "tool_response": {
+      "durationMs": 398,
+      "filenames": [],
+      "numFiles": 0,
+      "truncated": false
+    },
+    "tool_use_id": "toolu_01U6PTLa2eNTTLGiVoUbdULV",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837780815149000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

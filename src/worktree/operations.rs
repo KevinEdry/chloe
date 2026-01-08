@@ -27,11 +27,10 @@ fn generate_claude_settings(worktree_path: &Path) -> Result<()> {
     });
 
     let settings_path = worktree_path.join(".claude_settings.json");
-    let settings_content = serde_json::to_string_pretty(&settings)
-        .context("Failed to serialize Claude settings")?;
+    let settings_content =
+        serde_json::to_string_pretty(&settings).context("Failed to serialize Claude settings")?;
 
-    fs::write(&settings_path, settings_content)
-        .context("Failed to write .claude_settings.json")?;
+    fs::write(&settings_path, settings_content).context("Failed to write .claude_settings.json")?;
 
     Ok(())
 }

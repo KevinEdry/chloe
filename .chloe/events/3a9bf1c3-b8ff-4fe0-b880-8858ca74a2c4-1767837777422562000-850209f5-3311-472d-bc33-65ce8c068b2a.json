@@ -1,0 +1,33 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "output_mode": "files_with_matches",
+      "pattern": "footer|status.bar"
+    },
+    "tool_name": "Grep",
+    "tool_response": {
+      "filenames": [
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837772939094000-586fa1f9-3c34-4cb2-b52d-31da851f28b7.json",
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837765924553000-a2334480-703a-4982-92e5-9bf01548a2b1.json",
+        ".chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767837765537013000-eb48ce92-147d-4e3a-b8ac-e32a17224168.json",
+        "src/worktree/tab_ui.rs",
+        "src/ui/widgets/mod.rs",
+        "src/roadmap/ui/mod.rs",
+        "src/kanban/ui/mod.rs",
+        "src/instance/ui.rs",
+        "claude.md"
+      ],
+      "mode": "files_with_matches",
+      "numFiles": 9
+    },
+    "tool_use_id": "toolu_01Wb6uUuGBwKnCr4vxjkrq7X",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837777422562000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

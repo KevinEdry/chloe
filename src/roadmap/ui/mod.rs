@@ -57,6 +57,10 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
+    const VERSION_TEXT: &str = "Chloe v0.1.0";
+    const VERSION_TEXT_LENGTH: u16 = 13;
+    const MINIMUM_SPACE_FOR_VERSION: u16 = 15;
+
     let mode_color = match &state.mode {
         RoadmapMode::Normal => Color::Cyan,
         RoadmapMode::AddingItem { .. } => Color::Green,
@@ -99,6 +103,14 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
         }
     };
 
+    let inner_area = Block::default().borders(Borders::ALL).inner(area);
+    let should_show_version = inner_area.width >= MINIMUM_SPACE_FOR_VERSION;
+
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(0), Constraint::Length(VERSION_TEXT_LENGTH)])
+        .split(inner_area);
+
     let status = Paragraph::new(Line::from(vec![
         Span::styled(
             format!("[{}] ", mode_text),
@@ -113,4 +125,11 @@ fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {
     );
 
     f.render_widget(status, area);
+
+    if should_show_version {
+        let version = Paragraph::new(VERSION_TEXT)
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(ratatui::layout::Alignment::Right);
+        f.render_widget(version, chunks[1]);
+    }
 }

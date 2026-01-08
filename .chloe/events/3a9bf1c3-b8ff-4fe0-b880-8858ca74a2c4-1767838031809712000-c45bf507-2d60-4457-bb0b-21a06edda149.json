@@ -1,0 +1,27 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "-A": 60,
+      "output_mode": "content",
+      "path": "src/roadmap/ui/mod.rs",
+      "pattern": "^fn render_status_bar"
+    },
+    "tool_name": "Grep",
+    "tool_response": {
+      "content": "59:fn render_status_bar(f: &mut Frame, state: &RoadmapState, area: Rect) {\n60-    let mode_color = match &state.mode {\n61-        RoadmapMode::Normal => Color::Cyan,\n62-        RoadmapMode::AddingItem { .. } => Color::Green,\n63-        RoadmapMode::EditingItem { .. } => Color::Yellow,\n64-        RoadmapMode::ConfirmDelete { .. } => Color::Red,\n65-        RoadmapMode::ConvertToTask { .. } => Color::Magenta,\n66-        RoadmapMode::Generating => Color::Magenta,\n67-    };\n68-\n69-    let mode_text = match &state.mode {\n70-        RoadmapMode::Normal => \"NORMAL\",\n71-        RoadmapMode::AddingItem { .. } => \"ADD ITEM\",\n72-        RoadmapMode::EditingItem { .. } => \"EDIT ITEM\",\n73-        RoadmapMode::ConfirmDelete { .. } => \"CONFIRM DELETE\",\n74-        RoadmapMode::ConvertToTask { .. } => \"CONVERT TO TASK\",\n75-        RoadmapMode::Generating => \"GENERATING\",\n76-    };\n77-\n78-    let help_text = if area.width < STATUS_BAR_WIDTH_THRESHOLD {\n79-        match &state.mode {\n80-            RoadmapMode::Normal => \"jk:navigate  a:add  g:generate  e:edit  d:delete  t:convert\",\n81-            RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {\n82-                \"Enter:save  Esc:cancel\"\n83-            }\n84-            RoadmapMode::ConfirmDelete { .. } => \"y:yes  n:no\",\n85-            RoadmapMode::ConvertToTask { .. } => \"y:yes  n:no\",\n86-            RoadmapMode::Generating => \"Esc:cancel\",\n87-        }\n88-    } else {\n89-        match &state.mode {\n90-            RoadmapMode::Normal => {\n91-                \"↑↓/jk:navigate  a:add  g:generate-with-ai  e:edit  d:delete  t:convert-to-task  p:priority  q:quit\"\n92-            }\n93-            RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {\n94-                \"Type to enter text  Enter:save  Esc:cancel\"\n95-            }\n96-            RoadmapMode::ConfirmDelete { .. } => \"y:yes  n:no  Esc:cancel\",\n97-            RoadmapMode::ConvertToTask { .. } => \"y:yes  n:no  Esc:cancel\",\n98-            RoadmapMode::Generating => \"AI is analyzing your project... Press Esc to cancel\",\n99-        }\n100-    };\n101-\n102-    let status = Paragraph::new(Line::from(vec![\n103-        Span::styled(\n104-            format!(\"[{}] \", mode_text),\n105-            Style::default().fg(mode_color).add_modifier(Modifier::BOLD),\n106-        ),\n107-        Span::styled(help_text, Style::default().fg(Color::DarkGray)),\n108-    ]))\n109-    .block(\n110-        Block::default()\n111-            .borders(Borders::ALL)\n112-            .border_style(Style::default().fg(Color::DarkGray)),\n113-    );\n114-\n115-    f.render_widget(status, area);\n116-}",
+      "filenames": [],
+      "mode": "content",
+      "numFiles": 0,
+      "numLines": 58
+    },
+    "tool_use_id": "toolu_01CpV893W5euST7cxuBreKsq",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838031809712000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

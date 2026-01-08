@@ -1,0 +1,29 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "file_path": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/worktree/tab_ui.rs",
+      "limit": 40,
+      "offset": 107
+    },
+    "tool_name": "Read",
+    "tool_response": {
+      "file": {
+        "content": "fn render_status_bar(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {\n    let mode_color = match state.mode {\n        WorktreeMode::Normal => Color::Cyan,\n        WorktreeMode::ConfirmDelete { .. } => Color::Red,\n    };\n\n    let mode_text = match state.mode {\n        WorktreeMode::Normal => \"NORMAL\",\n        WorktreeMode::ConfirmDelete { .. } => \"CONFIRM DELETE\",\n    };\n\n    let help_text = if area.width < STATUS_BAR_WIDTH_THRESHOLD {\n        match state.mode {\n            WorktreeMode::Normal => \"jk:navigate  o:open  r:refresh  d:delete\",\n            WorktreeMode::ConfirmDelete { .. } => \"y:yes  n:no\",\n        }\n    } else {\n        match state.mode {\n            WorktreeMode::Normal => \"↑↓/jk:navigate  o:open  r:refresh  d:delete  Tab:switch-tabs  q:quit\",\n            WorktreeMode::ConfirmDelete { .. } => \"y:yes  n:no  Esc:cancel\",\n        }\n    };\n\n    let status = Paragraph::new(Line::from(vec![\n        Span::styled(\n            format!(\"[{mode_text}] \"),\n            Style::default().fg(mode_color).add_modifier(Modifier::BOLD),\n        ),\n        Span::styled(help_text, Style::default().fg(Color::DarkGray)),\n    ]))\n    .block(\n        Block::default()\n            .borders(Borders::ALL)\n            .border_style(Style::default().fg(Color::DarkGray)),\n    );\n\n    frame.render_widget(status, area);\n}\n\nfn render_delete_confirmation(",
+        "filePath": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/worktree/tab_ui.rs",
+        "numLines": 40,
+        "startLine": 107,
+        "totalLines": 209
+      },
+      "type": "text"
+    },
+    "tool_use_id": "toolu_016KotQ135FGTNbNxcZeFQML",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838065471588000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

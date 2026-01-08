@@ -1,0 +1,29 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "file_path": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/roadmap/ui/mod.rs",
+      "limit": 20,
+      "offset": 1
+    },
+    "tool_name": "Read",
+    "tool_response": {
+      "file": {
+        "content": "mod details_panel;\nmod dialogs;\nmod items;\n\nuse crate::app::App;\nuse crate::roadmap::{RoadmapMode, RoadmapState};\nuse details_panel::render_details_panel;\nuse dialogs::{\n    render_confirm_dialog, render_convert_dialog, render_input_dialog, render_loading_dialog,\n};\nuse items::render_items_list;\nuse ratatui::{\n    Frame,\n    layout::{Constraint, Direction, Layout, Rect},\n    style::{Color, Modifier, Style},\n    text::{Line, Span},\n    widgets::{Block, Borders, Paragraph},\n};\n\nconst STATUS_BAR_WIDTH_THRESHOLD: u16 = 100;",
+        "filePath": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/roadmap/ui/mod.rs",
+        "numLines": 20,
+        "startLine": 1,
+        "totalLines": 117
+      },
+      "type": "text"
+    },
+    "tool_use_id": "toolu_01VTUiQonDpUvegAijngvj6x",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838036749952000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

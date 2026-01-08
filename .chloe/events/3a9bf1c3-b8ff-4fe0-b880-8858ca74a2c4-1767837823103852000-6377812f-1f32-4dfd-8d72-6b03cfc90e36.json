@@ -1,0 +1,29 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "file_path": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/instance/ui.rs",
+      "limit": 50,
+      "offset": 150
+    },
+    "tool_name": "Read",
+    "tool_response": {
+      "file": {
+        "content": "    match state {\n        super::ClaudeState::Idle => \"\",\n        super::ClaudeState::Running if should_show => \"●\",\n        super::ClaudeState::Running => \" \",\n        super::ClaudeState::NeedsPermissions if should_show => \"🔒\",\n        super::ClaudeState::NeedsPermissions => \"  \",\n        super::ClaudeState::Done if should_show => \"✓\",\n        super::ClaudeState::Done => \" \",\n    }\n}\n\nfn render_instance_content(f: &mut Frame, session: &super::pty::PtySession, area: Rect) {\n    if let Ok(parser) = session.screen().lock() {\n        let screen = parser.screen();\n        let mut lines = Vec::new();\n\n        let max_rows = area.height.min(screen.size().0);\n        let max_cols = area.width.min(screen.size().1);\n\n        for row in 0..max_rows {\n            let mut line_spans = Vec::new();\n            let mut current_text = String::new();\n            let mut current_style = Style::default();\n            let mut last_fg = vt100::Color::Default;\n            let mut last_bg = vt100::Color::Default;\n            let mut last_attrs = (false, false, false);\n\n            for col in 0..max_cols {\n                let cell = match screen.cell(row, col) {\n                    Some(c) => c,\n                    None => continue,\n                };\n\n                let fg = cell.fgcolor();\n                let bg = cell.bgcolor();\n                let attrs = (cell.bold(), cell.italic(), cell.underline());\n\n                if fg != last_fg || bg != last_bg || attrs != last_attrs {\n                    if !current_text.is_empty() {\n                        line_spans.push(Span::styled(current_text.clone(), current_style));\n                        current_text.clear();\n                    }\n\n                    current_style = Style::default()\n                        .fg(convert_vt100_color(fg))\n                        .bg(convert_vt100_color(bg));\n\n                    if attrs.0 {\n                        current_style = current_style.add_modifier(Modifier::BOLD);\n                    }",
+        "filePath": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/src/instance/ui.rs",
+        "numLines": 50,
+        "startLine": 150,
+        "totalLines": 309
+      },
+      "type": "text"
+    },
+    "tool_use_id": "toolu_01DCsN8j5qRM28z7KFYQQFND",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837823103852000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

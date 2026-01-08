@@ -1,0 +1,99 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "todos": [
+        {
+          "activeForm": "Exploring codebase to find footer rendering code",
+          "content": "Explore codebase to find footer rendering code",
+          "status": "completed"
+        },
+        {
+          "activeForm": "Locating version number source (Cargo.toml)",
+          "content": "Locate version number source (Cargo.toml)",
+          "status": "in_progress"
+        },
+        {
+          "activeForm": "Implementing name and version display in footer",
+          "content": "Implement name and version display in footer",
+          "status": "pending"
+        },
+        {
+          "activeForm": "Testing the changes",
+          "content": "Test the changes",
+          "status": "pending"
+        },
+        {
+          "activeForm": "Running quality gates (fmt, clippy, build)",
+          "content": "Run quality gates (fmt, clippy, build)",
+          "status": "pending"
+        }
+      ]
+    },
+    "tool_name": "TodoWrite",
+    "tool_response": {
+      "newTodos": [
+        {
+          "activeForm": "Exploring codebase to find footer rendering code",
+          "content": "Explore codebase to find footer rendering code",
+          "status": "completed"
+        },
+        {
+          "activeForm": "Locating version number source (Cargo.toml)",
+          "content": "Locate version number source (Cargo.toml)",
+          "status": "in_progress"
+        },
+        {
+          "activeForm": "Implementing name and version display in footer",
+          "content": "Implement name and version display in footer",
+          "status": "pending"
+        },
+        {
+          "activeForm": "Testing the changes",
+          "content": "Test the changes",
+          "status": "pending"
+        },
+        {
+          "activeForm": "Running quality gates (fmt, clippy, build)",
+          "content": "Run quality gates (fmt, clippy, build)",
+          "status": "pending"
+        }
+      ],
+      "oldTodos": [
+        {
+          "activeForm": "Exploring codebase to find footer rendering code",
+          "content": "Explore codebase to find footer rendering code",
+          "status": "in_progress"
+        },
+        {
+          "activeForm": "Locating version number source (Cargo.toml)",
+          "content": "Locate version number source (Cargo.toml)",
+          "status": "pending"
+        },
+        {
+          "activeForm": "Implementing name and version display in footer",
+          "content": "Implement name and version display in footer",
+          "status": "pending"
+        },
+        {
+          "activeForm": "Testing the changes",
+          "content": "Test the changes",
+          "status": "pending"
+        },
+        {
+          "activeForm": "Running quality gates (fmt, clippy, build)",
+          "content": "Run quality gates (fmt, clippy, build)",
+          "status": "pending"
+        }
+      ]
+    },
+    "tool_use_id": "toolu_01JvsJkthBNiHi9qF9CApCGB",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767837840563574000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}
