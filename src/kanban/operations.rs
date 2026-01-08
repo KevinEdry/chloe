@@ -493,4 +493,37 @@ impl KanbanState {
 
         instance_id
     }
+
+    /// Move a task to In Progress column by task ID, regardless of current column
+    /// Returns true if the task was found and moved (or was already in In Progress)
+    pub fn move_task_to_in_progress_by_id(&mut self, task_id: uuid::Uuid) -> bool {
+        let in_progress_column_index = 1;
+
+        let task_location = self
+            .columns
+            .iter()
+            .enumerate()
+            .find_map(|(column_index, column)| {
+                column
+                    .tasks
+                    .iter()
+                    .position(|task| task.id == task_id)
+                    .map(|task_index| (column_index, task_index))
+            });
+
+        let (source_column_index, task_index) = match task_location {
+            Some(location) => location,
+            None => return false,
+        };
+
+        let is_already_in_progress = source_column_index == in_progress_column_index;
+        if is_already_in_progress {
+            return true;
+        }
+
+        let task = self.columns[source_column_index].tasks.remove(task_index);
+        self.columns[in_progress_column_index].tasks.push(task);
+
+        true
+    }
 }
