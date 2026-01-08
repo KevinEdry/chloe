@@ -1,0 +1,25 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "command": "ping -c 1 github.com 2>&1 || echo \"Network unreachable\"",
+      "description": "Check network connectivity to GitHub",
+      "timeout": 10000
+    },
+    "tool_name": "Bash",
+    "tool_response": {
+      "interrupted": false,
+      "isImage": false,
+      "stderr": "",
+      "stdout": "ping: cannot resolve github.com: Unknown host\nNetwork unreachable"
+    },
+    "tool_use_id": "toolu_01F9QLMjQ7JdtFdTSzMrQkmE",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838306101807000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

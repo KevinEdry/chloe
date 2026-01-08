@@ -1,0 +1,12 @@
+{
+  "event": "end",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "SessionEnd",
+    "reason": "prompt_input_exit",
+    "session_id": "9d4c66d7-5b5d-43d9-965d-91a6879a629d",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/9d4c66d7-5b5d-43d9-965d-91a6879a629d.jsonl"
+  },
+  "timestamp": 1767889869018075000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

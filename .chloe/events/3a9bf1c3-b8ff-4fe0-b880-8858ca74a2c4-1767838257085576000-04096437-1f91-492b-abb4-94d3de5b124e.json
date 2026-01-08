@@ -1,0 +1,27 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "file_path": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/.gitignore"
+    },
+    "tool_name": "Read",
+    "tool_response": {
+      "file": {
+        "content": "# Build artifacts\n/target/\n\n# IDE\n.idea/\n.vscode/\n\n# OS\n.DS_Store\n*.swp\n*.swo\n\n# User config\nstate.json\nconfig.toml\n\n# Auto-generated Claude settings for worktrees\n.claude_settings.json\n",
+        "filePath": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side/.gitignore",
+        "numLines": 19,
+        "startLine": 1,
+        "totalLines": 19
+      },
+      "type": "text"
+    },
+    "tool_use_id": "toolu_01WZjPK99VE11ikNEiqFKSMy",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838257085576000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

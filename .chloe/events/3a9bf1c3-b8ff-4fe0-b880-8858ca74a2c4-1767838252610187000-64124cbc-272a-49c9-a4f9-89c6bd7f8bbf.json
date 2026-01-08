@@ -1,0 +1,25 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "acceptEdits",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "command": "cat .gitignore | grep -i event",
+      "description": "Check if event files should be ignored"
+    },
+    "tool_name": "Bash",
+    "tool_response": {
+      "interrupted": false,
+      "isImage": false,
+      "returnCodeInterpretation": "No matches found",
+      "stderr": "",
+      "stdout": ""
+    },
+    "tool_use_id": "toolu_01T1zRieY6jpPQkjtfTuQfG7",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767838252610187000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}
