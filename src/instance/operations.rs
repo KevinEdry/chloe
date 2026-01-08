@@ -54,10 +54,7 @@ impl InstanceState {
             super::pty::PtySession::spawn(&working_directory, actual_rows, actual_columns)
         {
             let claude_command = if task_description.is_empty() {
-                format!(
-                    "claude \"{}\"\n",
-                    task_title.replace('\"', "\\\"")
-                )
+                format!("claude \"{}\"\n", task_title.replace('\"', "\\\""))
             } else {
                 format!(
                     "claude \"Work on this task:\n\nTitle: {}\n\nDescription: {}\"\n",

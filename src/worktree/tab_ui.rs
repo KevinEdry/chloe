@@ -105,6 +105,10 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
 }
 
 fn render_status_bar(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
+    const VERSION_TEXT: &str = "Chloe v0.1.0";
+    const VERSION_TEXT_LENGTH: u16 = 13;
+    const MINIMUM_SPACE_FOR_VERSION: u16 = 15;
+
     let mode_color = match state.mode {
         WorktreeMode::Normal => Color::Cyan,
         WorktreeMode::ConfirmDelete { .. } => Color::Red,
@@ -122,10 +126,20 @@ fn render_status_bar(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
         }
     } else {
         match state.mode {
-            WorktreeMode::Normal => "↑↓/jk:navigate  o:open  r:refresh  d:delete  Tab:switch-tabs  q:quit",
+            WorktreeMode::Normal => {
+                "↑↓/jk:navigate  o:open  r:refresh  d:delete  Tab:switch-tabs  q:quit"
+            }
             WorktreeMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
         }
     };
+
+    let inner_area = Block::default().borders(Borders::ALL).inner(area);
+    let should_show_version = inner_area.width >= MINIMUM_SPACE_FOR_VERSION;
+
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(0), Constraint::Length(VERSION_TEXT_LENGTH)])
+        .split(inner_area);
 
     let status = Paragraph::new(Line::from(vec![
         Span::styled(
@@ -141,6 +155,13 @@ fn render_status_bar(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
     );
 
     frame.render_widget(status, area);
+
+    if should_show_version {
+        let version = Paragraph::new(VERSION_TEXT)
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(Alignment::Right);
+        frame.render_widget(version, chunks[1]);
+    }
 }
 
 fn render_delete_confirmation(
