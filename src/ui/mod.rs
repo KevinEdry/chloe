@@ -3,10 +3,10 @@ pub mod widgets;
 use crate::app::{App, Tab};
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Tabs as RatTabs},
+    widgets::{Block, Borders, Paragraph, Tabs as RatTabs},
 };
 
 pub fn render(f: &mut Frame, app: &mut App) {
@@ -18,26 +18,22 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ])
         .split(f.area());
 
-    // Render tab bar with current directory
     let current_directory = std::env::current_dir()
         .ok()
         .and_then(|path| path.to_str().map(String::from))
         .unwrap_or_else(|| String::from("?"));
 
+    let tab_bar_block = Block::default().borders(Borders::ALL);
+    let tab_bar_inner = tab_bar_block.inner(chunks[0]);
+    f.render_widget(tab_bar_block, chunks[0]);
+
+    let tab_bar_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(0), Constraint::Length(current_directory.len() as u16)])
+        .split(tab_bar_inner);
+
     let tab_titles = vec!["Kanban", "Instances", "Roadmap", "Worktree"];
     let tabs = RatTabs::new(tab_titles)
-        .block(Block::default().borders(Borders::ALL).title(
-            Line::from(vec![
-                Span::raw("Chloe"),
-                Span::raw(" "),
-                Span::styled(
-                    current_directory,
-                    Style::default()
-                        .fg(Color::DarkGray)
-                        .add_modifier(Modifier::ITALIC),
-                ),
-            ])
-        ))
         .select(match app.active_tab {
             Tab::Kanban => 0,
             Tab::Instances => 1,
@@ -51,7 +47,16 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 .add_modifier(Modifier::BOLD),
         );
 
-    f.render_widget(tabs, chunks[0]);
+    let directory_display = Paragraph::new(Line::from(Span::styled(
+        current_directory,
+        Style::default()
+            .fg(Color::DarkGray)
+            .add_modifier(Modifier::ITALIC),
+    )))
+    .alignment(Alignment::Right);
+
+    f.render_widget(tabs, tab_bar_layout[0]);
+    f.render_widget(directory_display, tab_bar_layout[1]);
 
     // Render active tab content
     match app.active_tab {
