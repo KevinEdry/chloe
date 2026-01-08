@@ -1,9 +1,13 @@
-use crate::instance::InstanceState;
-use crate::kanban::{KanbanState, TaskType};
-use crate::roadmap::RoadmapState;
 use crate::types::Config;
-use crate::worktree::WorktreeTabState;
+use crate::views::focus::FocusState;
+use crate::views::instances::InstanceState;
+use crate::views::kanban::{KanbanState, TaskType};
+use crate::views::roadmap::RoadmapState;
+use crate::views::worktree::WorktreeTabState;
 use serde::{Deserialize, Serialize};
+
+const DEFAULT_PTY_ROWS: u16 = 24;
+const DEFAULT_PTY_COLUMNS: u16 = 80;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tab {
@@ -11,6 +15,7 @@ pub enum Tab {
     Instances,
     Roadmap,
     Worktree,
+    Focus,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,6 +25,7 @@ pub struct App {
     pub instances: InstanceState,
     pub roadmap: RoadmapState,
     pub worktree: WorktreeTabState,
+    pub focus: FocusState,
     pub config: Config,
     #[serde(skip)]
     pub showing_exit_confirmation: bool,
@@ -33,12 +39,12 @@ impl App {
             instances: InstanceState::new(),
             roadmap: RoadmapState::new(),
             worktree: WorktreeTabState::new(),
+            focus: FocusState::new(),
             config: Config::default(),
             showing_exit_confirmation: false,
         }
     }
 
-    /// Load state from disk, or create new if it doesn't exist
     pub fn load_or_default() -> Self {
         match crate::persistence::storage::load_state() {
             Ok(mut app) => {
@@ -63,7 +69,6 @@ impl App {
         }
     }
 
-    /// Save the current state to disk
     pub fn save(&self) -> crate::types::Result<()> {
         crate::persistence::storage::save_state(self)
     }
@@ -81,7 +86,8 @@ impl App {
             Tab::Kanban => Tab::Instances,
             Tab::Instances => Tab::Roadmap,
             Tab::Roadmap => Tab::Worktree,
-            Tab::Worktree => Tab::Kanban,
+            Tab::Worktree => Tab::Focus,
+            Tab::Focus => Tab::Kanban,
         };
 
         if self.active_tab == Tab::Worktree {
@@ -89,7 +95,6 @@ impl App {
         }
     }
 
-    /// Auto-create instances for tasks in "In Progress" that don't have one
     pub fn sync_task_instances(&mut self) {
         if self.kanban.columns.len() < 2 {
             return;
@@ -120,14 +125,13 @@ impl App {
                 &task_title,
                 &task_description,
                 working_directory,
-                24,
-                80,
+                DEFAULT_PTY_ROWS,
+                DEFAULT_PTY_COLUMNS,
             );
             self.kanban.link_task_to_instance(task_id, instance_id);
         }
     }
 
-    /// Jump to a task's instance in the Instances tab
     pub fn jump_to_task_instance(&mut self) -> bool {
         if let Some(task) = self.kanban.get_selected_task() {
             let task_id = task.id;
@@ -146,23 +150,22 @@ impl App {
                     &task_title,
                     &task_description,
                     working_directory,
-                    24,
-                    80,
+                    DEFAULT_PTY_ROWS,
+                    DEFAULT_PTY_COLUMNS,
                 );
                 self.kanban.link_task_to_instance(task_id, instance_id);
                 self.active_tab = Tab::Instances;
-                self.instances.mode = crate::instance::InstanceMode::Focused;
+                self.instances.mode = crate::views::instances::InstanceMode::Focused;
                 return true;
             }
         }
         false
     }
 
-    /// Get the Claude state for an instance by its ID
     pub fn get_instance_claude_state(
         &self,
         instance_id: uuid::Uuid,
-    ) -> Option<crate::instance::ClaudeState> {
+    ) -> Option<crate::views::instances::ClaudeState> {
         self.instances
             .panes
             .iter()
@@ -170,13 +173,12 @@ impl App {
             .map(|pane| pane.claude_state)
     }
 
-    /// Auto-transition tasks from In Progress to Review when Claude Code completes
     pub fn auto_transition_completed_tasks(&mut self) {
         let completed_instances: Vec<uuid::Uuid> = self
             .instances
             .panes
             .iter()
-            .filter(|pane| pane.claude_state == crate::instance::ClaudeState::Done)
+            .filter(|pane| pane.claude_state == crate::views::instances::ClaudeState::Done)
             .map(|pane| pane.id)
             .collect();
 
@@ -185,7 +187,6 @@ impl App {
         }
     }
 
-    /// Process hook events from Claude Code to update task and instance states
     pub fn process_hook_event(&mut self, event: &crate::events::HookEvent) {
         let task_id = event.worktree_id;
 
@@ -207,20 +208,19 @@ impl App {
 
         match event.event_type() {
             crate::events::EventType::Start => {
-                pane.claude_state = crate::instance::ClaudeState::Running;
+                pane.claude_state = crate::views::instances::ClaudeState::Running;
                 self.kanban.move_task_to_in_progress_by_id(task_id);
             }
             crate::events::EventType::End => {
-                pane.claude_state = crate::instance::ClaudeState::Done;
+                pane.claude_state = crate::views::instances::ClaudeState::Done;
             }
             crate::events::EventType::Permission => {
-                pane.claude_state = crate::instance::ClaudeState::NeedsPermissions;
+                pane.claude_state = crate::views::instances::ClaudeState::NeedsPermissions;
             }
             crate::events::EventType::Unknown(_) => {}
         }
     }
 
-    /// Get the output buffer for an instance by its ID
     pub fn get_instance_output(&self, instance_id: uuid::Uuid) -> Option<&str> {
         self.instances
             .panes
@@ -229,14 +229,13 @@ impl App {
             .map(|pane| pane.output_buffer.as_str())
     }
 
-    /// Open the project in the default IDE for a task in Review column
-    pub fn open_task_in_ide(&self, task_idx: usize) {
+    pub fn open_task_in_ide(&self, task_index: usize) {
         let review_column_index = 2;
         if let Some(task) = self
             .kanban
             .columns
             .get(review_column_index)
-            .and_then(|col| col.tasks.get(task_idx))
+            .and_then(|col| col.tasks.get(task_index))
         {
             let path_to_open = if let Some(worktree_info) = &task.worktree_info {
                 &worktree_info.worktree_path
@@ -257,14 +256,13 @@ impl App {
         }
     }
 
-    /// Open external terminal at the task's path (worktree or working directory)
-    pub fn open_task_in_terminal(&self, task_idx: usize) {
+    pub fn open_task_in_terminal(&self, task_index: usize) {
         let review_column_index = 2;
         if let Some(task) = self
             .kanban
             .columns
             .get(review_column_index)
-            .and_then(|col| col.tasks.get(task_idx))
+            .and_then(|col| col.tasks.get(task_index))
         {
             let path_to_open = if let Some(worktree_info) = &task.worktree_info {
                 &worktree_info.worktree_path
@@ -282,14 +280,13 @@ impl App {
         }
     }
 
-    /// Switch to instances tab and focus the instance for a task in Review column
-    pub fn switch_to_task_instance(&mut self, task_idx: usize) -> bool {
+    pub fn switch_to_task_instance(&mut self, task_index: usize) -> bool {
         let review_column_index = 2;
         if let Some(task) = self
             .kanban
             .columns
             .get(review_column_index)
-            .and_then(|col| col.tasks.get(task_idx))
+            .and_then(|col| col.tasks.get(task_index))
         {
             if let Some(instance_id) = task.instance_id {
                 self.active_tab = Tab::Instances;
@@ -299,7 +296,6 @@ impl App {
         false
     }
 
-    /// Convert a roadmap item to a kanban task in Planning column
     pub fn convert_roadmap_item_to_task(&mut self, item_index: usize) {
         if let Some(item) = self.roadmap.items.get(item_index) {
             let title = item.title.clone();
@@ -309,7 +305,6 @@ impl App {
         }
     }
 
-    /// Open a worktree in the configured IDE
     pub fn open_worktree_in_ide(&self, worktree_index: usize) {
         if let Some(worktree) = self.worktree.worktrees.get(worktree_index) {
             let ide_command = self.config.ide_command.command_name();
@@ -319,7 +314,6 @@ impl App {
         }
     }
 
-    /// Open a worktree in the configured terminal
     pub fn open_worktree_in_terminal(&self, worktree_index: usize) {
         if let Some(worktree) = self.worktree.worktrees.get(worktree_index) {
             let _ = self.config.terminal_command.open_at_path(&worktree.path);

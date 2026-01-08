@@ -17,13 +17,11 @@ mod app;
 mod cli;
 mod common;
 pub mod events;
-mod instance;
-mod kanban;
 mod persistence;
-mod roadmap;
+mod polling;
 mod types;
-mod ui;
-mod worktree;
+mod views;
+mod widgets;
 
 use app::{App, Tab};
 use clap::Parser;
@@ -64,8 +62,6 @@ fn run_tui() -> Result<(), io::Error> {
     let mut terminal = Terminal::new(backend)?;
 
     let event_listener = events::EventListener::start()?;
-
-    // Load state from disk
     let mut app = App::load_or_default();
     let res = run_app(&mut terminal, &mut app, &event_listener);
 
@@ -77,7 +73,6 @@ fn run_tui() -> Result<(), io::Error> {
     )?;
     terminal.show_cursor()?;
 
-    // Save state before exiting
     if let Err(save_err) = app.save() {
         eprintln!("Warning: Failed to save state: {save_err}");
     }
@@ -95,46 +90,16 @@ fn run_app<B: ratatui::backend::Backend>(
     event_listener: &events::EventListener,
 ) -> io::Result<()> {
     loop {
-        terminal.draw(|f| ui::render(f, app))?;
+        terminal.draw(|f| views::render(f, app))?;
 
-        // Poll for AI classification completion on every loop iteration
-        if app.active_tab == Tab::Kanban {
-            app.kanban.poll_classification();
-        }
-
-        // Poll for roadmap generation completion and advance spinner
-        if app.active_tab == Tab::Roadmap {
-            app.roadmap.poll_generation();
-            if app.roadmap.mode == roadmap::RoadmapMode::Generating {
-                app.roadmap.advance_spinner();
-            }
-        }
-
-        // Poll for instance PTY output on every loop iteration
-        // Always poll instances, not just when tab is active, to catch output from background instances
-        app.instances.poll_pty_output();
-
-        // Poll for worktree updates when worktree tab is active
-        if app.active_tab == Tab::Worktree {
-            app.worktree.poll_worktrees();
-        }
-
-        // Poll for hook events from Claude Code and update instance states
-        for event in event_listener.poll_events() {
-            app.process_hook_event(&event);
-        }
-
-        // Auto-transition completed tasks from In Progress to Review
-        app.auto_transition_completed_tasks();
+        polling::poll_background_tasks(app, event_listener);
 
         if event::poll(std::time::Duration::from_millis(100))? {
             match event::read()? {
                 Event::Key(key) => {
-                    // Check if instance is focused - if so, don't catch Ctrl+C globally
                     let instance_is_focused = app.active_tab == Tab::Instances
-                        && app.instances.mode == instance::InstanceMode::Focused;
+                        && app.instances.mode == views::instances::InstanceMode::Focused;
 
-                    // Handle exit confirmation dialog if showing
                     if app.showing_exit_confirmation {
                         match key.code {
                             KeyCode::Char('y') | KeyCode::Char('Y') => {
@@ -148,13 +113,12 @@ fn run_app<B: ratatui::backend::Backend>(
                         continue;
                     }
 
-                    // Global keybindings
                     match key.code {
                         KeyCode::Char('q') | KeyCode::Char('Q') => {
                             if !instance_is_focused {
                                 app.showing_exit_confirmation = true;
                             } else {
-                                instance::events::handle_key_event(&mut app.instances, key);
+                                views::instances::events::handle_key_event(&mut app.instances, key);
                             }
                         }
                         KeyCode::Char('c')
@@ -163,14 +127,14 @@ fn run_app<B: ratatui::backend::Backend>(
                             if !instance_is_focused {
                                 app.showing_exit_confirmation = true;
                             } else {
-                                instance::events::handle_key_event(&mut app.instances, key);
+                                views::instances::events::handle_key_event(&mut app.instances, key);
                             }
                         }
                         KeyCode::Tab | KeyCode::BackTab => {
                             if !instance_is_focused && key.code == KeyCode::Tab {
                                 app.next_tab();
                             } else {
-                                instance::events::handle_key_event(&mut app.instances, key);
+                                views::instances::events::handle_key_event(&mut app.instances, key);
                             }
                         }
                         KeyCode::Char('1') if !instance_is_focused => {
@@ -185,120 +149,44 @@ fn run_app<B: ratatui::backend::Backend>(
                         KeyCode::Char('4') if !instance_is_focused => {
                             app.switch_tab(Tab::Worktree);
                         }
-                        _ => {
-                            // Route to active tab
-                            match app.active_tab {
-                                Tab::Kanban => {
-                                    // Handle 'T' key to jump to task instance, but only in Normal mode
-                                    let is_normal_mode =
-                                        app.kanban.mode == kanban::KanbanMode::Normal;
-                                    if is_normal_mode
-                                        && (key.code == KeyCode::Char('t')
-                                            || key.code == KeyCode::Char('T'))
-                                    {
-                                        app.jump_to_task_instance();
-                                    } else {
-                                        kanban::events::handle_key_event(&mut app.kanban, key);
+                        KeyCode::Char('5') if !instance_is_focused => {
+                            app.switch_tab(Tab::Focus);
+                        }
+                        _ => match app.active_tab {
+                            Tab::Kanban => {
+                                let is_normal_mode =
+                                    app.kanban.mode == views::kanban::KanbanMode::Normal;
+                                let is_jump_to_instance_key = key.code == KeyCode::Char('t')
+                                    || key.code == KeyCode::Char('T');
 
-                                        // Check if an instance needs to be terminated
-                                        if let Some(instance_id) =
-                                            app.kanban.pending_instance_termination.take()
-                                        {
-                                            app.instances.close_pane_by_id(instance_id);
-                                        }
-
-                                        // Check if a worktree needs to be deleted
-                                        if let Some(worktree_info) =
-                                            app.kanban.pending_worktree_deletion.take()
-                                        {
-                                            if let Ok(repo_root) = worktree::find_repository_root(
-                                                std::env::current_dir()
-                                                    .unwrap_or_else(|_| std::path::PathBuf::from("."))
-                                                    .as_path(),
-                                            ) {
-                                                let _ = worktree::delete_worktree(&repo_root, &worktree_info);
-                                            }
-                                        }
-
-                                        // Handle pending IDE open action
-                                        if let Some(task_idx) = app.kanban.pending_ide_open.take() {
-                                            app.open_task_in_ide(task_idx);
-                                        }
-
-                                        // Handle pending terminal switch action
-                                        if let Some(task_idx) =
-                                            app.kanban.pending_terminal_switch.take()
-                                        {
-                                            app.open_task_in_terminal(task_idx);
-                                        }
-
-                                        // Handle pending change request
-                                        if let Some((task_idx, change_request)) =
-                                            app.kanban.pending_change_request.take()
-                                        {
-                                            let instance_id =
-                                                app.kanban.move_task_to_in_progress(task_idx);
-                                            if let Some(instance_id) = instance_id {
-                                                app.instances.send_input_to_instance(
-                                                    instance_id,
-                                                    &change_request,
-                                                );
-                                            }
-                                        }
-
-                                        // Auto-create instances for tasks in "In Progress"
-                                        app.sync_task_instances();
-                                    }
-                                }
-                                Tab::Instances => {
-                                    instance::events::handle_key_event(&mut app.instances, key)
-                                }
-                                Tab::Roadmap => {
-                                    let action =
-                                        roadmap::events::handle_key_event(&mut app.roadmap, key);
-                                    match action {
-                                        roadmap::events::RoadmapAction::ConvertToTask(
-                                            item_index,
-                                        ) => {
-                                            app.convert_roadmap_item_to_task(item_index);
-                                            app.active_tab = Tab::Kanban;
-                                        }
-                                        roadmap::events::RoadmapAction::SaveState => {
-                                            let _ = app.save();
-                                        }
-                                        roadmap::events::RoadmapAction::GenerateRoadmap => {
-                                            if let Ok(current_dir) = std::env::current_dir() {
-                                                app.roadmap.start_generation(
-                                                    current_dir.to_string_lossy().to_string(),
-                                                );
-                                            }
-                                        }
-                                        roadmap::events::RoadmapAction::None => {}
-                                    }
-                                }
-                                Tab::Worktree => {
-                                    app.worktree.handle_key_event(key);
-
-                                    // Handle pending IDE open action
-                                    if let Some(worktree_idx) = app.worktree.pending_ide_open.take()
-                                    {
-                                        app.open_worktree_in_ide(worktree_idx);
-                                    }
-
-                                    // Handle pending terminal open action
-                                    if let Some(worktree_idx) =
-                                        app.worktree.pending_terminal_open.take()
-                                    {
-                                        app.open_worktree_in_terminal(worktree_idx);
-                                    }
+                                if is_normal_mode && is_jump_to_instance_key {
+                                    app.jump_to_task_instance();
+                                } else {
+                                    views::kanban::events::handle_key_event(&mut app.kanban, key);
+                                    polling::process_kanban_pending_actions(app);
                                 }
                             }
-                        }
+                            Tab::Instances => {
+                                views::instances::events::handle_key_event(&mut app.instances, key);
+                            }
+                            Tab::Roadmap => {
+                                let action =
+                                    views::roadmap::events::handle_key_event(&mut app.roadmap, key);
+                                polling::process_roadmap_action(app, action);
+                            }
+                            Tab::Worktree => {
+                                app.worktree.handle_key_event(key);
+                                polling::process_worktree_pending_actions(app);
+                            }
+                            Tab::Focus => {
+                                polling::process_focus_event(app, key);
+                            }
+                        },
                     }
                 }
                 Event::Mouse(mouse_event) => {
                     if app.active_tab == Tab::Instances {
-                        instance::events::handle_mouse_event(&mut app.instances, mouse_event);
+                        views::instances::events::handle_mouse_event(&mut app.instances, mouse_event);
                     }
                 }
                 _ => {}

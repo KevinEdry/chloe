@@ -12,13 +12,10 @@ pub mod app;
 pub mod cli;
 pub mod common;
 pub mod events;
-pub mod instance;
-pub mod kanban;
 pub mod persistence;
-pub mod roadmap;
 pub mod types;
-pub mod ui;
-pub mod worktree;
+pub mod views;
+pub mod widgets;
 
 #[cfg(test)]
 mod tests {
@@ -49,8 +46,8 @@ mod tests {
             .map(|_| {
                 let counter = Arc::clone(&counter);
                 thread::spawn(move || {
-                    let mut num = counter.lock().unwrap();
-                    *num += 1;
+                    let mut number = counter.lock().unwrap();
+                    *number += 1;
                 })
             })
             .collect();
