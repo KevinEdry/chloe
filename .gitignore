@@ -14,5 +14,8 @@
 state.json
 config.toml
 
-# Auto-generated Claude settings for worktrees
-.claude_settings.json
+# Claude Code local settings (auto-generated in worktrees)
+**/.claude/settings.local.json
+
+# Event files
+.chloe/events/

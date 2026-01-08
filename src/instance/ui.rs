@@ -101,7 +101,7 @@ fn render_pane(
             Modifier::empty()
         });
 
-    let state_indicator = get_claude_state_indicator(pane.claude_state);
+    let (state_indicator, indicator_color) = get_claude_state_indicator(pane.claude_state);
 
     let pane_name = if let Some(name) = &pane.name {
         name.clone()
@@ -109,23 +109,33 @@ fn render_pane(
         format!("Pane {}", index + 1)
     };
 
-    let title = if is_focused {
-        format!("● {} {}", pane_name, state_indicator)
+    let title_prefix = if is_focused {
+        "● "
     } else if is_selected {
-        format!("→ {} {}", pane_name, state_indicator)
+        "→ "
     } else {
-        format!("  {} {}", pane_name, state_indicator)
+        "  "
     };
+
+    let title_spans = vec![
+        Span::styled(
+            format!("{}{} ", title_prefix, pane_name),
+            Style::default()
+                .fg(border_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            state_indicator,
+            Style::default()
+                .fg(indicator_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+    ];
 
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(border_style)
-        .title(Span::styled(
-            title,
-            Style::default()
-                .fg(border_color)
-                .add_modifier(Modifier::BOLD),
-        ));
+        .title(Line::from(title_spans));
 
     let inner_area = block.inner(area);
     f.render_widget(block, area);
@@ -139,22 +149,23 @@ fn render_pane(
     }
 }
 
-fn get_claude_state_indicator(state: super::ClaudeState) -> &'static str {
+fn get_claude_state_indicator(state: super::ClaudeState) -> (&'static str, Color) {
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    let should_show = match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => (duration.as_millis() / 500) % 2 == 0,
+    const BLINK_DURATION_MS: u128 = 500;
+    const BLINK_PHASES: u128 = 2;
+
+    let should_flash = match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(duration) => (duration.as_millis() / BLINK_DURATION_MS) % BLINK_PHASES == 0,
         Err(_) => true,
     };
 
     match state {
-        super::ClaudeState::Idle => "",
-        super::ClaudeState::Running if should_show => "●",
-        super::ClaudeState::Running => " ",
-        super::ClaudeState::NeedsPermissions if should_show => "🔒",
-        super::ClaudeState::NeedsPermissions => "  ",
-        super::ClaudeState::Done if should_show => "✓",
-        super::ClaudeState::Done => " ",
+        super::ClaudeState::Idle => (" ", Color::Gray),
+        super::ClaudeState::Running if should_flash => ("●", Color::Rgb(255, 165, 0)),
+        super::ClaudeState::Running => (" ", Color::Rgb(255, 165, 0)),
+        super::ClaudeState::NeedsPermissions => ("●", Color::Rgb(138, 43, 226)),
+        super::ClaudeState::Done => ("●", Color::Green),
     }
 }
 

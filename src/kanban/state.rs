@@ -14,6 +14,10 @@ pub struct KanbanState {
     #[serde(skip)]
     pub pending_instance_termination: Option<Uuid>,
     #[serde(skip)]
+    pub pending_worktree_deletion: Option<crate::worktree::WorktreeInfo>,
+    #[serde(skip)]
+    pub pending_instance_creation: Option<Uuid>,
+    #[serde(skip)]
     pub pending_ide_open: Option<usize>,
     #[serde(skip)]
     pub pending_terminal_switch: Option<usize>,
@@ -47,6 +51,8 @@ impl KanbanState {
             mode: KanbanMode::Normal,
             classification_request: None,
             pending_instance_termination: None,
+            pending_worktree_deletion: None,
+            pending_instance_creation: None,
             pending_ide_open: None,
             pending_terminal_switch: None,
             pending_change_request: None,

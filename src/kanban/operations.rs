@@ -161,6 +161,10 @@ impl KanbanState {
             None => return,
         };
 
+        if is_entering_in_progress {
+            self.pending_instance_creation = Some(task.id);
+        }
+
         self.columns[self.selected_column].tasks.remove(task_index);
         self.columns[self.selected_column + 1].tasks.push(task);
 
@@ -253,10 +257,15 @@ impl KanbanState {
             self.pending_instance_termination = Some(instance_id);
         }
 
+        if let Some(worktree_info) = task.worktree_info.clone() {
+            self.pending_worktree_deletion = Some(worktree_info);
+        }
+
         self.columns[self.selected_column].tasks.remove(task_index);
 
         let mut task_without_instance = task;
         task_without_instance.instance_id = None;
+        task_without_instance.worktree_info = None;
 
         self.columns[self.selected_column - 1]
             .tasks

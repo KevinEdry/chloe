@@ -9,7 +9,9 @@
 
 // Re-export main modules for testing
 pub mod app;
+pub mod cli;
 pub mod common;
+pub mod events;
 pub mod instance;
 pub mod kanban;
 pub mod persistence;

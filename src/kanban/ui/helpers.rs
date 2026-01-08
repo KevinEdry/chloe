@@ -1,8 +1,8 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    widgets::{Clear, Paragraph},
+    style::Color,
+    widgets::Clear,
 };
 
 const PERCENTAGE_FULL: u16 = 100;
@@ -103,7 +103,7 @@ pub fn get_claude_state_indicator_for_card(
 ) -> (&'static str, Color) {
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    let should_show = match SystemTime::now().duration_since(UNIX_EPOCH) {
+    let should_flash = match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(duration) => {
             (duration.as_millis() / CLAUDE_STATE_BLINK_DURATION_MS) % CLAUDE_STATE_BLINK_PHASES == 0
         }
@@ -112,11 +112,9 @@ pub fn get_claude_state_indicator_for_card(
 
     match state {
         crate::instance::ClaudeState::Idle => (" ", Color::Gray),
-        crate::instance::ClaudeState::Running if should_show => ("●", Color::Green),
-        crate::instance::ClaudeState::Running => (" ", Color::Green),
-        crate::instance::ClaudeState::NeedsPermissions if should_show => ("●", Color::Magenta),
-        crate::instance::ClaudeState::NeedsPermissions => (" ", Color::Magenta),
-        crate::instance::ClaudeState::Done if should_show => ("●", Color::White),
-        crate::instance::ClaudeState::Done => (" ", Color::White),
+        crate::instance::ClaudeState::Running if should_flash => ("●", Color::Rgb(255, 165, 0)),
+        crate::instance::ClaudeState::Running => (" ", Color::Rgb(255, 165, 0)),
+        crate::instance::ClaudeState::NeedsPermissions => ("●", Color::Rgb(138, 43, 226)),
+        crate::instance::ClaudeState::Done => ("●", Color::Green),
     }
 }

@@ -14,7 +14,9 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 mod app;
+mod cli;
 mod common;
+pub mod events;
 mod instance;
 mod kanban;
 mod persistence;
@@ -24,6 +26,8 @@ mod ui;
 mod worktree;
 
 use app::{App, Tab};
+use clap::Parser;
+use cli::{Cli, Commands};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -33,6 +37,26 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
 fn main() -> Result<(), io::Error> {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Some(Commands::Notify {
+            event_type,
+            worktree_id,
+        }) => {
+            if let Err(error) = cli::handle_notify_command(event_type, worktree_id) {
+                eprintln!("Error handling notify command: {error}");
+                std::process::exit(1);
+            }
+            return Ok(());
+        }
+        None => {
+            return run_tui();
+        }
+    }
+}
+
+fn run_tui() -> Result<(), io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -90,6 +114,13 @@ fn run_app<B: ratatui::backend::Backend>(
         // Poll for worktree updates when worktree tab is active
         if app.active_tab == Tab::Worktree {
             app.worktree.poll_worktrees();
+        }
+
+        // Poll for hook events from Claude Code and update instance states
+        if let Ok(events) = events::poll_events() {
+            for event in &events {
+                app.process_hook_event(event);
+            }
         }
 
         // Auto-transition completed tasks from In Progress to Review
@@ -173,6 +204,19 @@ fn run_app<B: ratatui::backend::Backend>(
                                             app.kanban.pending_instance_termination.take()
                                         {
                                             app.instances.close_pane_by_id(instance_id);
+                                        }
+
+                                        // Check if a worktree needs to be deleted
+                                        if let Some(worktree_info) =
+                                            app.kanban.pending_worktree_deletion.take()
+                                        {
+                                            if let Ok(repo_root) = worktree::find_repository_root(
+                                                std::env::current_dir()
+                                                    .unwrap_or_else(|_| std::path::PathBuf::from("."))
+                                                    .as_path(),
+                                            ) {
+                                                let _ = worktree::delete_worktree(&repo_root, &worktree_info);
+                                            }
                                         }
 
                                         // Handle pending IDE open action

@@ -127,7 +127,7 @@ pub fn render_columns(f: &mut Frame, app: &App, area: Rect) {
 
             let is_selected_task = is_selected && state.selected_task == Some(task_index);
 
-            render_task_card(f, app, task, card_area, is_selected_task, border_color);
+            render_task_card(f, app, task, card_area, is_selected_task);
 
             y_offset += card_height;
         }
@@ -140,16 +140,7 @@ fn render_task_card(
     task: &crate::kanban::Task,
     area: Rect,
     is_selected: bool,
-    _accent_color: Color,
 ) {
-    let border_style = if is_selected {
-        Style::default()
-            .fg(Color::White)
-            .add_modifier(Modifier::BOLD)
-    } else {
-        Style::default().fg(Color::DarkGray)
-    };
-
     let badge_color = task.task_type.color();
     let created = task.created_at.format("%Y/%m/%d-%H:%M:%S").to_string();
 
@@ -159,6 +150,20 @@ fn render_task_card(
         app.get_instance_claude_state(instance_id)
     } else {
         None
+    };
+
+    let border_color = if is_selected {
+        Color::White
+    } else {
+        Color::DarkGray
+    };
+
+    let border_style = if is_selected {
+        Style::default()
+            .fg(border_color)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(border_color)
     };
 
     let has_indicator =

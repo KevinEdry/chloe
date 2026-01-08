@@ -21,6 +21,7 @@ vt100 = "0.15"
 # Utilities
 anyhow = "1.0"
 dirs = "5.0"
+clap = { version = "4.5", features = ["derive"] }
 
 # Git operations
 git2 = "0.18"

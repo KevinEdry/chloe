@@ -7,8 +7,8 @@ use uuid::Uuid;
 
 const MAX_SLUG_LENGTH: usize = 50;
 
-/// Generate `.claude_settings.json` in the worktree to pre-configure permissions
-fn generate_claude_settings(worktree_path: &Path) -> Result<()> {
+/// Generate `.claude/settings.local.json` in the worktree to pre-configure permissions
+fn generate_claude_settings(worktree_path: &Path, task_id: &Uuid) -> Result<()> {
     let settings = serde_json::json!({
         "permissions": {
             "Read": ["./**"],
@@ -23,15 +23,59 @@ fn generate_claude_settings(worktree_path: &Path) -> Result<()> {
             "autoAllowBashIfSandboxed": true
         },
         "includeCoAuthoredBy": false,
-        "gitAttribution": false
+        "gitAttribution": false,
+        "hooks": {
+            "SessionStart": [{
+                "hooks": [{
+                    "type": "command",
+                    "command": format!("chloe notify start --worktree-id {}", task_id)
+                }]
+            }],
+            "SessionEnd": [{
+                "hooks": [{
+                    "type": "command",
+                    "command": format!("chloe notify end --worktree-id {}", task_id)
+                }]
+            }],
+            "PermissionRequest": [{
+                "matcher": "*",
+                "hooks": [{
+                    "type": "command",
+                    "command": format!("chloe notify permission --worktree-id {}", task_id)
+                }]
+            }],
+            "PostToolUse": [{
+                "matcher": "*",
+                "hooks": [{
+                    "type": "command",
+                    "command": format!("chloe notify start --worktree-id {}", task_id)
+                }]
+            }],
+            "Stop": [{
+                "hooks": [{
+                    "type": "command",
+                    "command": format!("chloe notify end --worktree-id {}", task_id)
+                }]
+            }],
+            "UserPromptSubmit": [{
+                "hooks": [{
+                    "type": "command",
+                    "command": format!("chloe notify start --worktree-id {}", task_id)
+                }]
+            }]
+        }
     });
 
-    let settings_path = worktree_path.join(".claude_settings.json");
+    let claude_dir = worktree_path.join(".claude");
+    fs::create_dir_all(&claude_dir)
+        .context("Failed to create .claude directory")?;
+
+    let settings_path = claude_dir.join("settings.local.json");
     let settings_content = serde_json::to_string_pretty(&settings)
         .context("Failed to serialize Claude settings")?;
 
     fs::write(&settings_path, settings_content)
-        .context("Failed to write .claude_settings.json")?;
+        .context("Failed to write .claude/settings.local.json")?;
 
     Ok(())
 }
@@ -168,7 +212,7 @@ pub fn create_worktree(
 
     let worktree_info = WorktreeInfo::new(final_branch_name, worktree_path.clone());
 
-    generate_claude_settings(&worktree_path)?;
+    generate_claude_settings(&worktree_path, task_id)?;
 
     Ok(worktree_info)
 }

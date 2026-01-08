@@ -159,7 +159,7 @@ impl InstanceState {
         for pane in &mut self.panes {
             if pane.pty_session.is_some() {
                 Self::capture_output_buffer(pane);
-                Self::update_claude_state(pane);
+                Self::check_process_exit(pane);
             }
         }
     }
@@ -187,7 +187,7 @@ impl InstanceState {
         }
     }
 
-    fn update_claude_state(pane: &mut InstancePane) {
+    fn check_process_exit(pane: &mut InstancePane) {
         let process_has_exited = if let Some(session) = &mut pane.pty_session {
             session.check_process_exit()
         } else {
@@ -196,86 +196,7 @@ impl InstanceState {
 
         if process_has_exited {
             pane.claude_state = super::ClaudeState::Done;
-            return;
         }
-
-        let session = match &pane.pty_session {
-            Some(s) => s,
-            None => return,
-        };
-
-        if let Ok(parser) = session.screen().lock() {
-            let screen = parser.screen();
-            let mut screen_text = String::new();
-
-            for row in 0..screen.size().0.min(50) {
-                for col in 0..screen.size().1 {
-                    if let Some(cell) = screen.cell(row, col) {
-                        screen_text.push_str(&cell.contents());
-                    }
-                }
-                screen_text.push('\n');
-            }
-
-            let lower_text = screen_text.to_lowercase();
-
-            if pane.claude_state == super::ClaudeState::Running {
-                if Self::contains_permission_request(&lower_text) {
-                    pane.claude_state = super::ClaudeState::NeedsPermissions;
-                } else if Self::is_claude_done(&screen_text) {
-                    pane.claude_state = super::ClaudeState::Done;
-                }
-            } else if pane.claude_state == super::ClaudeState::NeedsPermissions {
-                if !Self::contains_permission_request(&lower_text) {
-                    pane.claude_state = super::ClaudeState::Running;
-                } else if Self::is_claude_done(&screen_text) {
-                    pane.claude_state = super::ClaudeState::Done;
-                }
-            }
-        }
-    }
-
-    fn contains_permission_request(lower_text: &str) -> bool {
-        let has_warning_symbol = lower_text.contains("⚠️")
-            || lower_text.contains("⚠")
-            || lower_text.contains("[!]")
-            || lower_text.contains("warning:");
-
-        let has_permission_keywords = lower_text.contains("permission")
-            || lower_text.contains("approval")
-            || lower_text.contains("authorization")
-            || lower_text.contains("consent");
-
-        let has_action_prompt = lower_text.contains("(y/n)")
-            || lower_text.contains("[yes/no]")
-            || lower_text.contains("(yes/no)")
-            || lower_text.contains("allow?")
-            || lower_text.contains("proceed?")
-            || lower_text.contains("continue?");
-
-        let has_allow_deny_text = lower_text.contains("do you want to allow")
-            || lower_text.contains("do you want to proceed")
-            || lower_text.contains("would you like to allow")
-            || lower_text.contains("would you like to proceed");
-
-        let has_requires_pattern = lower_text.contains("requires permission")
-            || lower_text.contains("requires approval")
-            || lower_text.contains("needs permission")
-            || lower_text.contains("needs approval")
-            || lower_text.contains("requires your approval")
-            || lower_text.contains("requires user approval");
-
-        (has_warning_symbol && has_permission_keywords)
-            || (has_permission_keywords && has_action_prompt)
-            || has_allow_deny_text
-            || has_requires_pattern
-    }
-
-    fn is_claude_done(screen_text: &str) -> bool {
-        let last_lines: Vec<&str> = screen_text.lines().rev().take(5).collect();
-        let last_text = last_lines.join("\n");
-
-        last_text.contains("$ ") || last_text.contains("% ") || last_text.contains("❯ ")
     }
 
     /// Send input to an instance by its ID
@@ -289,7 +210,6 @@ impl InstanceState {
         if let Some(session) = &mut pane.pty_session {
             let input_with_newline = format!("{}\n", input);
             if session.write_input(input_with_newline.as_bytes()).is_ok() {
-                pane.claude_state = super::ClaudeState::Running;
                 return true;
             }
         }
