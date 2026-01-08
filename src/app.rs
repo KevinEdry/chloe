@@ -20,7 +20,6 @@ pub struct App {
     pub instances: InstanceState,
     pub roadmap: RoadmapState,
     pub worktree: WorktreeTabState,
-    #[serde(skip)]
     pub config: Config,
     #[serde(skip)]
     pub showing_exit_confirmation: bool,
@@ -43,7 +42,7 @@ impl App {
     pub fn load_or_default() -> Self {
         match crate::persistence::storage::load_state() {
             Ok(mut app) => {
-                app.config = Config::default();
+                // Preserve config from state.json to maintain user's IDE/terminal preferences
 
                 let active_instance_ids: Vec<uuid::Uuid> =
                     app.instances.panes.iter().map(|p| p.id).collect();
@@ -182,6 +181,40 @@ impl App {
 
         for instance_id in completed_instances {
             self.kanban.move_task_to_review_by_instance(instance_id);
+        }
+    }
+
+    /// Process hook events from Claude Code to update task and instance states
+    pub fn process_hook_event(&mut self, event: &crate::events::HookEvent) {
+        let task_id = event.worktree_id;
+
+        let instance_id = self
+            .kanban
+            .columns
+            .iter()
+            .flat_map(|col| &col.tasks)
+            .find(|task| task.id == task_id)
+            .and_then(|task| task.instance_id);
+
+        let Some(instance_id) = instance_id else {
+            return;
+        };
+
+        let Some(pane) = self.instances.panes.iter_mut().find(|p| p.id == instance_id) else {
+            return;
+        };
+
+        match event.event_type() {
+            crate::events::EventType::Start => {
+                pane.claude_state = crate::instance::ClaudeState::Running;
+            }
+            crate::events::EventType::End => {
+                pane.claude_state = crate::instance::ClaudeState::Done;
+            }
+            crate::events::EventType::Permission => {
+                pane.claude_state = crate::instance::ClaudeState::NeedsPermissions;
+            }
+            crate::events::EventType::Unknown(_) => {}
         }
     }
 
