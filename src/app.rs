@@ -207,6 +207,7 @@ impl App {
         match event.event_type() {
             crate::events::EventType::Start => {
                 pane.claude_state = crate::instance::ClaudeState::Running;
+                self.kanban.move_task_to_in_progress_by_id(task_id);
             }
             crate::events::EventType::End => {
                 pane.claude_state = crate::instance::ClaudeState::Done;
