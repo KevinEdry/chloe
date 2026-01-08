@@ -1,0 +1,24 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "command": "git add .chloe/events/ && git commit -m \"Add event tracking files\" && git log --oneline -n 2",
+      "description": "Commit event files without pushing"
+    },
+    "tool_name": "Bash",
+    "tool_response": {
+      "interrupted": false,
+      "isImage": false,
+      "stderr": "",
+      "stdout": "[chloe/add-tui-name-and-version-to-footer-right-side 1906392] Add event tracking files\n 13 files changed, 247 insertions(+)\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767838248231915000-6dd943b3-b00f-4e44-b656-f353c692c7a6.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767838252610187000-64124cbc-272a-49c9-a4f9-89c6bd7f8bbf.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767838257085576000-04096437-1f91-492b-abb4-94d3de5b124e.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767838273046678000-465f8bc2-df33-4c78-9252-3d55c84ea540.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767838290583090000-5fbcfd49-aca7-44de-be6c-f12c983172e4.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767838306101807000-2da33fdc-5582-4794-9939-e31db36708c4.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767838322069764000-7e63069b-472e-41dd-baa2-ccd503895396.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767889851129704000-1c9832fa-ef85-42ad-8160-837b9c0be9cd.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767889868080954000-396d24f3-29d8-478b-866c-2c18ad3be8b7.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767889869018075000-da5e76bf-822b-4d82-83fe-d9e0faaa6c95.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767889881724343000-6b9e154e-5fcb-4733-a10d-fc71cd16e5f0.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767890073974957000-b38414a3-2f34-49da-8631-22a2f18857c0.json\n create mode 100644 .chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767890087001204000-7a032f51-81d1-439f-a4cb-c095044a48ac.json\n1906392 Add event tracking files\nca10cf3 Add TUI name and version to footer right side"
+    },
+    "tool_use_id": "toolu_01LGnFdK2qVVnTadDgTkRXuc",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767890094478163000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}

@@ -1,0 +1,24 @@
+{
+  "event": "start",
+  "hook_data": {
+    "cwd": "/Users/kedry/RustroverProjects/.chloe/chloe-add-tui-name-and-version-to-footer-right-side",
+    "hook_event_name": "PostToolUse",
+    "permission_mode": "default",
+    "session_id": "78c1d51b-b2fd-4a00-90b3-0e1b0950a74b",
+    "tool_input": {
+      "command": "git status",
+      "description": "Verify clean working directory"
+    },
+    "tool_name": "Bash",
+    "tool_response": {
+      "interrupted": false,
+      "isImage": false,
+      "stderr": "",
+      "stdout": "On branch chloe/add-tui-name-and-version-to-footer-right-side\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\t.chloe/events/3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4-1767890094478163000-d5be7c6b-07c7-4b0b-ab42-235e75476ad9.json\n\nnothing added to commit but untracked files present (use \"git add\" to track)"
+    },
+    "tool_use_id": "toolu_01VSVLbsG7zBZTKv1qvN6ksL",
+    "transcript_path": "/Users/kedry/.claude/projects/-Users-kedry-RustroverProjects--chloe-chloe-add-tui-name-and-version-to-footer-right-side/78c1d51b-b2fd-4a00-90b3-0e1b0950a74b.jsonl"
+  },
+  "timestamp": 1767890100405738000,
+  "worktree_id": "3a9bf1c3-b8ff-4fe0-b880-8858ca74a2c4"
+}
