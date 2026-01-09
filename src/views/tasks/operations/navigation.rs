@@ -63,7 +63,13 @@ impl TasksState {
                 if active_count == 0 {
                     return;
                 }
-                self.focus_active_index = (self.focus_active_index + 1).min(active_count - 1);
+                let is_at_last_active_task = self.focus_active_index >= active_count - 1;
+                if is_at_last_active_task && done_count > 0 {
+                    self.focus_panel = FocusPanel::DoneTasks;
+                    self.focus_done_index = 0;
+                } else {
+                    self.focus_active_index = (self.focus_active_index + 1).min(active_count - 1);
+                }
             }
             FocusPanel::DoneTasks => {
                 if done_count == 0 {
@@ -75,12 +81,20 @@ impl TasksState {
     }
 
     pub fn focus_select_previous(&mut self) {
+        let active_count = get_active_task_count(&self.columns);
+
         match self.focus_panel {
             FocusPanel::ActiveTasks => {
                 self.focus_active_index = self.focus_active_index.saturating_sub(1);
             }
             FocusPanel::DoneTasks => {
-                self.focus_done_index = self.focus_done_index.saturating_sub(1);
+                let is_at_first_done_task = self.focus_done_index == 0;
+                if is_at_first_done_task && active_count > 0 {
+                    self.focus_panel = FocusPanel::ActiveTasks;
+                    self.focus_active_index = active_count - 1;
+                } else {
+                    self.focus_done_index = self.focus_done_index.saturating_sub(1);
+                }
             }
         }
     }
