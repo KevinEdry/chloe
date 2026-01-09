@@ -1,28 +1,16 @@
+mod exit_confirmation;
+mod review_popup;
+
+pub use exit_confirmation::render_exit_confirmation_dialog;
+pub use review_popup::render_review_popup;
+
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::Color,
     widgets::Clear,
 };
 
-pub use crate::helpers::text::{truncate as truncate_string, wrap as wrap_text};
-pub use crate::widgets::claude_indicator::dot as get_claude_state_indicator_for_card;
-
 const PERCENTAGE_FULL: u16 = 100;
-
-pub const COLUMN_COLORS: [Color; 4] = [
-    Color::Cyan,    // Planning
-    Color::Yellow,  // In Progress
-    Color::Magenta, // Review
-    Color::Green,   // Done
-];
-
-pub const COLUMN_COLORS_SELECTED: [Color; 4] = [
-    Color::LightCyan,    // Planning
-    Color::LightYellow,  // In Progress
-    Color::LightMagenta, // Review
-    Color::LightGreen,   // Done
-];
 
 pub fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
     let popup_layout = Layout::default()

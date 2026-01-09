@@ -39,8 +39,8 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     match app.active_tab {
         Tab::Tasks => match app.tasks.view_mode {
-            TasksViewMode::Focus => tasks::focus::view::render(frame, app, layout.content),
-            TasksViewMode::Kanban => tasks::kanban::view::render(frame, app, layout.content),
+            TasksViewMode::Focus => tasks::views::focus::view::render(frame, app, layout.content),
+            TasksViewMode::Kanban => tasks::views::kanban::view::render(frame, app, layout.content),
         },
         Tab::Instances => instances::view::render(frame, &mut app.instances, layout.content),
         Tab::Roadmap => roadmap::view::render(frame, app, layout.content),
@@ -50,10 +50,10 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     let status_content = match app.active_tab {
         Tab::Tasks => match app.tasks.view_mode {
             TasksViewMode::Focus => {
-                tasks::focus::view::get_status_bar_content(app, layout.footer.width)
+                tasks::views::focus::view::get_status_bar_content(app, layout.footer.width)
             }
             TasksViewMode::Kanban => {
-                tasks::kanban::view::get_status_bar_content(app, layout.footer.width)
+                tasks::views::kanban::view::get_status_bar_content(app, layout.footer.width)
             }
         },
         Tab::Instances => {

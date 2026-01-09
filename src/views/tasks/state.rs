@@ -95,10 +95,6 @@ impl TasksState {
         };
     }
 
-    pub fn selected_column_mut(&mut self) -> &mut Column {
-        &mut self.columns[self.kanban_selected_column]
-    }
-
     pub fn get_kanban_selected_task(&self) -> Option<&Task> {
         self.kanban_selected_task
             .and_then(|index| self.columns[self.kanban_selected_column].tasks.get(index))
@@ -118,17 +114,6 @@ impl TasksState {
     pub fn find_task_by_id(&self, task_id: Uuid) -> Option<&Task> {
         for column in &self.columns {
             for task in &column.tasks {
-                if task.id == task_id {
-                    return Some(task);
-                }
-            }
-        }
-        None
-    }
-
-    pub fn find_task_by_id_mut(&mut self, task_id: Uuid) -> Option<&mut Task> {
-        for column in &mut self.columns {
-            for task in &mut column.tasks {
                 if task.id == task_id {
                     return Some(task);
                 }
