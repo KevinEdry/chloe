@@ -60,6 +60,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         .enumerate()
         .flat_map(|(index, name)| {
             let is_selected = index == selected_index;
+            let tab_number = index + 1;
             let color = if is_selected {
                 TAB_COLORS[index]
             } else {
@@ -75,19 +76,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
                 Style::default().fg(color)
             };
 
-            let bracket_style = Style::default().fg(color);
-
-            let mut spans = vec![];
-
-            if is_selected {
-                spans.push(Span::styled(format!(" {name} "), tab_style));
-            } else {
-                spans.push(Span::styled(" [", bracket_style));
-                spans.push(Span::styled(*name, tab_style));
-                spans.push(Span::styled("] ", bracket_style));
-            }
-
-            spans
+            vec![Span::styled(format!(" {tab_number}:{name} "), tab_style)]
         })
         .collect();
 
