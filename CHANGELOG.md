@@ -5,19 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-01-09
+## [0.1.1] - 2026-01-09
 
 ### Bug Fixes
 
 - Resolve clippy pedantic and nursery warnings by @KevinEdry
 - Resolve Rust 1.92 clippy warnings and add docs site by @KevinEdry
+- Correct committed.toml config format by @KevinEdry
+- Defer MDX theme components initialization for Vercel build by @KevinEdry
 
 ### Build
 
 - **deps:** Bump crossterm from 0.28.1 to 0.29.0 by @dependabot[bot]
 - **deps:** Bump git2 from 0.18.3 to 0.20.3 by @dependabot[bot]
 - **deps:** Bump portable-pty from 0.8.1 to 0.9.0 by @dependabot[bot]
-- **deps:** Bump ratatui from 0.29.0 to 0.30.0
+- **deps:** Bump ratatui from 0.29.0 to 0.30.0 by @dependabot[bot]
 
 ### CI/CD
 
@@ -32,11 +34,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump actions/checkout from 4 to 6 by @dependabot[bot]
 - Use macos-latest for x86_64 builds (macos-13 retired) by @KevinEdry
 - Use macos-15-intel for x86_64 builds (macos-13 retired) by @KevinEdry
+- Checkout PR head to avoid merge commit in lint by @KevinEdry
 
 ### Documentation
 
 - Update README and add CONTRIBUTING and CHANGELOG by @KevinEdry
-- Add vercel.json for Bun version config
+- Update CHANGELOG.md for v0.1.0 by @KevinEdry
+- Add tailwind css configuration by @KevinEdry
+- Add landing page components by @KevinEdry
+- Add demo video and logo assets by @KevinEdry
+- Add demo gif to README by @KevinEdry
+- Add Vercel configuration by @KevinEdry
 
 ### Features
 
@@ -48,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add docs/.next/ to gitignore by @KevinEdry
 - Increase commit subject max length to 100 by @KevinEdry
 - Add VHS demo recording script by @KevinEdry
+- Update demo recording script timing by @KevinEdry
+- Bump version to 0.1.1 and remove crates.io publish by @KevinEdry
 
 ### Refactoring
 
