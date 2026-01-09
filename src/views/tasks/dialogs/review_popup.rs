@@ -79,8 +79,7 @@ pub fn render_review_popup(
                 Style::default().fg(Color::DarkGray),
             )])
             .alignment(Alignment::Right),
-        )
-        .style(Style::default().bg(Color::Black));
+        );
 
     let inner_area = block.inner(chunks[0]);
     frame.render_widget(block, chunks[0]);

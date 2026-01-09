@@ -35,8 +35,7 @@ pub fn render_exit_confirmation_dialog(frame: &mut Frame, area: Rect) {
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
-        ))
-        .style(Style::default().bg(Color::Black));
+        ));
 
     frame.render_widget(block, dialog_area);
 
