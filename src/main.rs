@@ -17,6 +17,7 @@ mod app;
 mod cli;
 mod common;
 pub mod events;
+mod helpers;
 mod persistence;
 mod polling;
 mod types;
@@ -97,8 +98,11 @@ fn run_app<B: ratatui::backend::Backend>(
         if event::poll(std::time::Duration::from_millis(100))? {
             match event::read()? {
                 Event::Key(key) => {
-                    let instance_is_focused = app.active_tab == Tab::Instances
+                    let instances_terminal_focused = app.active_tab == Tab::Instances
                         && app.instances.mode == views::instances::InstanceMode::Focused;
+                    let focus_terminal_focused = app.active_tab == Tab::Focus
+                        && app.focus.mode == views::focus::FocusMode::TerminalFocused;
+                    let terminal_is_focused = instances_terminal_focused || focus_terminal_focused;
 
                     if app.showing_exit_confirmation {
                         match key.code {
@@ -115,42 +119,52 @@ fn run_app<B: ratatui::backend::Backend>(
 
                     match key.code {
                         KeyCode::Char('q') | KeyCode::Char('Q') => {
-                            if !instance_is_focused {
+                            if !terminal_is_focused {
                                 app.showing_exit_confirmation = true;
-                            } else {
+                            } else if instances_terminal_focused {
                                 views::instances::events::handle_key_event(&mut app.instances, key);
+                            } else {
+                                polling::process_focus_event(app, key);
                             }
                         }
                         KeyCode::Char('c')
                             if key.modifiers.contains(event::KeyModifiers::CONTROL) =>
                         {
-                            if !instance_is_focused {
+                            if !terminal_is_focused {
                                 app.showing_exit_confirmation = true;
-                            } else {
+                            } else if instances_terminal_focused {
                                 views::instances::events::handle_key_event(&mut app.instances, key);
+                            } else {
+                                polling::process_focus_event(app, key);
                             }
                         }
                         KeyCode::Tab | KeyCode::BackTab => {
-                            if !instance_is_focused && key.code == KeyCode::Tab {
-                                app.next_tab();
-                            } else {
+                            if !terminal_is_focused {
+                                match key.code {
+                                    KeyCode::Tab => app.next_tab(),
+                                    KeyCode::BackTab => app.previous_tab(),
+                                    _ => {}
+                                }
+                            } else if instances_terminal_focused {
                                 views::instances::events::handle_key_event(&mut app.instances, key);
+                            } else {
+                                polling::process_focus_event(app, key);
                             }
                         }
-                        KeyCode::Char('1') if !instance_is_focused => {
+                        KeyCode::Char('1') if !terminal_is_focused => {
+                            app.switch_tab(Tab::Focus);
+                        }
+                        KeyCode::Char('2') if !terminal_is_focused => {
                             app.switch_tab(Tab::Kanban);
                         }
-                        KeyCode::Char('2') if !instance_is_focused => {
+                        KeyCode::Char('3') if !terminal_is_focused => {
                             app.switch_tab(Tab::Instances);
                         }
-                        KeyCode::Char('3') if !instance_is_focused => {
+                        KeyCode::Char('4') if !terminal_is_focused => {
                             app.switch_tab(Tab::Roadmap);
                         }
-                        KeyCode::Char('4') if !instance_is_focused => {
+                        KeyCode::Char('5') if !terminal_is_focused => {
                             app.switch_tab(Tab::Worktree);
-                        }
-                        KeyCode::Char('5') if !instance_is_focused => {
-                            app.switch_tab(Tab::Focus);
                         }
                         _ => match app.active_tab {
                             Tab::Kanban => {

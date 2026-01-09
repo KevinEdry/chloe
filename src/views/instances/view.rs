@@ -1,6 +1,7 @@
 use super::InstanceState;
 use crate::views::StatusBarContent;
-use crate::widgets::terminal::{TerminalView, claude_state};
+use crate::widgets::claude_indicator;
+use crate::widgets::terminal::{Cursor, PseudoTerminal};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -98,7 +99,7 @@ fn render_pane(
             Modifier::empty()
         });
 
-    let (state_indicator, indicator_color) = claude_state::get_indicator_dot(pane.claude_state);
+    let (state_indicator, indicator_color) = claude_indicator::dot(pane.claude_state);
 
     let pane_name = if let Some(name) = &pane.name {
         name.clone()
@@ -137,13 +138,26 @@ fn render_pane(
     let inner_area = block.inner(area);
     f.render_widget(block, area);
 
-    if let Some(session) = &pane.pty_session {
-        f.render_widget(TerminalView::new(session), inner_area);
-    } else {
+    let Some(session) = &pane.pty_session else {
         let message = "PTY session failed to start";
         let text = Paragraph::new(message).style(Style::default().fg(Color::Red));
         f.render_widget(text, inner_area);
-    }
+        return;
+    };
+
+    let screen_mutex = session.screen();
+    let Ok(mut parser) = screen_mutex.lock() else {
+        return;
+    };
+
+    parser.set_scrollback(pane.scroll_offset);
+
+    let cursor = Cursor::default().visibility(is_focused);
+    let terminal = PseudoTerminal::new(parser.screen())
+        .cursor(cursor)
+        .scroll_offset(pane.scroll_offset);
+
+    f.render_widget(terminal, inner_area);
 }
 
 pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarContent {

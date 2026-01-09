@@ -1,5 +1,6 @@
 use crate::views::instances::InstancePane;
-use crate::widgets::terminal::{TerminalView, claude_state};
+use crate::widgets::claude_indicator;
+use crate::widgets::terminal::{Cursor, PseudoTerminal};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -8,7 +9,12 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-pub fn render(frame: &mut Frame, pane: Option<&InstancePane>, is_focused: bool, area: Rect) {
+pub fn render(
+    frame: &mut Frame,
+    pane: Option<&mut InstancePane>,
+    is_focused: bool,
+    area: Rect,
+) {
     let border_color = if is_focused {
         Color::Green
     } else {
@@ -35,8 +41,8 @@ pub fn render(frame: &mut Frame, pane: Option<&InstancePane>, is_focused: bool, 
             Style::default().fg(Color::Cyan)
         });
 
-    if let Some(pane) = pane {
-        let (indicator, color) = claude_state::get_indicator(pane.claude_state);
+    if let Some(pane) = &pane {
+        let (indicator, color) = claude_indicator::label(pane.claude_state);
         block = block.title_bottom(
             Line::from(vec![Span::styled(
                 format!(" {} ", indicator),
@@ -50,19 +56,46 @@ pub fn render(frame: &mut Frame, pane: Option<&InstancePane>, is_focused: bool, 
     frame.render_widget(block, area);
 
     match pane {
-        Some(pane) => render_pane_content(frame, pane, inner_area),
+        Some(pane) => render_pane_content(frame, pane, is_focused, inner_area),
         None => render_no_terminal(frame, inner_area),
     }
 }
 
-fn render_pane_content(frame: &mut Frame, pane: &InstancePane, area: Rect) {
-    if let Some(session) = &pane.pty_session {
-        frame.render_widget(TerminalView::new(session), area);
-    } else {
+fn render_pane_content(
+    frame: &mut Frame,
+    pane: &mut InstancePane,
+    is_focused: bool,
+    area: Rect,
+) {
+    let Some(session) = &mut pane.pty_session else {
         let message =
             Paragraph::new("PTY session not available").style(Style::default().fg(Color::Red));
         frame.render_widget(message, area);
+        return;
+    };
+
+    let desired_rows = area.height;
+    let desired_columns = area.width;
+
+    if pane.rows != desired_rows || pane.columns != desired_columns {
+        let _ = session.resize(desired_rows, desired_columns);
+        pane.rows = desired_rows;
+        pane.columns = desired_columns;
     }
+
+    let screen_mutex = session.screen();
+    let Ok(mut parser) = screen_mutex.lock() else {
+        return;
+    };
+
+    parser.set_scrollback(pane.scroll_offset);
+
+    let cursor = Cursor::default().visibility(is_focused);
+    let terminal = PseudoTerminal::new(parser.screen())
+        .cursor(cursor)
+        .scroll_offset(pane.scroll_offset);
+
+    frame.render_widget(terminal, area);
 }
 
 fn render_no_terminal(frame: &mut Frame, area: Rect) {

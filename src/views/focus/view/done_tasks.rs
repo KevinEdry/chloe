@@ -1,5 +1,6 @@
 use crate::app::App;
 use crate::views::focus::state::FocusPanel;
+use crate::widgets::task::TaskItem;
 use ratatui::{
     Frame,
     layout::{Alignment, Rect},
@@ -7,8 +8,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem},
 };
-
-const TITLE_ELLIPSIS_THRESHOLD: usize = 25;
 
 pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     let state = &app.focus;
@@ -98,48 +97,13 @@ fn create_task_item(
     task_type: crate::views::kanban::TaskType,
     is_selected: bool,
 ) -> ListItem<'static> {
-    let truncated_title = if title.len() > TITLE_ELLIPSIS_THRESHOLD {
-        format!("{}...", &title[..TITLE_ELLIPSIS_THRESHOLD])
-    } else {
-        title.to_string()
-    };
+    let mut item = TaskItem::new(title, task_type)
+        .selected(is_selected)
+        .selection_color(Color::Green);
 
-    let badge_text = task_type.badge_text();
+    if !is_selected {
+        item = item.badge_color(Color::DarkGray);
+    }
 
-    let title_color = if is_selected {
-        Color::White
-    } else {
-        Color::DarkGray
-    };
-
-    let badge_color = if is_selected {
-        Color::Green
-    } else {
-        Color::DarkGray
-    };
-
-    let spans = vec![
-        if is_selected {
-            Span::styled("▶ ", Style::default().fg(Color::Green))
-        } else {
-            Span::raw("  ")
-        },
-        Span::styled(
-            format!("[{}]", badge_text),
-            Style::default().fg(badge_color),
-        ),
-        Span::raw(" "),
-        Span::styled(
-            truncated_title,
-            Style::default()
-                .fg(title_color)
-                .add_modifier(if is_selected {
-                    Modifier::BOLD
-                } else {
-                    Modifier::empty()
-                }),
-        ),
-    ];
-
-    ListItem::new(Line::from(spans))
+    item.build()
 }

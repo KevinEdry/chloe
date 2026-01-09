@@ -1,6 +1,6 @@
 use crate::app::App;
 use crate::views::focus::state::FocusPanel;
-use crate::views::instances::ClaudeState;
+use crate::widgets::task::TaskItem;
 use ratatui::{
     Frame,
     layout::{Alignment, Rect},
@@ -8,8 +8,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem},
 };
-
-const TITLE_ELLIPSIS_THRESHOLD: usize = 25;
 
 pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     let state = &app.focus;
@@ -135,76 +133,10 @@ fn create_task_item(
     title: &str,
     task_type: crate::views::kanban::TaskType,
     is_selected: bool,
-    claude_state: Option<ClaudeState>,
+    claude_state: Option<crate::views::instances::ClaudeState>,
 ) -> ListItem<'static> {
-    let truncated_title = if title.len() > TITLE_ELLIPSIS_THRESHOLD {
-        format!("{}...", &title[..TITLE_ELLIPSIS_THRESHOLD])
-    } else {
-        title.to_string()
-    };
-
-    let badge_text = task_type.badge_text();
-    let badge_color = task_type.color();
-
-    let title_color = if is_selected {
-        Color::White
-    } else {
-        Color::Gray
-    };
-
-    let mut spans = vec![
-        if is_selected {
-            Span::styled("▶ ", Style::default().fg(Color::Cyan))
-        } else {
-            Span::raw("  ")
-        },
-        Span::styled(
-            format!("[{}]", badge_text),
-            Style::default().fg(badge_color),
-        ),
-        Span::raw(" "),
-        Span::styled(
-            truncated_title,
-            Style::default()
-                .fg(title_color)
-                .add_modifier(if is_selected {
-                    Modifier::BOLD
-                } else {
-                    Modifier::empty()
-                }),
-        ),
-    ];
-
-    if let Some(state) = claude_state {
-        let (indicator, color) = get_claude_state_indicator(state);
-        if !indicator.is_empty() {
-            spans.push(Span::raw(" "));
-            spans.push(Span::styled(
-                indicator.to_string(),
-                Style::default().fg(color),
-            ));
-        }
-    }
-
-    ListItem::new(Line::from(spans))
-}
-
-fn get_claude_state_indicator(state: ClaudeState) -> (&'static str, Color) {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    const BLINK_DURATION_MS: u128 = 500;
-    const BLINK_PHASES: u128 = 2;
-
-    let should_flash = match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => (duration.as_millis() / BLINK_DURATION_MS) % BLINK_PHASES == 0,
-        Err(_) => true,
-    };
-
-    match state {
-        ClaudeState::Idle => ("", Color::Gray),
-        ClaudeState::Running if should_flash => ("●", Color::Rgb(255, 165, 0)),
-        ClaudeState::Running => ("", Color::Rgb(255, 165, 0)),
-        ClaudeState::NeedsPermissions => ("●", Color::Rgb(138, 43, 226)),
-        ClaudeState::Done => ("●", Color::Green),
-    }
+    TaskItem::new(title, task_type)
+        .selected(is_selected)
+        .claude_state(claude_state)
+        .build()
 }

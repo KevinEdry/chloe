@@ -12,6 +12,7 @@ pub mod app;
 pub mod cli;
 pub mod common;
 pub mod events;
+pub mod helpers;
 pub mod persistence;
 pub mod types;
 pub mod views;
