@@ -42,11 +42,6 @@ impl WorktreeTabState {
         }
     }
 
-    #[must_use]
-    pub fn get_selected_worktree(&self) -> Option<&Worktree> {
-        self.selected_index.and_then(|i| self.worktrees.get(i))
-    }
-
     pub fn mark_needs_refresh(&mut self) {
         self.needs_initial_refresh = true;
     }

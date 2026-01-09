@@ -3,10 +3,6 @@ use super::traits::{Cell, Screen};
 use ratatui::{buffer::Cell as BufferCell, style::Modifier};
 
 impl Cell for vt100::Cell {
-    fn has_contents(&self) -> bool {
-        !self.contents().is_empty()
-    }
-
     fn apply(&self, cell: &mut BufferCell) {
         let contents = self.contents();
         if contents.is_empty() {

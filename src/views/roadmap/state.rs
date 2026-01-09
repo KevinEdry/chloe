@@ -52,11 +52,6 @@ impl RoadmapState {
     pub fn get_selected_item(&self) -> Option<&RoadmapItem> {
         self.selected_item.and_then(|index| self.items.get(index))
     }
-
-    pub fn get_selected_item_mut(&mut self) -> Option<&mut RoadmapItem> {
-        self.selected_item
-            .and_then(|index| self.items.get_mut(index))
-    }
 }
 
 impl Default for RoadmapState {
@@ -116,25 +111,6 @@ pub enum RoadmapStatus {
     Cancelled,
 }
 
-impl RoadmapStatus {
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Planned => "Planned",
-            Self::InProgress => "In Progress",
-            Self::Completed => "Completed",
-            Self::Cancelled => "Cancelled",
-        }
-    }
-
-    pub const fn color(self) -> Color {
-        match self {
-            Self::Planned => Color::Gray,
-            Self::InProgress => Color::Cyan,
-            Self::Completed => Color::Green,
-            Self::Cancelled => Color::Red,
-        }
-    }
-}
 
 impl Default for RoadmapStatus {
     fn default() -> Self {

@@ -43,11 +43,6 @@ impl TaskItem {
         self
     }
 
-    pub const fn title_max_length(mut self, length: usize) -> Self {
-        self.title_max_length = length;
-        self
-    }
-
     pub const fn selection_color(mut self, color: Color) -> Self {
         self.selection_color = color;
         self

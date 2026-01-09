@@ -88,12 +88,6 @@ pub enum MergeResult {
     Conflicts { conflicted_files: Vec<String> },
 }
 
-/// Check if the current directory is inside a git repository
-#[must_use]
-pub fn is_git_repository(path: &Path) -> bool {
-    Repository::discover(path).is_ok()
-}
-
 /// Get the default branch name (main or master) for the repository
 pub fn get_default_branch(repository_path: &Path) -> Result<String> {
     let repository = Repository::open(repository_path).context("Failed to open git repository")?;

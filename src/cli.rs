@@ -1,5 +1,3 @@
-#![allow(clippy::all, clippy::pedantic, clippy::nursery, clippy::restriction)]
-
 use clap::{Parser, Subcommand};
 use std::io::Read;
 use uuid::Uuid;

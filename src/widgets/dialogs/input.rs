@@ -25,11 +25,6 @@ impl<'a> InputDialog<'a> {
             style: DialogStyle::Normal,
         }
     }
-
-    pub const fn style(mut self, style: DialogStyle) -> Self {
-        self.style = style;
-        self
-    }
 }
 
 impl Widget for InputDialog<'_> {

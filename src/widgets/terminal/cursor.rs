@@ -22,32 +22,8 @@ impl Default for Cursor {
 }
 
 impl Cursor {
-    pub const fn new() -> Self {
-        Self {
-            visibility: true,
-            symbol: String::new(),
-            style: Style::new(),
-            blinking: true,
-        }
-    }
-
     pub const fn visibility(mut self, visibility: bool) -> Self {
         self.visibility = visibility;
-        self
-    }
-
-    pub fn symbol(mut self, symbol: impl Into<String>) -> Self {
-        self.symbol = symbol.into();
-        self
-    }
-
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
-    pub const fn blinking(mut self, blinking: bool) -> Self {
-        self.blinking = blinking;
         self
     }
 
