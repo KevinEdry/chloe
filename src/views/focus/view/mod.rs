@@ -7,7 +7,7 @@ use super::operations::{get_active_tasks, get_done_tasks};
 use super::state::{FocusMode, FocusPanel};
 use crate::app::App;
 use crate::views::StatusBarContent;
-use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, InputDialog};
+use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, InputDialog, LoadingDialog};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -22,7 +22,7 @@ const DETAILS_PANEL_PERCENT: u16 = 40;
 const TERMINAL_PANEL_PERCENT: u16 = 60;
 const STATUS_BAR_WIDTH_THRESHOLD: u16 = 80;
 
-pub fn render(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     let horizontal_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
@@ -53,14 +53,10 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     let selected_task = get_selected_task(app);
     details_panel::render(frame, selected_task.as_ref(), right_chunks[0]);
 
-    let instance_pane = selected_task
-        .and_then(|task_ref| task_ref.task.instance_id)
-        .and_then(|instance_id| {
-            app.instances
-                .panes
-                .iter()
-                .find(|pane| pane.id == instance_id)
-        });
+    let instance_id = selected_task.and_then(|task_ref| task_ref.task.instance_id);
+    let instance_pane = instance_id.and_then(|id| {
+        app.instances.panes.iter_mut().find(|pane| pane.id == id)
+    });
 
     let is_terminal_focused = matches!(app.focus.mode, FocusMode::TerminalFocused);
     terminal_panel::render(frame, instance_pane, is_terminal_focused, right_chunks[1]);
@@ -103,6 +99,9 @@ fn render_dialogs(frame: &mut Frame, mode: &FocusMode, area: Rect) {
                 area,
             );
         }
+        FocusMode::ClassifyingTask { raw_input } => {
+            frame.render_widget(LoadingDialog::new("Loading", raw_input), area);
+        }
         FocusMode::Normal | FocusMode::TerminalFocused => {}
     }
 }
@@ -120,6 +119,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         FocusMode::EditingTask { .. } => ("EDIT TASK", Color::Yellow),
         FocusMode::ConfirmDelete { .. } => ("DELETE", Color::Red),
         FocusMode::ConfirmStartTask { .. } => ("START", Color::Green),
+        FocusMode::ClassifyingTask { .. } => ("CLASSIFYING", Color::Yellow),
     };
 
     let active_count: usize = app
@@ -146,6 +146,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             FocusMode::ConfirmDelete { .. } | FocusMode::ConfirmStartTask { .. } => {
                 "y:confirm  n:cancel"
             }
+            FocusMode::ClassifyingTask { .. } => "Esc:cancel",
         }
     } else {
         match &state.mode {
@@ -159,6 +160,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             FocusMode::ConfirmDelete { .. } | FocusMode::ConfirmStartTask { .. } => {
                 "Press y to confirm, n or Esc to cancel"
             }
+            FocusMode::ClassifyingTask { .. } => "AI is classifying your task...  Esc:cancel",
         }
     };
 

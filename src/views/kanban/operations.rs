@@ -167,7 +167,11 @@ impl KanbanState {
     }
 
     fn try_create_worktree_for_task(&mut self, task_index: usize) {
-        let task = match self.columns[self.selected_column].tasks.get_mut(task_index) {
+        self.try_create_worktree_for_task_in_column(self.selected_column, task_index);
+    }
+
+    fn try_create_worktree_for_task_in_column(&mut self, column_index: usize, task_index: usize) {
+        let task = match self.columns.get_mut(column_index).and_then(|col| col.tasks.get_mut(task_index)) {
             Some(t) => t,
             None => return,
         };
@@ -460,6 +464,8 @@ impl KanbanState {
             return None;
         }
 
+        self.try_create_worktree_for_task_in_column(review_column_index, task_index);
+
         let task = self.columns[review_column_index].tasks.remove(task_index);
         let instance_id = task.instance_id;
         self.columns[in_progress_column_index].tasks.push(task);
@@ -499,7 +505,10 @@ impl KanbanState {
             return true;
         }
 
+        self.try_create_worktree_for_task_in_column(source_column_index, task_index);
+
         let task = self.columns[source_column_index].tasks.remove(task_index);
+        self.pending_instance_creation = Some(task.id);
         self.columns[in_progress_column_index].tasks.push(task);
 
         true

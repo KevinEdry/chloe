@@ -12,6 +12,18 @@ pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
         app.kanban.poll_classification();
     }
 
+    if app.active_tab == Tab::Focus {
+        let was_classifying =
+            matches!(app.focus.mode, views::focus::FocusMode::ClassifyingTask { .. });
+        app.kanban.poll_classification();
+        let is_still_classifying =
+            matches!(app.kanban.mode, views::kanban::KanbanMode::ClassifyingTask { .. });
+
+        if was_classifying && !is_still_classifying {
+            app.focus.mode = views::focus::FocusMode::Normal;
+        }
+    }
+
     if app.active_tab == Tab::Roadmap {
         app.roadmap.poll_generation();
         if app.roadmap.mode == views::roadmap::RoadmapMode::Generating {
@@ -128,11 +140,13 @@ pub fn process_focus_event(app: &mut App, key: KeyEvent) {
         }
         views::focus::FocusAction::SendToTerminal(instance_id, data) => {
             if !data.is_empty() {
-                app.instances
-                    .send_input_to_instance(instance_id, &String::from_utf8_lossy(&data));
+                app.instances.send_raw_input_to_instance(instance_id, &data);
             }
         }
         views::focus::FocusAction::CreateTask(title) => {
+            app.focus.mode = views::focus::FocusMode::ClassifyingTask {
+                raw_input: title.clone(),
+            };
             app.kanban.start_classification(title);
         }
         views::focus::FocusAction::UpdateTask { task_id, new_title } => {
@@ -149,6 +163,9 @@ pub fn process_focus_event(app: &mut App, key: KeyEvent) {
             app.kanban.move_task_to_in_progress_by_id(task_id);
             app.sync_task_instances();
             let _ = app.save();
+        }
+        views::focus::FocusAction::CancelClassification => {
+            app.kanban.cancel_classification();
         }
         views::focus::FocusAction::SaveState => {
             let _ = app.save();

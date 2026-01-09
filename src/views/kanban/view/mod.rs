@@ -70,7 +70,7 @@ pub fn get_status_bar_content(state: &KanbanState, width: u16) -> StatusBarConte
         KanbanMode::EditingTask { .. } => "EDIT TASK",
         KanbanMode::ConfirmDelete { .. } => "CONFIRM DELETE",
         KanbanMode::ConfirmMoveBack { .. } => "CONFIRM MOVE BACK",
-        KanbanMode::ClassifyingTask { .. } => "AI CLASSIFYING",
+        KanbanMode::ClassifyingTask { .. } => "LOADING",
         KanbanMode::ReviewPopup { .. } => "REVIEW OUTPUT",
         KanbanMode::ReviewRequestChanges { .. } => "REQUEST CHANGES",
     };
@@ -97,7 +97,7 @@ pub fn get_status_bar_content(state: &KanbanState, width: u16) -> StatusBarConte
             }
             KanbanMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
             KanbanMode::ConfirmMoveBack { .. } => "y:yes  n:no  Esc:cancel",
-            KanbanMode::ClassifyingTask { .. } => "Press Esc to cancel classification",
+            KanbanMode::ClassifyingTask { .. } => "Press Esc to cancel",
             KanbanMode::ReviewPopup { .. } => {
                 "jk:scroll  ←→/hl/Tab:select-button  Enter:execute-action  q/Esc:close"
             }

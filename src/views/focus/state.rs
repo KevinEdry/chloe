@@ -43,4 +43,5 @@ pub enum FocusMode {
     EditingTask { task_id: Uuid, input: String },
     ConfirmDelete { task_id: Uuid },
     ConfirmStartTask { task_id: Uuid },
+    ClassifyingTask { raw_input: String },
 }

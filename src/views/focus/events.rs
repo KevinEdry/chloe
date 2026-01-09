@@ -14,6 +14,7 @@ pub enum FocusAction {
     UpdateTask { task_id: Uuid, new_title: String },
     DeleteTask(Uuid),
     StartTask(Uuid),
+    CancelClassification,
     SaveState,
 }
 
@@ -55,6 +56,7 @@ pub fn handle_key_event(
         FocusMode::ConfirmStartTask { task_id } => {
             handle_confirm_start_task_mode(state, key, *task_id)
         }
+        FocusMode::ClassifyingTask { .. } => handle_classifying_task_mode(state, key),
     }
 }
 
@@ -262,6 +264,14 @@ fn handle_confirm_start_task_mode(
         }
         _ => FocusAction::None,
     }
+}
+
+fn handle_classifying_task_mode(state: &mut FocusState, key: KeyEvent) -> FocusAction {
+    if key.code == KeyCode::Esc {
+        state.mode = FocusMode::Normal;
+        return FocusAction::CancelClassification;
+    }
+    FocusAction::None
 }
 
 fn handle_terminal_focused_mode(

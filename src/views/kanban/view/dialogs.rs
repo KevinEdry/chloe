@@ -143,7 +143,7 @@ pub fn render_classifying_dialog(f: &mut Frame, raw_input: &str, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         )
         .title(Span::styled(
-            " AI Classification ",
+            " Loading ",
             Style::default()
                 .fg(Color::Magenta)
                 .add_modifier(Modifier::BOLD),
@@ -176,7 +176,7 @@ pub fn render_classifying_dialog(f: &mut Frame, raw_input: &str, area: Rect) {
                     .fg(Color::Magenta)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::raw(" Analyzing task with Claude..."),
+            Span::raw(" Processing..."),
         ]),
         Line::from(""),
         Line::from(vec![
