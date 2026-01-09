@@ -204,4 +204,21 @@ impl InstanceState {
 
         false
     }
+
+    pub fn send_raw_input_to_instance(&mut self, instance_id: uuid::Uuid, data: &[u8]) -> bool {
+        let pane = match self.panes.iter_mut().find(|p| p.id == instance_id) {
+            Some(p) => p,
+            None => return false,
+        };
+
+        pane.scroll_to_bottom();
+
+        if let Some(session) = &mut pane.pty_session {
+            if session.write_input(data).is_ok() {
+                return true;
+            }
+        }
+
+        false
+    }
 }

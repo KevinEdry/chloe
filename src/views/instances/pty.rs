@@ -56,7 +56,12 @@ impl PtySession {
             }
         });
 
-        let parser = Arc::new(Mutex::new(vt100::Parser::new(rows, columns, 0)));
+        const SCROLLBACK_LINES: usize = 1000;
+        let parser = Arc::new(Mutex::new(vt100::Parser::new(
+            rows,
+            columns,
+            SCROLLBACK_LINES,
+        )));
 
         Ok(Self {
             parser,
@@ -100,6 +105,14 @@ impl PtySession {
 
     pub fn screen(&self) -> Arc<Mutex<vt100::Parser>> {
         Arc::clone(&self.parser)
+    }
+
+    pub fn scrollback_len(&self) -> usize {
+        if let Ok(parser) = self.parser.lock() {
+            parser.screen().scrollback()
+        } else {
+            0
+        }
     }
 
     pub fn write_input(&mut self, data: &[u8]) -> anyhow::Result<()> {

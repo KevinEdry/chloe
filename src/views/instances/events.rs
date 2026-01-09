@@ -29,10 +29,50 @@ fn handle_navigation_mode(state: &mut InstanceState, key: KeyEvent) {
     }
 }
 
+const SCROLL_LINES: usize = 3;
+const PAGE_SCROLL_LINES: usize = 10;
+
 fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
     if key.code == KeyCode::Esc {
         state.mode = InstanceMode::Normal;
         return;
+    }
+
+    let has_shift = key.modifiers.contains(KeyModifiers::SHIFT);
+    if has_shift {
+        match key.code {
+            KeyCode::PageUp => {
+                if let Some(pane) = state.selected_pane_mut() {
+                    pane.scroll_up(PAGE_SCROLL_LINES);
+                }
+                return;
+            }
+            KeyCode::PageDown => {
+                if let Some(pane) = state.selected_pane_mut() {
+                    pane.scroll_down(PAGE_SCROLL_LINES);
+                }
+                return;
+            }
+            KeyCode::Home => {
+                if let Some(pane) = state.selected_pane_mut() {
+                    if let Some(session) = &pane.pty_session {
+                        pane.scroll_offset = session.scrollback_len();
+                    }
+                }
+                return;
+            }
+            KeyCode::End => {
+                if let Some(pane) = state.selected_pane_mut() {
+                    pane.scroll_to_bottom();
+                }
+                return;
+            }
+            _ => {}
+        }
+    }
+
+    if let Some(pane) = state.selected_pane_mut() {
+        pane.scroll_to_bottom();
     }
 
     send_input_to_instance(state, key);
@@ -102,17 +142,11 @@ pub fn handle_mouse_event(state: &mut InstanceState, mouse: MouseEvent) {
         return;
     };
 
-    let Some(session) = &mut pane.pty_session else {
-        return;
+    match mouse.kind {
+        MouseEventKind::ScrollUp => pane.scroll_up(SCROLL_LINES),
+        MouseEventKind::ScrollDown => pane.scroll_down(SCROLL_LINES),
+        _ => {}
     };
-
-    const SCROLL_LINES: u8 = 3;
-    let scroll_data = match mouse.kind {
-        MouseEventKind::ScrollUp => format!("\x1b[{}A", SCROLL_LINES).into_bytes(),
-        MouseEventKind::ScrollDown => format!("\x1b[{}B", SCROLL_LINES).into_bytes(),
-        _ => return,
-    };
-    let _ = session.write_input(&scroll_data);
 }
 
 fn find_pane_at_position(

@@ -62,6 +62,8 @@ pub struct InstancePane {
     pub claude_state: ClaudeState,
     #[serde(skip, default)]
     pub output_buffer: String,
+    #[serde(skip, default)]
+    pub scroll_offset: usize,
 }
 
 impl InstancePane {
@@ -75,7 +77,23 @@ impl InstancePane {
             pty_session: None,
             claude_state: ClaudeState::Idle,
             output_buffer: String::new(),
+            scroll_offset: 0,
         }
+    }
+
+    pub fn scroll_up(&mut self, lines: usize) {
+        if let Some(session) = &self.pty_session {
+            let scrollback_len = session.scrollback_len();
+            self.scroll_offset = (self.scroll_offset + lines).min(scrollback_len);
+        }
+    }
+
+    pub fn scroll_down(&mut self, lines: usize) {
+        self.scroll_offset = self.scroll_offset.saturating_sub(lines);
+    }
+
+    pub fn scroll_to_bottom(&mut self) {
+        self.scroll_offset = 0;
     }
 }
 
