@@ -39,6 +39,13 @@ fn main() -> Result<(), io::Error> {
     let cli = Cli::parse();
 
     match cli.command {
+        Some(Commands::Init) => {
+            if let Err(error) = cli::handle_init_command() {
+                eprintln!("Error: {error}");
+                std::process::exit(1);
+            }
+            return Ok(());
+        }
         Some(Commands::Notify {
             event_type,
             worktree_id,

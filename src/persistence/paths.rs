@@ -1,10 +1,10 @@
-// Placeholder for config directory paths
+use std::env;
 use std::path::PathBuf;
 
 pub fn get_config_dir() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("chloe")
+    env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(".chloe")
 }
 
 pub fn get_state_path() -> PathBuf {
