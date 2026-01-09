@@ -10,17 +10,20 @@ pub struct ClaudeIndicator {
 }
 
 impl ClaudeIndicator {
+    #[must_use]
     pub const fn new(state: ClaudeState) -> Self {
         Self { state }
     }
 
     fn should_blink() -> bool {
-        match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(duration) => (duration.as_millis() / BLINK_DURATION_MS) % BLINK_PHASES == 0,
-            Err(_) => true,
-        }
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(true, |duration| {
+                (duration.as_millis() / BLINK_DURATION_MS) % BLINK_PHASES == 0
+            })
     }
 
+    #[must_use]
     pub fn label(&self) -> (&'static str, Color) {
         let should_blink = Self::should_blink();
 
@@ -33,6 +36,7 @@ impl ClaudeIndicator {
         }
     }
 
+    #[must_use]
     pub fn dot(&self) -> (&'static str, Color) {
         let should_blink = Self::should_blink();
 
@@ -45,6 +49,7 @@ impl ClaudeIndicator {
         }
     }
 
+    #[must_use]
     pub fn dot_visible(&self) -> (&'static str, Color) {
         let should_blink = Self::should_blink();
 
@@ -58,14 +63,17 @@ impl ClaudeIndicator {
     }
 }
 
+#[must_use]
 pub fn label(state: ClaudeState) -> (&'static str, Color) {
     ClaudeIndicator::new(state).label()
 }
 
+#[must_use]
 pub fn dot(state: ClaudeState) -> (&'static str, Color) {
     ClaudeIndicator::new(state).dot()
 }
 
+#[must_use]
 pub fn dot_visible(state: ClaudeState) -> (&'static str, Color) {
     ClaudeIndicator::new(state).dot_visible()
 }

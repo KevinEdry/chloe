@@ -40,7 +40,7 @@ pub fn handle_notify_command(event_type: String, worktree_id: Uuid) -> Result<()
         .as_nanos();
 
     let hook_data_value = serde_json::from_str::<serde_json::Value>(&hook_data)
-        .unwrap_or_else(|_| serde_json::Value::String(hook_data));
+        .unwrap_or(serde_json::Value::String(hook_data));
 
     let event = crate::events::HookEvent {
         event: event_type,

@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-pub fn convert_vt100_color(color: vt100::Color) -> Color {
+pub const fn convert_vt100_color(color: vt100::Color) -> Color {
     match color {
         vt100::Color::Default => Color::Reset,
         vt100::Color::Idx(idx) => convert_indexed_color(idx),
@@ -8,7 +8,7 @@ pub fn convert_vt100_color(color: vt100::Color) -> Color {
     }
 }
 
-fn convert_indexed_color(idx: u8) -> Color {
+const fn convert_indexed_color(idx: u8) -> Color {
     match idx {
         0 => Color::Black,
         1 => Color::Red,

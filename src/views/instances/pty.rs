@@ -1,7 +1,7 @@
 use portable_pty::{Child, CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySystem};
 use std::io::{Read, Write};
 use std::path::Path;
-use std::sync::mpsc::{Receiver, TryRecvError, channel};
+use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -12,6 +12,8 @@ pub struct PtySession {
     receiver: Receiver<Vec<u8>>,
     child: Option<Box<dyn Child + Send>>,
 }
+
+const SCROLLBACK_LINES: usize = 1000;
 
 impl PtySession {
     pub fn spawn(working_directory: &Path, rows: u16, columns: u16) -> anyhow::Result<Self> {
@@ -45,18 +47,16 @@ impl PtySession {
             let mut buffer = [0u8; 4096];
             loop {
                 match reader.read(&mut buffer) {
-                    Ok(0) => break,
+                    Ok(0) | Err(_) => break,
                     Ok(bytes_read) => {
                         if sender.send(buffer[..bytes_read].to_vec()).is_err() {
                             break;
                         }
                     }
-                    Err(_) => break,
                 }
             }
         });
 
-        const SCROLLBACK_LINES: usize = 1000;
         let parser = Arc::new(Mutex::new(vt100::Parser::new(
             rows,
             columns,
@@ -72,7 +72,7 @@ impl PtySession {
         })
     }
 
-    pub fn resize(&mut self, rows: u16, columns: u16) -> anyhow::Result<()> {
+    pub fn resize(&self, rows: u16, columns: u16) -> anyhow::Result<()> {
         let pty_size = PtySize {
             rows,
             cols: columns,
@@ -88,31 +88,24 @@ impl PtySession {
         Ok(())
     }
 
-    pub fn read_output(&mut self) -> anyhow::Result<()> {
-        loop {
-            match self.receiver.try_recv() {
-                Ok(data) => {
-                    if let Ok(mut parser) = self.parser.lock() {
-                        parser.process(&data);
-                    }
-                }
-                Err(TryRecvError::Empty) => break,
-                Err(TryRecvError::Disconnected) => break,
+    pub fn read_output(&self) {
+        while let Ok(data) = self.receiver.try_recv() {
+            if let Ok(mut parser) = self.parser.lock() {
+                parser.process(&data);
             }
         }
-        Ok(())
     }
 
+    #[must_use]
     pub fn screen(&self) -> Arc<Mutex<vt100::Parser>> {
         Arc::clone(&self.parser)
     }
 
+    #[must_use]
     pub fn scrollback_len(&self) -> usize {
-        if let Ok(parser) = self.parser.lock() {
-            parser.screen().scrollback()
-        } else {
-            0
-        }
+        self.parser
+            .lock()
+            .map_or(0, |parser| parser.screen().scrollback())
     }
 
     pub fn write_input(&mut self, data: &[u8]) -> anyhow::Result<()> {

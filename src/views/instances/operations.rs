@@ -101,9 +101,8 @@ impl InstanceState {
     }
 
     pub fn close_pane_by_id(&mut self, instance_id: uuid::Uuid) -> bool {
-        let index = match self.panes.iter().position(|pane| pane.id == instance_id) {
-            Some(i) => i,
-            None => return false,
+        let Some(index) = self.panes.iter().position(|pane| pane.id == instance_id) else {
+            return false;
         };
 
         self.panes.remove(index);
@@ -119,7 +118,7 @@ impl InstanceState {
         true
     }
 
-    pub fn next_pane(&mut self) {
+    pub const fn next_pane(&mut self) {
         if self.panes.is_empty() {
             return;
         }
@@ -127,7 +126,7 @@ impl InstanceState {
         self.selected_pane = (self.selected_pane + 1) % self.panes.len();
     }
 
-    pub fn previous_pane(&mut self) {
+    pub const fn previous_pane(&mut self) {
         if self.panes.is_empty() {
             return;
         }
@@ -141,8 +140,8 @@ impl InstanceState {
 
     pub fn poll_pty_output(&mut self) {
         for pane in &mut self.panes {
-            if let Some(session) = &mut pane.pty_session {
-                let _ = session.read_output();
+            if let Some(session) = &pane.pty_session {
+                session.read_output();
             }
         }
 
@@ -155,9 +154,8 @@ impl InstanceState {
     }
 
     fn capture_output_buffer(pane: &mut InstancePane) {
-        let session = match &pane.pty_session {
-            Some(s) => s,
-            None => return,
+        let Some(session) = &pane.pty_session else {
+            return;
         };
 
         if let Ok(parser) = session.screen().lock() {
@@ -190,13 +188,12 @@ impl InstanceState {
     }
 
     pub fn send_input_to_instance(&mut self, instance_id: uuid::Uuid, input: &str) -> bool {
-        let pane = match self.panes.iter_mut().find(|p| p.id == instance_id) {
-            Some(p) => p,
-            None => return false,
+        let Some(pane) = self.panes.iter_mut().find(|p| p.id == instance_id) else {
+            return false;
         };
 
         if let Some(session) = &mut pane.pty_session {
-            let input_with_enter = format!("{}\r", input);
+            let input_with_enter = format!("{input}\r");
             if session.write_input(input_with_enter.as_bytes()).is_ok() {
                 return true;
             }
@@ -206,9 +203,8 @@ impl InstanceState {
     }
 
     pub fn send_raw_input_to_instance(&mut self, instance_id: uuid::Uuid, data: &[u8]) -> bool {
-        let pane = match self.panes.iter_mut().find(|p| p.id == instance_id) {
-            Some(p) => p,
-            None => return false,
+        let Some(pane) = self.panes.iter_mut().find(|p| p.id == instance_id) else {
+            return false;
         };
 
         pane.scroll_to_bottom();

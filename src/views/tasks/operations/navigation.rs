@@ -6,10 +6,10 @@ impl TasksState {
         if self.kanban_selected_column < self.columns.len() - 1 {
             self.kanban_selected_column += 1;
 
-            if !self.columns[self.kanban_selected_column].tasks.is_empty() {
-                self.kanban_selected_task = Some(0);
-            } else {
+            if self.columns[self.kanban_selected_column].tasks.is_empty() {
                 self.kanban_selected_task = None;
+            } else {
+                self.kanban_selected_task = Some(0);
             }
         }
     }
@@ -18,10 +18,10 @@ impl TasksState {
         if self.kanban_selected_column > 0 {
             self.kanban_selected_column -= 1;
 
-            if !self.columns[self.kanban_selected_column].tasks.is_empty() {
-                self.kanban_selected_task = Some(0);
-            } else {
+            if self.columns[self.kanban_selected_column].tasks.is_empty() {
                 self.kanban_selected_task = None;
+            } else {
+                self.kanban_selected_task = Some(0);
             }
         }
     }

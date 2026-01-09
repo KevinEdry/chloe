@@ -5,7 +5,6 @@
 //! This crate forbids ALL unsafe code.
 
 #![forbid(unsafe_code)]
-#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 // Re-export main modules for testing
 pub mod app;

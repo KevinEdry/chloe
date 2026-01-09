@@ -8,9 +8,8 @@ impl TasksState {
             return;
         }
 
-        let task_index = match self.kanban_selected_task {
-            Some(index) => index,
-            None => return,
+        let Some(task_index) = self.kanban_selected_task else {
+            return;
         };
 
         let is_entering_in_progress =
@@ -22,13 +21,12 @@ impl TasksState {
         let done_column_index = 3;
         let is_entering_done = self.kanban_selected_column + 1 == done_column_index;
 
-        let mut task = match self.columns[self.kanban_selected_column]
+        let Some(mut task) = self.columns[self.kanban_selected_column]
             .tasks
             .get(task_index)
             .cloned()
-        {
-            Some(task) => task,
-            None => return,
+        else {
+            return;
         };
 
         if is_entering_in_progress {
@@ -58,17 +56,15 @@ impl TasksState {
             return;
         }
 
-        let task_index = match self.kanban_selected_task {
-            Some(index) => index,
-            None => return,
+        let Some(task_index) = self.kanban_selected_task else {
+            return;
         };
 
-        let task = match self.columns[self.kanban_selected_column]
+        let Some(task) = self.columns[self.kanban_selected_column]
             .tasks
             .get(task_index)
-        {
-            Some(task) => task,
-            None => return,
+        else {
+            return;
         };
 
         let is_in_progress_column = self.kanban_selected_column == 1;
@@ -88,18 +84,16 @@ impl TasksState {
             return;
         }
 
-        let task_index = match self.kanban_selected_task {
-            Some(index) => index,
-            None => return,
+        let Some(task_index) = self.kanban_selected_task else {
+            return;
         };
 
-        let task = match self.columns[self.kanban_selected_column]
+        let Some(task) = self.columns[self.kanban_selected_column]
             .tasks
             .get(task_index)
             .cloned()
-        {
-            Some(task) => task,
-            None => return,
+        else {
+            return;
         };
 
         if let Some(instance_id) = task.instance_id {
@@ -140,9 +134,8 @@ impl TasksState {
             .iter()
             .position(|task| task.instance_id == Some(instance_id));
 
-        let task_index = match task_index {
-            Some(index) => index,
-            None => return false,
+        let Some(task_index) = task_index else {
+            return false;
         };
 
         let task = in_progress_column.tasks.remove(task_index);
@@ -155,14 +148,12 @@ impl TasksState {
         let review_column_index = 2;
         let done_column_index = 3;
 
-        let task_index = self
+        let Some(task_index) = self
             .columns
             .get(review_column_index)
-            .and_then(|column| column.tasks.iter().position(|task| task.id == task_id));
-
-        let task_index = match task_index {
-            Some(index) => index,
-            None => return false,
+            .and_then(|column| column.tasks.iter().position(|task| task.id == task_id))
+        else {
+            return false;
         };
 
         if self.columns.len() <= done_column_index {
@@ -173,10 +164,10 @@ impl TasksState {
 
         let has_worktree_to_merge = task.worktree_info.is_some();
         if has_worktree_to_merge {
-            let merge_result = self.try_merge_worktree(task);
+            let merge_result = Self::try_merge_worktree(task);
 
             match merge_result {
-                Some(crate::views::worktree::MergeResult::Success) => {}
+                Some(crate::views::worktree::MergeResult::Success) | None => {}
                 Some(crate::views::worktree::MergeResult::Conflicts { conflicted_files }) => {
                     let conflict_message = format!(
                         "Merge conflicts detected in the following files:\n{}\n\nPlease resolve these conflicts and commit the changes.",
@@ -185,12 +176,11 @@ impl TasksState {
                     self.pending_change_request = Some((task_id, conflict_message));
                     return false;
                 }
-                None => {}
             }
         }
 
         let task = &self.columns[review_column_index].tasks[task_index];
-        self.try_cleanup_worktree(task);
+        Self::try_cleanup_worktree(task);
 
         let mut task = self.columns[review_column_index].tasks.remove(task_index);
 
@@ -246,10 +236,7 @@ impl TasksState {
                     .map(|task_index| (column_index, task_index))
             });
 
-        let (source_column_index, task_index) = match task_location {
-            Some(location) => location,
-            None => return None,
-        };
+        let (source_column_index, task_index) = task_location?;
 
         let is_already_in_progress = source_column_index == in_progress_column_index;
         if is_already_in_progress {

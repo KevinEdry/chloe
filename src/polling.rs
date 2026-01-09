@@ -68,10 +68,10 @@ pub fn process_tasks_pending_actions(app: &mut App) {
     app.sync_task_instances();
 }
 
-pub fn process_roadmap_action(app: &mut App, action: views::roadmap::events::RoadmapAction) {
+pub fn process_roadmap_action(app: &mut App, action: &views::roadmap::events::RoadmapAction) {
     match action {
         views::roadmap::events::RoadmapAction::ConvertToTask(item_index) => {
-            app.convert_roadmap_item_to_task(item_index);
+            app.convert_roadmap_item_to_task(*item_index);
             app.active_tab = Tab::Tasks;
         }
         views::roadmap::events::RoadmapAction::SaveState => {

@@ -21,6 +21,7 @@ pub struct TaskItem {
 }
 
 impl TaskItem {
+    #[must_use]
     pub fn new(title: impl Into<String>, task_type: TaskType) -> Self {
         Self {
             title: title.into(),
@@ -33,31 +34,37 @@ impl TaskItem {
         }
     }
 
+    #[must_use]
     pub const fn selected(mut self, is_selected: bool) -> Self {
         self.is_selected = is_selected;
         self
     }
 
+    #[must_use]
     pub const fn claude_state(mut self, state: Option<ClaudeState>) -> Self {
         self.claude_state = state;
         self
     }
 
+    #[must_use]
     pub const fn selection_color(mut self, color: Color) -> Self {
         self.selection_color = color;
         self
     }
 
+    #[must_use]
     pub const fn badge_color(mut self, color: Color) -> Self {
         self.badge_color_override = Some(color);
         self
     }
 
+    #[must_use]
     pub const fn title_max_length(mut self, length: usize) -> Self {
         self.title_max_length = length;
         self
     }
 
+    #[must_use]
     pub fn build(self) -> ListItem<'static> {
         let truncated_title = text::truncate(&self.title, self.title_max_length);
 

@@ -19,6 +19,7 @@ pub struct ConfirmDialog<'a> {
 }
 
 impl<'a> ConfirmDialog<'a> {
+    #[must_use]
     pub fn new(title: &'a str, message: &'a str) -> Self {
         Self {
             title,
@@ -27,6 +28,7 @@ impl<'a> ConfirmDialog<'a> {
         }
     }
 
+    #[must_use]
     pub const fn style(mut self, style: DialogStyle) -> Self {
         self.style = style;
         self

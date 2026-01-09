@@ -49,14 +49,14 @@ pub fn render(f: &mut Frame, app: &App, area: Rect) {
     }
 }
 
+#[must_use]
 pub fn get_status_bar_content(state: &RoadmapState, width: u16) -> StatusBarContent {
     let mode_color = match &state.mode {
         RoadmapMode::Normal => Color::Cyan,
         RoadmapMode::AddingItem { .. } => Color::Green,
         RoadmapMode::EditingItem { .. } => Color::Yellow,
         RoadmapMode::ConfirmDelete { .. } => Color::Red,
-        RoadmapMode::ConvertToTask { .. } => Color::Magenta,
-        RoadmapMode::Generating => Color::Magenta,
+        RoadmapMode::ConvertToTask { .. } | RoadmapMode::Generating => Color::Magenta,
     };
 
     let mode_text = match &state.mode {
@@ -74,8 +74,7 @@ pub fn get_status_bar_content(state: &RoadmapState, width: u16) -> StatusBarCont
             RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {
                 "Enter:save  Esc:cancel"
             }
-            RoadmapMode::ConfirmDelete { .. } => "y:yes  n:no",
-            RoadmapMode::ConvertToTask { .. } => "y:yes  n:no",
+            RoadmapMode::ConfirmDelete { .. } | RoadmapMode::ConvertToTask { .. } => "y:yes  n:no",
             RoadmapMode::Generating => "Esc:cancel",
         }
     } else {
@@ -86,8 +85,9 @@ pub fn get_status_bar_content(state: &RoadmapState, width: u16) -> StatusBarCont
             RoadmapMode::AddingItem { .. } | RoadmapMode::EditingItem { .. } => {
                 "Type to enter text  Enter:save  Esc:cancel"
             }
-            RoadmapMode::ConfirmDelete { .. } => "y:yes  n:no  Esc:cancel",
-            RoadmapMode::ConvertToTask { .. } => "y:yes  n:no  Esc:cancel",
+            RoadmapMode::ConfirmDelete { .. } | RoadmapMode::ConvertToTask { .. } => {
+                "y:yes  n:no  Esc:cancel"
+            }
             RoadmapMode::Generating => "AI is analyzing your project... Press Esc to cancel",
         }
     };

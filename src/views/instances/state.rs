@@ -14,7 +14,8 @@ pub struct InstanceState {
 }
 
 impl InstanceState {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             panes: Vec::new(),
             selected_pane: 0,
@@ -67,6 +68,7 @@ pub struct InstancePane {
 }
 
 impl InstancePane {
+    #[must_use]
     pub fn new(working_directory: PathBuf, rows: u16, columns: u16) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -88,11 +90,11 @@ impl InstancePane {
         }
     }
 
-    pub fn scroll_down(&mut self, lines: usize) {
+    pub const fn scroll_down(&mut self, lines: usize) {
         self.scroll_offset = self.scroll_offset.saturating_sub(lines);
     }
 
-    pub fn scroll_to_bottom(&mut self) {
+    pub const fn scroll_to_bottom(&mut self) {
         self.scroll_offset = 0;
     }
 }

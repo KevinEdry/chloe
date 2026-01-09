@@ -29,7 +29,7 @@ impl TasksState {
                         task.description = description;
                     }
                     if let Some(new_type) = task_type {
-                        task.task_type = new_type;
+                        task.kind = new_type;
                     }
                     return true;
                 }

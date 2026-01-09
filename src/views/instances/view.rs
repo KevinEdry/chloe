@@ -60,7 +60,7 @@ fn render_panes(f: &mut Frame, state: &mut InstanceState, area: Rect) {
         let desired_columns = inner_area.width;
 
         if pane.rows != desired_rows || pane.columns != desired_columns {
-            if let Some(session) = &mut pane.pty_session {
+            if let Some(session) = &pane.pty_session {
                 let _ = session.resize(desired_rows, desired_columns);
             }
             pane.rows = desired_rows;
@@ -101,11 +101,10 @@ fn render_pane(
 
     let (state_indicator, indicator_color) = claude_indicator::dot(pane.claude_state);
 
-    let pane_name = if let Some(name) = &pane.name {
-        name.clone()
-    } else {
-        format!("Pane {}", index + 1)
-    };
+    let pane_name = pane
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("Pane {}", index + 1));
 
     let title_prefix = if is_focused {
         "● "
@@ -117,7 +116,7 @@ fn render_pane(
 
     let title_spans = vec![
         Span::styled(
-            format!("{}{} ", title_prefix, pane_name),
+            format!("{title_prefix}{pane_name} "),
             Style::default()
                 .fg(border_color)
                 .add_modifier(Modifier::BOLD),
@@ -160,6 +159,7 @@ fn render_pane(
     f.render_widget(terminal, inner_area);
 }
 
+#[must_use]
 pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarContent {
     let (mode_text, mode_color) = match state.mode {
         super::InstanceMode::Normal => ("NAVIGATE", Color::Cyan),
@@ -196,7 +196,7 @@ pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarCon
     StatusBarContent {
         mode_text: mode_text.to_string(),
         mode_color,
-        extra_info: Some(format!("Panes: {}  Layout: {}  ", pane_count, layout_name)),
+        extra_info: Some(format!("Panes: {pane_count}  Layout: {layout_name}  ")),
         help_text: help_text.to_string(),
     }
 }

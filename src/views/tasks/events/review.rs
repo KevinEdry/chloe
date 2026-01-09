@@ -117,9 +117,8 @@ pub fn handle_review_request_changes_mode(
     key: KeyEvent,
     task_id: Uuid,
 ) -> TasksAction {
-    let input = match &mut state.mode {
-        TasksMode::ReviewRequestChanges { input, .. } => input,
-        _ => return TasksAction::None,
+    let TasksMode::ReviewRequestChanges { input, .. } = &mut state.mode else {
+        return TasksAction::None;
     };
 
     match key.code {

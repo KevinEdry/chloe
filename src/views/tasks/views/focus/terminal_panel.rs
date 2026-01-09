@@ -40,7 +40,7 @@ pub fn render(frame: &mut Frame, pane: Option<&mut InstancePane>, is_focused: bo
         let (indicator, color) = claude_indicator::label(pane.claude_state);
         block = block.title_bottom(
             Line::from(vec![Span::styled(
-                format!(" {} ", indicator),
+                format!(" {indicator} "),
                 Style::default().fg(color).add_modifier(Modifier::BOLD),
             )])
             .right_aligned(),

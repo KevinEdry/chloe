@@ -18,7 +18,8 @@ pub struct InputDialog<'a> {
 }
 
 impl<'a> InputDialog<'a> {
-    pub fn new(title: &'a str, input: &'a str) -> Self {
+    #[must_use]
+    pub const fn new(title: &'a str, input: &'a str) -> Self {
         Self {
             title,
             input,

@@ -29,6 +29,7 @@ pub struct App {
 }
 
 impl App {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             active_tab: Tab::Tasks,
@@ -41,6 +42,7 @@ impl App {
         }
     }
 
+    #[must_use]
     pub fn load_or_default() -> Self {
         match crate::persistence::storage::load_state() {
             Ok(mut app) => {
@@ -151,23 +153,24 @@ impl App {
             if let Some(instance_id) = task.instance_id {
                 self.active_tab = Tab::Instances;
                 return self.instances.select_pane_by_id(instance_id);
-            } else {
-                let instance_id = self.instances.create_pane_for_task(
-                    &task_title,
-                    &task_description,
-                    working_directory,
-                    DEFAULT_PTY_ROWS,
-                    DEFAULT_PTY_COLUMNS,
-                );
-                self.tasks.link_task_to_instance(task_id, instance_id);
-                self.active_tab = Tab::Instances;
-                self.instances.mode = crate::views::instances::InstanceMode::Focused;
-                return true;
             }
+
+            let instance_id = self.instances.create_pane_for_task(
+                &task_title,
+                &task_description,
+                working_directory,
+                DEFAULT_PTY_ROWS,
+                DEFAULT_PTY_COLUMNS,
+            );
+            self.tasks.link_task_to_instance(task_id, instance_id);
+            self.active_tab = Tab::Instances;
+            self.instances.mode = crate::views::instances::InstanceMode::Focused;
+            return true;
         }
         false
     }
 
+    #[must_use]
     pub fn get_instance_claude_state(
         &self,
         instance_id: uuid::Uuid,
@@ -232,6 +235,7 @@ impl App {
         }
     }
 
+    #[must_use]
     pub fn get_instance_output(&self, instance_id: uuid::Uuid) -> Option<&str> {
         self.instances
             .panes
@@ -314,29 +318,24 @@ impl App {
     }
 
     pub fn merge_task_branch(&mut self, task_id: uuid::Uuid) {
-        let task = match self.tasks.find_task_by_id(task_id) {
-            Some(task) => task,
-            None => return,
+        let Some(task) = self.tasks.find_task_by_id(task_id) else {
+            return;
         };
 
-        let worktree_info = match &task.worktree_info {
-            Some(info) => info.clone(),
-            None => {
-                self.tasks.move_task_to_done_by_id(task_id);
-                let _ = self.save();
-                return;
-            }
+        let Some(worktree_info) = &task.worktree_info else {
+            self.tasks.move_task_to_done_by_id(task_id);
+            let _ = self.save();
+            return;
+        };
+        let worktree_info = worktree_info.clone();
+
+        let Ok(current_directory) = std::env::current_dir() else {
+            return;
         };
 
-        let current_directory = match std::env::current_dir() {
-            Ok(directory) => directory,
-            Err(_) => return,
-        };
-
-        let repository_root = match crate::views::worktree::find_repository_root(&current_directory)
-        {
-            Ok(root) => root,
-            Err(_) => return,
+        let Ok(repository_root) = crate::views::worktree::find_repository_root(&current_directory)
+        else {
+            return;
         };
 
         let has_conflicts =
@@ -376,25 +375,22 @@ impl App {
     }
 
     pub fn resolve_task_conflicts(&mut self, task_id: uuid::Uuid) {
-        let task = match self.tasks.find_task_by_id(task_id) {
-            Some(task) => task,
-            None => return,
+        let Some(task) = self.tasks.find_task_by_id(task_id) else {
+            return;
         };
 
-        let worktree_info = match &task.worktree_info {
-            Some(info) => info.clone(),
-            None => return,
+        let Some(worktree_info) = &task.worktree_info else {
+            return;
+        };
+        let worktree_info = worktree_info.clone();
+
+        let Ok(current_directory) = std::env::current_dir() else {
+            return;
         };
 
-        let current_directory = match std::env::current_dir() {
-            Ok(directory) => directory,
-            Err(_) => return,
-        };
-
-        let repository_root = match crate::views::worktree::find_repository_root(&current_directory)
-        {
-            Ok(root) => root,
-            Err(_) => return,
+        let Ok(repository_root) = crate::views::worktree::find_repository_root(&current_directory)
+        else {
+            return;
         };
 
         let conflicts =

@@ -12,7 +12,7 @@ impl WorktreeTabState {
         }
     }
 
-    fn handle_normal_mode(&mut self, key: KeyEvent) -> bool {
+    const fn handle_normal_mode(&mut self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Char('j') | KeyCode::Down => {
                 self.select_next();
@@ -43,12 +43,12 @@ impl WorktreeTabState {
 
     fn handle_confirm_delete_mode(&mut self, key: KeyEvent, worktree_index: usize) -> bool {
         match key.code {
-            KeyCode::Char('y') | KeyCode::Char('Y') => {
+            KeyCode::Char('y' | 'Y') => {
                 self.delete_worktree_at_index(worktree_index);
                 self.mode = WorktreeMode::Normal;
                 true
             }
-            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+            KeyCode::Char('n' | 'N') | KeyCode::Esc => {
                 self.mode = WorktreeMode::Normal;
                 true
             }
@@ -56,7 +56,7 @@ impl WorktreeTabState {
         }
     }
 
-    fn select_next(&mut self) {
+    const fn select_next(&mut self) {
         if self.worktrees.is_empty() {
             self.selected_index = None;
             return;
@@ -69,7 +69,7 @@ impl WorktreeTabState {
         });
     }
 
-    fn select_previous(&mut self) {
+    const fn select_previous(&mut self) {
         if self.worktrees.is_empty() {
             self.selected_index = None;
             return;

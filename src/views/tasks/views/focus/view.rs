@@ -128,6 +128,7 @@ fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
     }
 }
 
+#[must_use]
 pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
     let state = &app.tasks;
 
@@ -153,11 +154,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         .take(3)
         .map(|column| column.tasks.len())
         .sum();
-    let done_count = state
-        .columns
-        .get(3)
-        .map(|column| column.tasks.len())
-        .unwrap_or(0);
+    let done_count = state.columns.get(3).map_or(0, |column| column.tasks.len());
 
     let view_indicator = match state.view_mode {
         TasksViewMode::Focus => "[Focus]",
@@ -204,8 +201,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         mode_text: mode_text.to_string(),
         mode_color,
         extra_info: Some(format!(
-            "{} Active: {}  Done: {}  ",
-            view_indicator, active_count, done_count
+            "{view_indicator} Active: {active_count}  Done: {done_count}  "
         )),
         help_text: help_text.to_string(),
     }

@@ -6,6 +6,7 @@ use crate::views::tasks::state::{FocusPanel, ReviewAction, TasksMode, TasksState
 use crossterm::event::{KeyCode, KeyEvent};
 use uuid::Uuid;
 
+#[allow(clippy::too_many_lines)]
 pub fn handle_focus_normal_mode(
     state: &mut TasksState,
     key: KeyEvent,
@@ -76,12 +77,10 @@ pub fn handle_focus_normal_mode(
                     };
                     TasksAction::None
                 } else if is_in_progress {
-                    if let Some(instance_id) = selected_instance_id {
+                    selected_instance_id.map_or(TasksAction::None, |instance_id| {
                         state.enter_terminal_mode();
                         TasksAction::SendToTerminal(instance_id, Vec::new())
-                    } else {
-                        TasksAction::None
-                    }
+                    })
                 } else if is_review {
                     state.mode = TasksMode::ReviewPopup {
                         task_id: task_ref.task.id,
@@ -97,11 +96,7 @@ pub fn handle_focus_normal_mode(
             }
         }
         KeyCode::Char('t') => {
-            if let Some(instance_id) = selected_instance_id {
-                TasksAction::JumpToInstance(instance_id)
-            } else {
-                TasksAction::None
-            }
+            selected_instance_id.map_or(TasksAction::None, TasksAction::JumpToInstance)
         }
         KeyCode::Char('s') => {
             if let Some(task_ref) = selected_task {

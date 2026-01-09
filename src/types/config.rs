@@ -24,6 +24,7 @@ pub enum IdeCommand {
 }
 
 impl IdeCommand {
+    #[must_use]
     pub fn detect() -> Self {
         if std::process::Command::new("cursor")
             .arg("--version")
@@ -52,6 +53,7 @@ impl IdeCommand {
         Self::Cursor
     }
 
+    #[must_use]
     pub fn command_name(&self) -> &str {
         match self {
             Self::Cursor => "cursor",
@@ -70,6 +72,7 @@ pub enum TerminalCommand {
 }
 
 impl TerminalCommand {
+    #[must_use]
     pub const fn detect() -> Self {
         Self::AppleTerminal
     }

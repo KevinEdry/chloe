@@ -12,6 +12,7 @@ use ratatui::{
 
 const PERCENTAGE_FULL: u16 = 100;
 
+#[must_use]
 pub fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)

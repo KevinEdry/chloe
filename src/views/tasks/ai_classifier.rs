@@ -22,6 +22,7 @@ impl Clone for ClassificationRequest {
 }
 
 impl ClassificationRequest {
+    #[must_use]
     pub fn spawn(raw_input: String) -> Self {
         let (sender, receiver) = channel();
 
@@ -37,7 +38,7 @@ impl ClassificationRequest {
         let prompt = format!(
             r#"Classify this task description and respond with ONLY valid JSON (no markdown, no explanation):
 
-User input: "{}"
+User input: "{raw_input}"
 
 Output format:
 {{
@@ -52,22 +53,20 @@ Rules:
 - task: general work item
 - chore: maintenance, refactoring, docs
 
-Output JSON only:"#,
-            raw_input
+Output JSON only:"#
         );
 
         let output = std::process::Command::new("claude")
             .arg(&prompt)
             .output()
             .map_err(|error| {
-                crate::types::AppError::Config(format!("Failed to run claude CLI: {}", error))
+                crate::types::AppError::Config(format!("Failed to run claude CLI: {error}"))
             })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(crate::types::AppError::Config(format!(
-                "claude CLI failed: {}",
-                stderr
+                "claude CLI failed: {stderr}"
             )));
         }
 
@@ -76,7 +75,7 @@ Output JSON only:"#,
         let json_string = Self::extract_json(&stdout)?;
 
         let classified: ClassifiedTask = serde_json::from_str(&json_string).map_err(|error| {
-            crate::types::AppError::Config(format!("Failed to parse JSON: {}", error))
+            crate::types::AppError::Config(format!("Failed to parse JSON: {error}"))
         })?;
 
         Ok(classified)
@@ -94,6 +93,7 @@ Output JSON only:"#,
         ))
     }
 
+    #[must_use]
     pub fn try_recv(&self) -> Option<Result<ClassifiedTask>> {
         self.receiver.try_recv().ok()
     }

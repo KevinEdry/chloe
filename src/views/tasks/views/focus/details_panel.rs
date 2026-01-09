@@ -42,9 +42,9 @@ fn render_task_details(frame: &mut Frame, task_ref: &TaskReference<'_>, area: Re
         Line::from(vec![
             Span::styled("Type: ", Style::default().fg(Color::DarkGray)),
             Span::styled(
-                task.task_type.badge_text(),
+                task.kind.badge_text(),
                 Style::default()
-                    .fg(task.task_type.color())
+                    .fg(task.kind.color())
                     .add_modifier(Modifier::BOLD),
             ),
             Span::raw("  "),

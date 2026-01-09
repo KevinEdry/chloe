@@ -10,10 +10,8 @@ pub fn handle_key_event(state: &mut InstanceState, key: KeyEvent) {
 
 fn handle_navigation_mode(state: &mut InstanceState, key: KeyEvent) {
     match key.code {
-        KeyCode::Left => state.previous_pane(),
-        KeyCode::Right => state.next_pane(),
-        KeyCode::Up => state.previous_pane(),
-        KeyCode::Down => state.next_pane(),
+        KeyCode::Left | KeyCode::Up => state.previous_pane(),
+        KeyCode::Right | KeyCode::Down => state.next_pane(),
         KeyCode::Enter => {
             if !state.panes.is_empty() {
                 state.mode = InstanceMode::Focused;
@@ -146,7 +144,7 @@ pub fn handle_mouse_event(state: &mut InstanceState, mouse: MouseEvent) {
         MouseEventKind::ScrollUp => pane.scroll_up(SCROLL_LINES),
         MouseEventKind::ScrollDown => pane.scroll_down(SCROLL_LINES),
         _ => {}
-    };
+    }
 }
 
 fn find_pane_at_position(

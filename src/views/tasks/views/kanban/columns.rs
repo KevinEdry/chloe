@@ -21,8 +21,11 @@ pub fn render_columns(frame: &mut Frame, app: &App, area: Rect) {
     let state = &app.tasks;
     let column_count = state.columns.len();
 
+    #[allow(clippy::cast_possible_truncation)]
+    let column_count_u32 = column_count as u32;
+
     let constraints = if area.width < COLUMN_WIDTH_THRESHOLD {
-        vec![Constraint::Ratio(1, column_count as u32); column_count]
+        vec![Constraint::Ratio(1, column_count_u32); column_count]
     } else {
         vec![Constraint::Percentage(COLUMN_WIDTH_PERCENT); column_count]
     };
@@ -95,15 +98,13 @@ pub fn render_columns(frame: &mut Frame, app: &App, area: Rect) {
         let available_height = inner_area.height;
         let cards_that_fit = (available_height / card_height) as usize;
 
-        let start_index = if let Some(selected_index) = state.kanban_selected_task {
+        let start_index = state.kanban_selected_task.map_or(0, |selected_index| {
             if is_selected {
                 selected_index.saturating_sub(cards_that_fit / 2)
             } else {
                 0
             }
-        } else {
-            0
-        };
+        });
 
         let visible_tasks = column
             .tasks
@@ -136,16 +137,14 @@ pub fn render_columns(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_selected: bool) {
-    let badge_color = task.task_type.color();
+    let badge_color = task.kind.color();
     let created = task.created_at.format("%Y/%m/%d-%H:%M:%S").to_string();
 
     let title_max_width = area.width.saturating_sub(4) as usize;
 
-    let claude_indicator = if let Some(instance_id) = task.instance_id {
-        app.get_instance_claude_state(instance_id)
-    } else {
-        None
-    };
+    let claude_indicator = task
+        .instance_id
+        .and_then(|instance_id| app.get_instance_claude_state(instance_id));
 
     let border_color = if is_selected {
         Color::White
@@ -170,7 +169,7 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
     let mut title_spans = vec![
         Span::raw(" "),
         Span::styled(
-            format!("[{}]", task.task_type.badge_text()),
+            format!("[{}]", task.kind.badge_text()),
             Style::default()
                 .fg(badge_color)
                 .add_modifier(Modifier::BOLD),
@@ -182,7 +181,7 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
         if state != crate::views::instances::ClaudeState::Idle {
             let (indicator, color) = get_claude_state_indicator_for_card(state);
             title_spans.push(Span::styled(
-                format!("{} ", indicator),
+                format!("{indicator} "),
                 Style::default().fg(color).add_modifier(Modifier::BOLD),
             ));
         }
@@ -219,7 +218,7 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
             wrapped_lines.iter().take(max_description_lines).enumerate()
         {
             let line_text = if has_more && index == max_description_lines - 1 {
-                format!("{}...", description_line)
+                format!("{description_line}...")
             } else {
                 description_line.clone()
             };
@@ -233,7 +232,7 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
     }
 
     lines.push(Line::from(Span::styled(
-        format!("Created: {}", created),
+        format!("Created: {created}"),
         Style::default().fg(Color::DarkGray),
     )));
 

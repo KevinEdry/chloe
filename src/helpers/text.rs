@@ -1,3 +1,4 @@
+#[must_use]
 pub fn truncate(text: &str, max_length: usize) -> String {
     if text.len() <= max_length {
         text.to_string()
@@ -8,6 +9,7 @@ pub fn truncate(text: &str, max_length: usize) -> String {
     }
 }
 
+#[must_use]
 pub fn wrap(text: &str, max_width: usize) -> Vec<String> {
     let mut lines = Vec::new();
     let words: Vec<&str> = text.split_whitespace().collect();
@@ -20,7 +22,7 @@ pub fn wrap(text: &str, max_width: usize) -> Vec<String> {
 
     for word in words {
         let word_length = word.len();
-        let space_length = if current_line.is_empty() { 0 } else { 1 };
+        let space_length = usize::from(!current_line.is_empty());
 
         if current_line.len() + space_length + word_length <= max_width {
             if !current_line.is_empty() {

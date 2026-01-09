@@ -74,7 +74,7 @@ fn handle_normal_mode(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction 
             }
             RoadmapAction::None
         }
-        KeyCode::Char('g') | KeyCode::Char('G') => RoadmapAction::GenerateRoadmap,
+        KeyCode::Char('g' | 'G') => RoadmapAction::GenerateRoadmap,
         _ => RoadmapAction::None,
     }
 }
@@ -168,12 +168,12 @@ fn handle_confirm_delete(
     item_index: usize,
 ) -> RoadmapAction {
     match key.code {
-        KeyCode::Char('y') | KeyCode::Char('Y') => {
+        KeyCode::Char('y' | 'Y') => {
             state.delete_item(item_index);
             state.mode = RoadmapMode::Normal;
             RoadmapAction::SaveState
         }
-        KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+        KeyCode::Char('n' | 'N') | KeyCode::Esc => {
             state.mode = RoadmapMode::Normal;
             RoadmapAction::None
         }
@@ -187,11 +187,11 @@ fn handle_convert_to_task(
     item_index: usize,
 ) -> RoadmapAction {
     match key.code {
-        KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => {
+        KeyCode::Char('y' | 'Y') | KeyCode::Enter => {
             state.mode = RoadmapMode::Normal;
             RoadmapAction::ConvertToTask(item_index)
         }
-        KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+        KeyCode::Char('n' | 'N') | KeyCode::Esc => {
             state.mode = RoadmapMode::Normal;
             RoadmapAction::None
         }

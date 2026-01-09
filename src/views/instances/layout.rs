@@ -1,7 +1,7 @@
 use super::LayoutMode;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
-/// Calculate pane layouts based on the layout mode and number of panes
+#[must_use]
 pub fn calculate_pane_areas(area: Rect, layout_mode: LayoutMode, pane_count: usize) -> Vec<Rect> {
     if pane_count == 0 {
         return Vec::new();
@@ -20,8 +20,9 @@ fn horizontal_split(area: Rect, pane_count: usize) -> Vec<Rect> {
         return Vec::new();
     }
 
+    let pane_count_u32 = u32::try_from(pane_count).unwrap_or(u32::MAX);
     let constraints: Vec<Constraint> = (0..pane_count)
-        .map(|_| Constraint::Ratio(1, pane_count as u32))
+        .map(|_| Constraint::Ratio(1, pane_count_u32))
         .collect();
 
     Layout::default()
@@ -36,8 +37,9 @@ fn vertical_split(area: Rect, pane_count: usize) -> Vec<Rect> {
         return Vec::new();
     }
 
+    let pane_count_u32 = u32::try_from(pane_count).unwrap_or(u32::MAX);
     let constraints: Vec<Constraint> = (0..pane_count)
-        .map(|_| Constraint::Ratio(1, pane_count as u32))
+        .map(|_| Constraint::Ratio(1, pane_count_u32))
         .collect();
 
     Layout::default()
@@ -52,12 +54,17 @@ fn grid_layout(area: Rect, pane_count: usize) -> Vec<Rect> {
         return Vec::new();
     }
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     let grid_size = ((pane_count as f64).sqrt().ceil() as usize).max(1);
-    let rows = (pane_count + grid_size - 1) / grid_size;
+    let rows = pane_count.div_ceil(grid_size);
 
-    let row_constraints: Vec<Constraint> = (0..rows)
-        .map(|_| Constraint::Ratio(1, rows as u32))
-        .collect();
+    let rows_u32 = u32::try_from(rows).unwrap_or(u32::MAX);
+    let row_constraints: Vec<Constraint> =
+        (0..rows).map(|_| Constraint::Ratio(1, rows_u32)).collect();
 
     let row_areas = Layout::default()
         .direction(Direction::Vertical)
@@ -69,8 +76,9 @@ fn grid_layout(area: Rect, pane_count: usize) -> Vec<Rect> {
 
     for row_area in row_areas.iter() {
         let columns_in_row = remaining_panes.min(grid_size);
+        let columns_in_row_u32 = u32::try_from(columns_in_row).unwrap_or(u32::MAX);
         let column_constraints: Vec<Constraint> = (0..columns_in_row)
-            .map(|_| Constraint::Ratio(1, columns_in_row as u32))
+            .map(|_| Constraint::Ratio(1, columns_in_row_u32))
             .collect();
 
         let column_areas = Layout::default()

@@ -41,16 +41,13 @@ pub fn render_review_popup(
 
     let task = app.tasks.find_task_by_id(task_id);
 
-    let output_text = if let Some(task) = task {
-        if let Some(instance_id) = task.instance_id {
-            app.get_instance_output(instance_id)
-                .unwrap_or("No output available")
-        } else {
-            "No instance associated with this task"
-        }
-    } else {
-        "Task not found"
-    };
+    let output_text = task.map_or("Task not found", |task| {
+        task.instance_id
+            .map_or("No instance associated with this task", |instance_id| {
+                app.get_instance_output(instance_id)
+                    .unwrap_or("No output available")
+            })
+    });
 
     let output_lines: Vec<&str> = output_text.lines().collect();
     let total_lines = output_lines.len();

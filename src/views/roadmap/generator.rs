@@ -53,14 +53,13 @@ impl RoadmapGenerationRequest {
             .arg(&prompt)
             .output()
             .map_err(|e| {
-                crate::types::AppError::Config(format!("Failed to run claude CLI: {}", e))
+                crate::types::AppError::Config(format!("Failed to run claude CLI: {e}"))
             })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(crate::types::AppError::Config(format!(
-                "claude CLI failed: {}",
-                stderr
+                "claude CLI failed: {stderr}"
             )));
         }
 
@@ -69,7 +68,7 @@ impl RoadmapGenerationRequest {
         let json_str = Self::extract_json(&stdout)?;
 
         let roadmap: GeneratedRoadmap = serde_json::from_str(&json_str)
-            .map_err(|e| crate::types::AppError::Config(format!("Failed to parse JSON: {}", e)))?;
+            .map_err(|e| crate::types::AppError::Config(format!("Failed to parse JSON: {e}")))?;
 
         Ok(roadmap)
     }
@@ -80,7 +79,7 @@ impl RoadmapGenerationRequest {
 
 # Your Task
 
-Analyze the project at: {}
+Analyze the project at: {project_path}
 
 Perform these phases autonomously:
 
@@ -145,8 +144,7 @@ Requirements:
 - Be specific and actionable in descriptions
 - Consider both short-term wins and long-term strategic features
 
-Output JSON only:"#,
-            project_path
+Output JSON only:"#
         )
     }
 
@@ -168,7 +166,7 @@ Output JSON only:"#,
 }
 
 impl GeneratedRoadmapItem {
-    pub fn to_roadmap_item(self) -> RoadmapItem {
+    pub fn into_roadmap_item(self) -> RoadmapItem {
         let priority = match self.priority.to_lowercase().as_str() {
             "high" => RoadmapPriority::High,
             "low" => RoadmapPriority::Low,

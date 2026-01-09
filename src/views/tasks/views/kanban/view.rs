@@ -68,20 +68,19 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     }
 }
 
+#[must_use]
 pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
     let state = &app.tasks;
 
     let mode_color = match &state.mode {
-        TasksMode::Normal => Color::Cyan,
-        TasksMode::TerminalFocused => Color::Green,
-        TasksMode::AddingTask { .. } => Color::Green,
-        TasksMode::EditingTask { .. } => Color::Yellow,
+        TasksMode::Normal | TasksMode::ReviewPopup { .. } => Color::Cyan,
+        TasksMode::TerminalFocused
+        | TasksMode::AddingTask { .. }
+        | TasksMode::ConfirmStartTask { .. } => Color::Green,
+        TasksMode::EditingTask { .. } | TasksMode::ReviewRequestChanges { .. } => Color::Yellow,
         TasksMode::ConfirmDelete { .. } => Color::Red,
         TasksMode::ConfirmMoveBack { .. } => Color::LightRed,
-        TasksMode::ConfirmStartTask { .. } => Color::Green,
         TasksMode::ClassifyingTask { .. } => Color::Magenta,
-        TasksMode::ReviewPopup { .. } => Color::Cyan,
-        TasksMode::ReviewRequestChanges { .. } => Color::Yellow,
     };
 
     let mode_text = match &state.mode {
@@ -106,14 +105,13 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         match &state.mode {
             TasksMode::Normal => "hjkl/arrows:navigate  a:add  e:edit  d:delete  /:view",
             TasksMode::ClassifyingTask { .. } => "Esc:cancel",
-            TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
-                "Enter:save  Esc:cancel"
-            }
+            TasksMode::AddingTask { .. }
+            | TasksMode::EditingTask { .. }
+            | TasksMode::ReviewRequestChanges { .. } => "Enter:save  Esc:cancel",
             TasksMode::ConfirmDelete { .. }
             | TasksMode::ConfirmMoveBack { .. }
             | TasksMode::ConfirmStartTask { .. } => "y:yes  n:no",
             TasksMode::ReviewPopup { .. } => "jk:scroll  hl/Tab:button  Enter:action",
-            TasksMode::ReviewRequestChanges { .. } => "Enter:save  Esc:cancel",
             TasksMode::TerminalFocused => "Esc:back",
         }
     } else {
@@ -141,7 +139,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
     StatusBarContent {
         mode_text: mode_text.to_string(),
         mode_color,
-        extra_info: Some(format!("{} ", view_indicator)),
+        extra_info: Some(format!("{view_indicator} ")),
         help_text: help_text.to_string(),
     }
 }

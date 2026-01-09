@@ -11,7 +11,6 @@
 //! This ensures memory safety, thread safety, and eliminates entire classes of bugs.
 
 #![forbid(unsafe_code)]
-#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 mod app;
 mod cli;
@@ -44,7 +43,7 @@ fn main() -> Result<(), io::Error> {
                 eprintln!("Error: {error}");
                 std::process::exit(1);
             }
-            return Ok(());
+            Ok(())
         }
         Some(Commands::Notify {
             event_type,
@@ -54,11 +53,9 @@ fn main() -> Result<(), io::Error> {
                 eprintln!("Error handling notify command: {error}");
                 std::process::exit(1);
             }
-            return Ok(());
+            Ok(())
         }
-        None => {
-            return run_tui();
-        }
+        None => run_tui(),
     }
 }
 
@@ -92,6 +89,7 @@ fn run_tui() -> Result<(), io::Error> {
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
@@ -116,10 +114,10 @@ fn run_app<B: ratatui::backend::Backend>(
 
                     if app.showing_exit_confirmation {
                         match key.code {
-                            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                            KeyCode::Char('y' | 'Y') => {
                                 return Ok(());
                             }
-                            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                            KeyCode::Char('n' | 'N') | KeyCode::Esc => {
                                 app.showing_exit_confirmation = false;
                             }
                             _ => {}
@@ -128,7 +126,7 @@ fn run_app<B: ratatui::backend::Backend>(
                     }
 
                     match key.code {
-                        KeyCode::Char('q') | KeyCode::Char('Q') => {
+                        KeyCode::Char('q' | 'Q') => {
                             if !terminal_is_focused {
                                 app.showing_exit_confirmation = true;
                             } else if instances_terminal_focused {
@@ -191,7 +189,7 @@ fn run_app<B: ratatui::backend::Backend>(
                             Tab::Roadmap => {
                                 let action =
                                     views::roadmap::events::handle_key_event(&mut app.roadmap, key);
-                                polling::process_roadmap_action(app, action);
+                                polling::process_roadmap_action(app, &action);
                             }
                             Tab::Worktree => {
                                 app.worktree.handle_key_event(key);

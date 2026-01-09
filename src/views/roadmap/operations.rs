@@ -23,13 +23,15 @@ impl RoadmapState {
         self.items.sort_by(|a, b| {
             use std::cmp::Ordering;
             match (a.priority, b.priority) {
-                (RoadmapPriority::High, RoadmapPriority::High) => Ordering::Equal,
-                (RoadmapPriority::High, _) => Ordering::Less,
-                (_, RoadmapPriority::High) => Ordering::Greater,
-                (RoadmapPriority::Medium, RoadmapPriority::Medium) => Ordering::Equal,
-                (RoadmapPriority::Medium, RoadmapPriority::Low) => Ordering::Less,
-                (RoadmapPriority::Low, RoadmapPriority::Medium) => Ordering::Greater,
-                (RoadmapPriority::Low, RoadmapPriority::Low) => Ordering::Equal,
+                (RoadmapPriority::High, RoadmapPriority::High)
+                | (RoadmapPriority::Medium, RoadmapPriority::Medium)
+                | (RoadmapPriority::Low, RoadmapPriority::Low) => Ordering::Equal,
+                (RoadmapPriority::High, _) | (RoadmapPriority::Medium, RoadmapPriority::Low) => {
+                    Ordering::Less
+                }
+                (_, RoadmapPriority::High) | (RoadmapPriority::Low, RoadmapPriority::Medium) => {
+                    Ordering::Greater
+                }
             }
         });
     }
@@ -71,7 +73,7 @@ impl RoadmapState {
         }
     }
 
-    pub fn select_next(&mut self) {
+    pub const fn select_next(&mut self) {
         if self.items.is_empty() {
             self.selected_item = None;
             return;
@@ -84,7 +86,7 @@ impl RoadmapState {
         });
     }
 
-    pub fn select_previous(&mut self) {
+    pub const fn select_previous(&mut self) {
         if self.items.is_empty() {
             self.selected_item = None;
             return;
@@ -92,8 +94,7 @@ impl RoadmapState {
 
         self.selected_item = Some(match self.selected_item {
             Some(current) if current > 0 => current - 1,
-            Some(_) => 0,
-            None => 0,
+            Some(_) | None => 0,
         });
     }
 
@@ -108,11 +109,8 @@ impl RoadmapState {
                 self.generation_request = None;
                 self.mode = super::state::RoadmapMode::Normal;
 
-                match result {
-                    Ok(generated) => {
-                        self.apply_generated_roadmap(generated);
-                    }
-                    Err(_) => {}
+                if let Ok(generated) = result {
+                    self.apply_generated_roadmap(generated);
                 }
             }
         }
@@ -120,7 +118,7 @@ impl RoadmapState {
 
     fn apply_generated_roadmap(&mut self, generated: GeneratedRoadmap) {
         for generated_item in generated.items {
-            let item = generated_item.to_roadmap_item();
+            let item = generated_item.into_roadmap_item();
             self.items.push(item);
         }
 

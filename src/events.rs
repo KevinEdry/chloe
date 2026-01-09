@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
-use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
+use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread;
 use uuid::Uuid;
 
@@ -26,10 +26,10 @@ pub enum EventType {
 impl From<&str> for EventType {
     fn from(string: &str) -> Self {
         match string {
-            "start" => EventType::Start,
-            "end" => EventType::End,
-            "permission" => EventType::Permission,
-            other => EventType::Unknown(other.to_string()),
+            "start" => Self::Start,
+            "end" => Self::End,
+            "permission" => Self::Permission,
+            other => Self::Unknown(other.to_string()),
         }
     }
 }
@@ -41,6 +41,7 @@ impl HookEvent {
     }
 }
 
+#[must_use]
 pub fn get_socket_path() -> PathBuf {
     std::env::temp_dir().join("chloe.sock")
 }
@@ -63,21 +64,18 @@ impl EventListener {
         let (sender, receiver) = channel();
 
         thread::spawn(move || {
-            run_listener(listener, sender);
+            run_listener(&listener, &sender);
         });
 
         Ok(Self { receiver })
     }
 
+    #[must_use]
     pub fn poll_events(&self) -> Vec<HookEvent> {
         let mut events = Vec::new();
 
-        loop {
-            match self.receiver.try_recv() {
-                Ok(event) => events.push(event),
-                Err(TryRecvError::Empty) => break,
-                Err(TryRecvError::Disconnected) => break,
-            }
+        while let Ok(event) = self.receiver.try_recv() {
+            events.push(event);
         }
 
         events
@@ -91,11 +89,11 @@ impl Drop for EventListener {
     }
 }
 
-fn run_listener(listener: UnixListener, sender: Sender<HookEvent>) {
+fn run_listener(listener: &UnixListener, sender: &Sender<HookEvent>) {
     loop {
         match listener.accept() {
             Ok((stream, _)) => {
-                handle_connection(stream, &sender);
+                handle_connection(stream, sender);
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                 thread::sleep(std::time::Duration::from_millis(50));
@@ -111,20 +109,16 @@ fn handle_connection(stream: UnixStream, sender: &Sender<HookEvent>) {
     let reader = BufReader::new(stream);
 
     for line in reader.lines() {
-        let line = match line {
-            Ok(line) => line,
-            Err(_) => break,
+        let Ok(line) = line else {
+            break;
         };
 
         if line.is_empty() {
             continue;
         }
 
-        match serde_json::from_str::<HookEvent>(&line) {
-            Ok(event) => {
-                let _ = sender.send(event);
-            }
-            Err(_) => {}
+        if let Ok(event) = serde_json::from_str::<HookEvent>(&line) {
+            let _ = sender.send(event);
         }
     }
 }
@@ -136,7 +130,7 @@ pub fn send_event(event: &HookEvent) -> std::io::Result<()> {
     let json = serde_json::to_string(event)
         .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
 
-    writeln!(stream, "{}", json)?;
+    writeln!(stream, "{json}")?;
     stream.flush()?;
 
     Ok(())

@@ -37,7 +37,8 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let directory_width = current_directory.len() as u16 + DIRECTORY_PADDING;
+    let directory_width =
+        u16::try_from(current_directory.len()).unwrap_or(u16::MAX) + DIRECTORY_PADDING;
 
     let layout = Layout::default()
         .direction(Direction::Horizontal)
@@ -76,7 +77,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
             let mut spans = vec![];
 
             if is_selected {
-                spans.push(Span::styled(format!(" {} ", name), tab_style));
+                spans.push(Span::styled(format!(" {name} "), tab_style));
             } else {
                 spans.push(Span::styled(" [", bracket_style));
                 spans.push(Span::styled(*name, tab_style));

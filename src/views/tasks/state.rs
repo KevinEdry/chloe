@@ -50,6 +50,7 @@ pub struct TasksState {
 }
 
 impl TasksState {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             columns: vec![
@@ -88,13 +89,14 @@ impl TasksState {
         }
     }
 
-    pub fn toggle_view_mode(&mut self) {
+    pub const fn toggle_view_mode(&mut self) {
         self.view_mode = match self.view_mode {
             TasksViewMode::Focus => TasksViewMode::Kanban,
             TasksViewMode::Kanban => TasksViewMode::Focus,
         };
     }
 
+    #[must_use]
     pub fn get_kanban_selected_task(&self) -> Option<&Task> {
         self.kanban_selected_task
             .and_then(|index| self.columns[self.kanban_selected_column].tasks.get(index))
@@ -111,6 +113,7 @@ impl TasksState {
         }
     }
 
+    #[must_use]
     pub fn find_task_by_id(&self, task_id: Uuid) -> Option<&Task> {
         for column in &self.columns {
             for task in &column.tasks {
@@ -122,15 +125,18 @@ impl TasksState {
         None
     }
 
-    pub fn is_normal_mode(&self) -> bool {
+    #[must_use]
+    pub const fn is_normal_mode(&self) -> bool {
         matches!(self.mode, TasksMode::Normal)
     }
 
-    pub fn is_terminal_focused(&self) -> bool {
+    #[must_use]
+    pub const fn is_terminal_focused(&self) -> bool {
         matches!(self.mode, TasksMode::TerminalFocused)
     }
 
-    pub fn is_typing_mode(&self) -> bool {
+    #[must_use]
+    pub const fn is_typing_mode(&self) -> bool {
         matches!(
             self.mode,
             TasksMode::AddingTask { .. }
@@ -161,6 +167,7 @@ pub enum TaskType {
 }
 
 impl TaskType {
+    #[must_use]
     pub const fn badge_text(self) -> &'static str {
         match self {
             Self::Feature => "FEAT",
@@ -170,6 +177,7 @@ impl TaskType {
         }
     }
 
+    #[must_use]
     pub const fn color(self) -> Color {
         match self {
             Self::Feature => Color::Green,
@@ -193,7 +201,7 @@ pub struct Task {
     pub description: String,
     pub created_at: DateTime<Utc>,
     #[serde(default)]
-    pub task_type: TaskType,
+    pub kind: TaskType,
     #[serde(default)]
     pub instance_id: Option<Uuid>,
     #[serde(default)]
@@ -203,13 +211,14 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn new(title: String, description: String, task_type: TaskType) -> Self {
+    #[must_use]
+    pub fn new(title: String, description: String, kind: TaskType) -> Self {
         Self {
             id: Uuid::new_v4(),
             title,
             description,
             created_at: Utc::now(),
-            task_type,
+            kind,
             instance_id: None,
             is_paused: false,
             worktree_info: None,
@@ -226,6 +235,7 @@ pub enum ReviewAction {
 }
 
 impl ReviewAction {
+    #[must_use]
     pub const fn all() -> [Self; 4] {
         [
             Self::ReviewInIDE,
@@ -235,7 +245,8 @@ impl ReviewAction {
         ]
     }
 
-    pub fn label(&self, branch_name: Option<&str>, has_conflicts: bool) -> String {
+    #[must_use]
+    pub fn label(self, branch_name: Option<&str>, has_conflicts: bool) -> String {
         match self {
             Self::ReviewInIDE => "Review in IDE".to_string(),
             Self::ReviewInTerminal => "Review in Terminal".to_string(),
@@ -244,10 +255,10 @@ impl ReviewAction {
                 if has_conflicts {
                     "Resolve Conflicts".to_string()
                 } else {
-                    match branch_name {
-                        Some(name) => format!("Merge to {}", name),
-                        None => "Mark Complete".to_string(),
-                    }
+                    let Some(name) = branch_name else {
+                        return "Mark Complete".to_string();
+                    };
+                    format!("Merge to {name}")
                 }
             }
         }

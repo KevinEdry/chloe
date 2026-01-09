@@ -22,11 +22,10 @@ pub fn handle_adding_task_mode(state: &mut TasksState, key: KeyEvent) -> TasksAc
             TasksAction::None
         }
         KeyCode::Enter => {
+            state.mode = TasksMode::Normal;
             if input.trim().is_empty() {
-                state.mode = TasksMode::Normal;
                 TasksAction::None
             } else {
-                state.mode = TasksMode::Normal;
                 TasksAction::CreateTask(input)
             }
         }
@@ -64,11 +63,10 @@ pub fn handle_editing_task_mode(state: &mut TasksState, key: KeyEvent) -> TasksA
             TasksAction::None
         }
         KeyCode::Enter => {
+            state.mode = TasksMode::Normal;
             if input.trim().is_empty() {
-                state.mode = TasksMode::Normal;
                 TasksAction::None
             } else {
-                state.mode = TasksMode::Normal;
                 TasksAction::UpdateTask {
                     task_id,
                     new_title: input,

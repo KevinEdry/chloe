@@ -89,6 +89,10 @@ pub enum MergeResult {
 }
 
 /// Get the default branch name (main or master) for the repository
+///
+/// # Errors
+///
+/// Returns an error if the repository cannot be opened or HEAD cannot be read.
 pub fn get_default_branch(repository_path: &Path) -> Result<String> {
     let repository = Repository::open(repository_path).context("Failed to open git repository")?;
 
@@ -109,6 +113,10 @@ pub fn get_default_branch(repository_path: &Path) -> Result<String> {
 }
 
 /// Check if merging a branch into the default branch would cause conflicts
+///
+/// # Errors
+///
+/// Returns an error if the repository cannot be opened or merge analysis fails.
 pub fn check_merge_conflicts(
     repository_path: &Path,
     worktree_info: &WorktreeInfo,
@@ -140,22 +148,22 @@ pub fn check_merge_conflicts(
         )
         .context("Failed to find ancestor commit")?;
 
-    let mut merge_options = git2::MergeOptions::new();
+    let merge_options = git2::MergeOptions::new();
     let index = repository
-        .merge_commits(&ancestor, &their_commit, Some(&mut merge_options))
+        .merge_commits(&ancestor, &their_commit, Some(&merge_options))
         .context("Failed to perform merge analysis")?;
 
     if index.has_conflicts() {
         let conflicts: Vec<String> = index
             .conflicts()
             .context("Failed to get conflicts")?
-            .filter_map(|conflict| conflict.ok())
+            .filter_map(Result::ok)
             .filter_map(|conflict| {
                 conflict
                     .our
                     .or(conflict.their)
                     .or(conflict.ancestor)
-                    .and_then(|entry| String::from_utf8(entry.path.clone()).ok())
+                    .and_then(|entry| String::from_utf8(entry.path).ok())
             })
             .collect();
         return Ok(Some(conflicts));
@@ -165,6 +173,10 @@ pub fn check_merge_conflicts(
 }
 
 /// Get the repository root for a given path
+///
+/// # Errors
+///
+/// Returns an error if the path is not within a git repository.
 pub fn find_repository_root(path: &Path) -> Result<PathBuf> {
     let repository = Repository::discover(path).context("Not a git repository")?;
 
@@ -176,6 +188,10 @@ pub fn find_repository_root(path: &Path) -> Result<PathBuf> {
 }
 
 /// List all existing worktrees in the repository
+///
+/// # Errors
+///
+/// Returns an error if the repository cannot be opened or worktrees cannot be listed.
 pub fn list_worktrees(repository_path: &Path) -> Result<Vec<Worktree>> {
     let repository = Repository::open(repository_path).context("Failed to open git repository")?;
 
@@ -184,9 +200,8 @@ pub fn list_worktrees(repository_path: &Path) -> Result<Vec<Worktree>> {
     let mut worktrees = Vec::new();
 
     for worktree_name in worktree_list.iter().flatten() {
-        let worktree = match repository.find_worktree(worktree_name) {
-            Ok(wt) => wt,
-            Err(_) => continue,
+        let Ok(worktree) = repository.find_worktree(worktree_name) else {
+            continue;
         };
 
         let path = worktree.path().to_path_buf();
@@ -238,6 +253,10 @@ pub fn generate_branch_name(task_title: &str) -> String {
 
 /// Create a new worktree for a task
 /// Returns `WorktreeInfo` with the branch name and path
+///
+/// # Errors
+///
+/// Returns an error if the repository cannot be opened or worktree creation fails.
 pub fn create_worktree(
     repository_path: &Path,
     task_title: &str,
@@ -287,7 +306,11 @@ pub fn create_worktree(
 }
 
 /// Merge a worktree branch into main
-/// Returns MergeResult indicating success or conflicts
+/// Returns `MergeResult` indicating success or conflicts
+///
+/// # Errors
+///
+/// Returns an error if checkout, stash, or merge operations fail.
 pub fn merge_worktree_to_main(
     repository_path: &Path,
     worktree_info: &WorktreeInfo,
@@ -367,6 +390,10 @@ fn get_conflicted_files(repository_path: &Path) -> Result<Vec<String>> {
 }
 
 /// Delete a worktree (cleanup)
+///
+/// # Errors
+///
+/// Returns an error if the worktree or branch cannot be deleted.
 pub fn delete_worktree(repository_path: &Path, worktree_info: &WorktreeInfo) -> Result<()> {
     let output = std::process::Command::new("git")
         .arg("worktree")

@@ -135,7 +135,7 @@ pub fn render_loading_dialog(f: &mut Frame, state: &RoadmapState, area: Rect) {
         Line::from(""),
         Line::from(vec![
             Span::styled(
-                format!("  {}  ", spinner),
+                format!("  {spinner}  "),
                 Style::default()
                     .fg(Color::Magenta)
                     .add_modifier(Modifier::BOLD),

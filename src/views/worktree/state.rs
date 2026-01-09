@@ -14,7 +14,7 @@ pub struct WorktreeInfo {
 
 impl WorktreeInfo {
     #[must_use]
-    pub fn new(branch_name: String, worktree_path: PathBuf) -> Self {
+    pub const fn new(branch_name: String, worktree_path: PathBuf) -> Self {
         Self {
             branch_name,
             worktree_path,

@@ -28,11 +28,13 @@ impl<'a, S: Screen> PseudoTerminal<'a, S> {
         }
     }
 
+    #[must_use]
     pub fn cursor(mut self, cursor: Cursor) -> Self {
         self.cursor = cursor;
         self
     }
 
+    #[must_use]
     pub const fn scroll_offset(mut self, offset: usize) -> Self {
         self.scroll_offset = offset;
         self
@@ -41,13 +43,11 @@ impl<'a, S: Screen> PseudoTerminal<'a, S> {
 
 impl<S: Screen> Widget for PseudoTerminal<'_, S> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let inner_area = if let Some(block) = &self.block {
+        let inner_area = self.block.as_ref().map_or(area, |block| {
             let inner = block.inner(area);
             block.clone().render(area, buf);
             inner
-        } else {
-            area
-        };
+        });
 
         buf.set_style(inner_area, self.style);
 

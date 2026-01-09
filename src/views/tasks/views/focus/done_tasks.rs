@@ -15,7 +15,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     let is_focused = state.focus_panel == FocusPanel::DoneTasks;
 
     let done_column = columns.get(3);
-    let done_count = done_column.map(|column| column.tasks.len()).unwrap_or(0);
+    let done_count = done_column.map_or(0, |column| column.tasks.len());
 
     let border_color = if is_focused {
         Color::Green
@@ -65,13 +65,14 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(list, inner_area);
 }
 
-fn calculate_title_max_length(panel_width: u16) -> usize {
+const fn calculate_title_max_length(panel_width: u16) -> usize {
     const SELECTION_INDICATOR_WIDTH: usize = 2;
     const BADGE_MAX_WIDTH: usize = 7;
     const SPACE_AFTER_BADGE: usize = 1;
     const SAFETY_MARGIN: usize = 1;
 
-    let fixed_width = SELECTION_INDICATOR_WIDTH + BADGE_MAX_WIDTH + SPACE_AFTER_BADGE + SAFETY_MARGIN;
+    let fixed_width =
+        SELECTION_INDICATOR_WIDTH + BADGE_MAX_WIDTH + SPACE_AFTER_BADGE + SAFETY_MARGIN;
 
     (panel_width as usize).saturating_sub(fixed_width)
 }
@@ -104,7 +105,7 @@ fn build_done_task_items(
         let is_selected = is_panel_focused && index == selected_index;
         items.push(create_task_item(
             &task.title,
-            task.task_type,
+            task.kind,
             is_selected,
             title_max_length,
         ));

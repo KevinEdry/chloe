@@ -99,6 +99,7 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
     frame.render_widget(list, area);
 }
 
+#[must_use]
 pub fn get_status_bar_content(state: &WorktreeTabState, width: u16) -> StatusBarContent {
     let mode_color = match state.mode {
         WorktreeMode::Normal => Color::Cyan,

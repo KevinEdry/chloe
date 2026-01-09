@@ -22,15 +22,18 @@ impl Default for Cursor {
 }
 
 impl Cursor {
+    #[must_use]
     pub const fn visibility(mut self, visibility: bool) -> Self {
         self.visibility = visibility;
         self
     }
 
+    #[must_use]
     pub const fn is_visible(&self) -> bool {
         self.visibility
     }
 
+    #[must_use]
     pub fn get_symbol(&self) -> &str {
         if self.symbol.is_empty() {
             "▌"
@@ -39,7 +42,8 @@ impl Cursor {
         }
     }
 
-    pub fn get_style(&self) -> Style {
+    #[must_use]
+    pub const fn get_style(&self) -> Style {
         if self.blinking {
             self.style.add_modifier(Modifier::SLOW_BLINK)
         } else {

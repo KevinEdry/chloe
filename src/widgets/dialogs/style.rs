@@ -9,6 +9,7 @@ pub enum DialogStyle {
 }
 
 impl DialogStyle {
+    #[must_use]
     pub const fn color(self) -> Color {
         match self {
             Self::Normal => Color::Cyan,

@@ -72,15 +72,18 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(list, inner_area);
 }
 
-fn calculate_title_max_length(panel_width: u16) -> usize {
+const fn calculate_title_max_length(panel_width: u16) -> usize {
     const SELECTION_INDICATOR_WIDTH: usize = 2;
     const BADGE_MAX_WIDTH: usize = 7;
     const SPACE_AFTER_BADGE: usize = 1;
     const CLAUDE_INDICATOR_WIDTH: usize = 2;
     const SAFETY_MARGIN: usize = 1;
 
-    let fixed_width =
-        SELECTION_INDICATOR_WIDTH + BADGE_MAX_WIDTH + SPACE_AFTER_BADGE + CLAUDE_INDICATOR_WIDTH + SAFETY_MARGIN;
+    let fixed_width = SELECTION_INDICATOR_WIDTH
+        + BADGE_MAX_WIDTH
+        + SPACE_AFTER_BADGE
+        + CLAUDE_INDICATOR_WIDTH
+        + SAFETY_MARGIN;
 
     (panel_width as usize).saturating_sub(fixed_width)
 }
@@ -122,7 +125,7 @@ fn build_task_list_items(
 
                 items.push(create_task_item(
                     &task.title,
-                    task.task_type,
+                    task.kind,
                     is_selected,
                     claude_state,
                     title_max_length,

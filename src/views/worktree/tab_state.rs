@@ -29,7 +29,7 @@ pub enum WorktreeMode {
 
 impl WorktreeTabState {
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             worktrees: Vec::new(),
             selected_index: None,
@@ -42,7 +42,7 @@ impl WorktreeTabState {
         }
     }
 
-    pub fn mark_needs_refresh(&mut self) {
+    pub const fn mark_needs_refresh(&mut self) {
         self.needs_initial_refresh = true;
     }
 }

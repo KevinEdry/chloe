@@ -15,7 +15,8 @@ pub struct RoadmapState {
 }
 
 impl RoadmapState {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             items: Vec::new(),
             selected_item: None,
@@ -29,26 +30,28 @@ impl RoadmapState {
         self.items.sort_by(|a, b| {
             use std::cmp::Ordering;
             match (a.priority, b.priority) {
-                (RoadmapPriority::High, RoadmapPriority::High) => Ordering::Equal,
-                (RoadmapPriority::High, _) => Ordering::Less,
-                (_, RoadmapPriority::High) => Ordering::Greater,
-                (RoadmapPriority::Medium, RoadmapPriority::Medium) => Ordering::Equal,
-                (RoadmapPriority::Medium, RoadmapPriority::Low) => Ordering::Less,
-                (RoadmapPriority::Low, RoadmapPriority::Medium) => Ordering::Greater,
-                (RoadmapPriority::Low, RoadmapPriority::Low) => Ordering::Equal,
+                (RoadmapPriority::High, RoadmapPriority::High)
+                | (RoadmapPriority::Medium, RoadmapPriority::Medium)
+                | (RoadmapPriority::Low, RoadmapPriority::Low) => Ordering::Equal,
+                (RoadmapPriority::High, RoadmapPriority::Medium | RoadmapPriority::Low)
+                | (RoadmapPriority::Medium, RoadmapPriority::Low) => Ordering::Less,
+                (RoadmapPriority::Medium | RoadmapPriority::Low, RoadmapPriority::High)
+                | (RoadmapPriority::Low, RoadmapPriority::Medium) => Ordering::Greater,
             }
         });
     }
 
-    pub fn advance_spinner(&mut self) {
+    pub const fn advance_spinner(&mut self) {
         self.spinner_frame = (self.spinner_frame + 1) % 10;
     }
 
-    pub fn get_spinner_char(&self) -> char {
+    #[must_use]
+    pub const fn get_spinner_char(&self) -> char {
         const SPINNER_FRAMES: [char; 10] = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
         SPINNER_FRAMES[self.spinner_frame]
     }
 
+    #[must_use]
     pub fn get_selected_item(&self) -> Option<&RoadmapItem> {
         self.selected_item.and_then(|index| self.items.get(index))
     }
@@ -79,6 +82,7 @@ pub struct RoadmapItem {
 }
 
 impl RoadmapItem {
+    #[must_use]
     pub fn new(
         title: String,
         description: String,
@@ -125,6 +129,7 @@ pub enum RoadmapPriority {
 }
 
 impl RoadmapPriority {
+    #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
             Self::High => "High",
@@ -133,6 +138,7 @@ impl RoadmapPriority {
         }
     }
 
+    #[must_use]
     pub const fn color(self) -> Color {
         match self {
             Self::High => Color::Red,
