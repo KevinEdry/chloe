@@ -110,10 +110,10 @@ impl WorktreeTabState {
                     self.selected_index = None;
                 } else if self.selected_index.is_none() {
                     self.selected_index = Some(0);
-                } else if let Some(i) = self.selected_index {
-                    if i >= self.worktrees.len() {
-                        self.selected_index = Some(self.worktrees.len() - 1);
-                    }
+                } else if let Some(i) = self.selected_index
+                    && i >= self.worktrees.len()
+                {
+                    self.selected_index = Some(self.worktrees.len() - 1);
                 }
             }
             Err(error) => {

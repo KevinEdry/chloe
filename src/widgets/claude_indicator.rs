@@ -19,7 +19,7 @@ impl ClaudeIndicator {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_or(true, |duration| {
-                (duration.as_millis() / BLINK_DURATION_MS) % BLINK_PHASES == 0
+                (duration.as_millis() / BLINK_DURATION_MS).is_multiple_of(BLINK_PHASES)
             })
     }
 

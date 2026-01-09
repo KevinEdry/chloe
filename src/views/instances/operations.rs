@@ -209,10 +209,10 @@ impl InstanceState {
 
         pane.scroll_to_bottom();
 
-        if let Some(session) = &mut pane.pty_session {
-            if session.write_input(data).is_ok() {
-                return true;
-            }
+        if let Some(session) = &mut pane.pty_session
+            && session.write_input(data).is_ok()
+        {
+            return true;
         }
 
         false

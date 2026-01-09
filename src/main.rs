@@ -14,7 +14,6 @@
 
 mod app;
 mod cli;
-mod common;
 pub mod events;
 mod helpers;
 mod persistence;

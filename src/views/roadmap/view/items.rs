@@ -20,19 +20,19 @@ pub fn render_items_list(f: &mut Frame, state: &RoadmapState, area: Rect) {
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
 
-    if !state.items.is_empty() {
-        if let Some(selected_idx) = state.selected_item {
-            let position_text = format!(" {} of {} ", selected_idx + 1, state.items.len());
-            block = block.title_bottom(
-                Line::from(vec![Span::styled(
-                    position_text,
-                    Style::default()
-                        .fg(Color::White)
-                        .add_modifier(Modifier::BOLD),
-                )])
-                .alignment(Alignment::Right),
-            );
-        }
+    if !state.items.is_empty()
+        && let Some(selected_idx) = state.selected_item
+    {
+        let position_text = format!(" {} of {} ", selected_idx + 1, state.items.len());
+        block = block.title_bottom(
+            Line::from(vec![Span::styled(
+                position_text,
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            )])
+            .alignment(Alignment::Right),
+        );
     }
 
     let inner_area = block.inner(area);

@@ -82,10 +82,10 @@ Output JSON only:"#
     }
 
     fn extract_json(text: &str) -> Result<String> {
-        if let Some(start) = text.find('{') {
-            if let Some(end) = text.rfind('}') {
-                return Ok(text[start..=end].to_string());
-            }
+        if let Some(start) = text.find('{')
+            && let Some(end) = text.rfind('}')
+        {
+            return Ok(text[start..=end].to_string());
         }
 
         Err(crate::types::AppError::Config(

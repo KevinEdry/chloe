@@ -104,14 +104,14 @@ impl RoadmapState {
     }
 
     pub fn poll_generation(&mut self) {
-        if let Some(ref request) = self.generation_request {
-            if let Some(result) = request.try_recv() {
-                self.generation_request = None;
-                self.mode = super::state::RoadmapMode::Normal;
+        if let Some(ref request) = self.generation_request
+            && let Some(result) = request.try_recv()
+        {
+            self.generation_request = None;
+            self.mode = super::state::RoadmapMode::Normal;
 
-                if let Ok(generated) = result {
-                    self.apply_generated_roadmap(generated);
-                }
+            if let Ok(generated) = result {
+                self.apply_generated_roadmap(generated);
             }
         }
     }

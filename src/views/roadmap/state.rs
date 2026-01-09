@@ -107,23 +107,19 @@ impl RoadmapItem {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum RoadmapStatus {
+    #[default]
     Planned,
     InProgress,
     Completed,
     Cancelled,
 }
 
-impl Default for RoadmapStatus {
-    fn default() -> Self {
-        Self::Planned
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum RoadmapPriority {
     High,
+    #[default]
     Medium,
     Low,
 }
@@ -145,12 +141,6 @@ impl RoadmapPriority {
             Self::Medium => Color::Yellow,
             Self::Low => Color::Gray,
         }
-    }
-}
-
-impl Default for RoadmapPriority {
-    fn default() -> Self {
-        Self::Medium
     }
 }
 

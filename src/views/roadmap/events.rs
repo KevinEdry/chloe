@@ -38,13 +38,13 @@ fn handle_normal_mode(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction 
             RoadmapAction::None
         }
         KeyCode::Char('e') => {
-            if let Some(index) = state.selected_item {
-                if let Some(item) = state.items.get(index) {
-                    state.mode = RoadmapMode::EditingItem {
-                        item_index: index,
-                        input: item.title.clone(),
-                    };
-                }
+            if let Some(index) = state.selected_item
+                && let Some(item) = state.items.get(index)
+            {
+                state.mode = RoadmapMode::EditingItem {
+                    item_index: index,
+                    input: item.title.clone(),
+                };
             }
             RoadmapAction::None
         }
@@ -61,16 +61,16 @@ fn handle_normal_mode(state: &mut RoadmapState, key: KeyEvent) -> RoadmapAction 
             RoadmapAction::None
         }
         KeyCode::Char('p') => {
-            if let Some(index) = state.selected_item {
-                if let Some(item) = state.items.get(index) {
-                    let new_priority = match item.priority {
-                        RoadmapPriority::Low => RoadmapPriority::Medium,
-                        RoadmapPriority::Medium => RoadmapPriority::High,
-                        RoadmapPriority::High => RoadmapPriority::Low,
-                    };
-                    state.update_item_priority(index, new_priority);
-                    return RoadmapAction::SaveState;
-                }
+            if let Some(index) = state.selected_item
+                && let Some(item) = state.items.get(index)
+            {
+                let new_priority = match item.priority {
+                    RoadmapPriority::Low => RoadmapPriority::Medium,
+                    RoadmapPriority::Medium => RoadmapPriority::High,
+                    RoadmapPriority::High => RoadmapPriority::Low,
+                };
+                state.update_item_priority(index, new_priority);
+                return RoadmapAction::SaveState;
             }
             RoadmapAction::None
         }

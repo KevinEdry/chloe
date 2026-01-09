@@ -72,19 +72,20 @@ pub fn render_columns(frame: &mut Frame, app: &App, area: Rect) {
             .border_style(border_style)
             .title(title_text);
 
-        if !column.tasks.is_empty() && is_selected {
-            if let Some(selected_index) = state.kanban_selected_task {
-                let position_text = format!(" {} of {} ", selected_index + 1, column.tasks.len());
-                column_block = column_block.title_bottom(
-                    Line::from(vec![Span::styled(
-                        position_text,
-                        Style::default()
-                            .fg(Color::White)
-                            .add_modifier(Modifier::BOLD),
-                    )])
-                    .alignment(Alignment::Right),
-                );
-            }
+        if !column.tasks.is_empty()
+            && is_selected
+            && let Some(selected_index) = state.kanban_selected_task
+        {
+            let position_text = format!(" {} of {} ", selected_index + 1, column.tasks.len());
+            column_block = column_block.title_bottom(
+                Line::from(vec![Span::styled(
+                    position_text,
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD),
+                )])
+                .alignment(Alignment::Right),
+            );
         }
 
         let inner_area = column_block.inner(*chunk);
@@ -177,14 +178,14 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
         Span::raw(" "),
     ];
 
-    if let Some(state) = claude_indicator {
-        if state != crate::views::instances::ClaudeState::Idle {
-            let (indicator, color) = get_claude_state_indicator_for_card(state);
-            title_spans.push(Span::styled(
-                format!("{indicator} "),
-                Style::default().fg(color).add_modifier(Modifier::BOLD),
-            ));
-        }
+    if let Some(state) = claude_indicator
+        && state != crate::views::instances::ClaudeState::Idle
+    {
+        let (indicator, color) = get_claude_state_indicator_for_card(state);
+        title_spans.push(Span::styled(
+            format!("{indicator} "),
+            Style::default().fg(color).add_modifier(Modifier::BOLD),
+        ));
     }
 
     title_spans.push(Span::styled(

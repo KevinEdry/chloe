@@ -36,18 +36,13 @@ impl Default for InstanceState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ClaudeState {
+    #[default]
     Idle,
     Running,
     NeedsPermissions,
     Done,
-}
-
-impl Default for ClaudeState {
-    fn default() -> Self {
-        Self::Idle
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -50,10 +50,10 @@ impl App {
                     app.instances.panes.iter().map(|pane| pane.id).collect();
                 for column in &mut app.tasks.columns {
                     for task in &mut column.tasks {
-                        if let Some(instance_id) = task.instance_id {
-                            if !active_instance_ids.contains(&instance_id) {
-                                task.instance_id = None;
-                            }
+                        if let Some(instance_id) = task.instance_id
+                            && !active_instance_ids.contains(&instance_id)
+                        {
+                            task.instance_id = None;
                         }
                     }
                 }
@@ -363,11 +363,11 @@ impl App {
                     "Please resolve merge conflicts in the following files:\n{}\n\nThen commit the resolution.",
                     conflicted_files.join("\n")
                 );
-                if let Some(task_index) = self.tasks.find_task_index_by_id(task_id) {
-                    if let Some(instance_id) = self.tasks.move_task_to_in_progress(task_index) {
-                        self.instances
-                            .send_input_to_instance(instance_id, &conflict_message);
-                    }
+                if let Some(task_index) = self.tasks.find_task_index_by_id(task_id)
+                    && let Some(instance_id) = self.tasks.move_task_to_in_progress(task_index)
+                {
+                    self.instances
+                        .send_input_to_instance(instance_id, &conflict_message);
                 }
             }
             Err(_) => {}
@@ -416,11 +416,11 @@ impl App {
             )
         };
 
-        if let Some(task_index) = self.tasks.find_task_index_by_id(task_id) {
-            if let Some(instance_id) = self.tasks.move_task_to_in_progress(task_index) {
-                self.instances
-                    .send_input_to_instance(instance_id, &conflict_message);
-            }
+        if let Some(task_index) = self.tasks.find_task_index_by_id(task_id)
+            && let Some(instance_id) = self.tasks.move_task_to_in_progress(task_index)
+        {
+            self.instances
+                .send_input_to_instance(instance_id, &conflict_message);
         }
     }
 }

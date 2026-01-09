@@ -52,10 +52,10 @@ fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
                 return;
             }
             KeyCode::Home => {
-                if let Some(pane) = state.selected_pane_mut() {
-                    if let Some(session) = &pane.pty_session {
-                        pane.scroll_offset = session.scrollback_len();
-                    }
+                if let Some(pane) = state.selected_pane_mut()
+                    && let Some(session) = &pane.pty_session
+                {
+                    pane.scroll_offset = session.scrollback_len();
                 }
                 return;
             }
@@ -77,41 +77,41 @@ fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
 }
 
 fn send_input_to_instance(state: &mut InstanceState, key: KeyEvent) {
-    if let Some(pane) = state.selected_pane_mut() {
-        if let Some(session) = &mut pane.pty_session {
-            let data = match key.code {
-                KeyCode::Char(c) => {
-                    if key.modifiers.contains(KeyModifiers::CONTROL) {
-                        if c.is_ascii_alphabetic() {
-                            let control_char = (c.to_ascii_lowercase() as u8) - b'a' + 1;
-                            vec![control_char]
-                        } else {
-                            return;
-                        }
+    if let Some(pane) = state.selected_pane_mut()
+        && let Some(session) = &mut pane.pty_session
+    {
+        let data = match key.code {
+            KeyCode::Char(c) => {
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    if c.is_ascii_alphabetic() {
+                        let control_char = (c.to_ascii_lowercase() as u8) - b'a' + 1;
+                        vec![control_char]
                     } else {
-                        c.to_string().into_bytes()
+                        return;
                     }
+                } else {
+                    c.to_string().into_bytes()
                 }
-                KeyCode::Enter => b"\r".to_vec(),
-                KeyCode::Backspace => b"\x7f".to_vec(),
-                KeyCode::Left => b"\x1b[D".to_vec(),
-                KeyCode::Right => b"\x1b[C".to_vec(),
-                KeyCode::Up => b"\x1b[A".to_vec(),
-                KeyCode::Down => b"\x1b[B".to_vec(),
-                KeyCode::Home => b"\x1b[H".to_vec(),
-                KeyCode::End => b"\x1b[F".to_vec(),
-                KeyCode::PageUp => b"\x1b[5~".to_vec(),
-                KeyCode::PageDown => b"\x1b[6~".to_vec(),
-                KeyCode::Tab => b"\t".to_vec(),
-                KeyCode::BackTab => b"\x1b[Z".to_vec(),
-                KeyCode::Delete => b"\x1b[3~".to_vec(),
-                KeyCode::Insert => b"\x1b[2~".to_vec(),
-                KeyCode::Esc => b"\x1b".to_vec(),
-                _ => return,
-            };
+            }
+            KeyCode::Enter => b"\r".to_vec(),
+            KeyCode::Backspace => b"\x7f".to_vec(),
+            KeyCode::Left => b"\x1b[D".to_vec(),
+            KeyCode::Right => b"\x1b[C".to_vec(),
+            KeyCode::Up => b"\x1b[A".to_vec(),
+            KeyCode::Down => b"\x1b[B".to_vec(),
+            KeyCode::Home => b"\x1b[H".to_vec(),
+            KeyCode::End => b"\x1b[F".to_vec(),
+            KeyCode::PageUp => b"\x1b[5~".to_vec(),
+            KeyCode::PageDown => b"\x1b[6~".to_vec(),
+            KeyCode::Tab => b"\t".to_vec(),
+            KeyCode::BackTab => b"\x1b[Z".to_vec(),
+            KeyCode::Delete => b"\x1b[3~".to_vec(),
+            KeyCode::Insert => b"\x1b[2~".to_vec(),
+            KeyCode::Esc => b"\x1b".to_vec(),
+            _ => return,
+        };
 
-            let _ = session.write_input(&data);
-        }
+        let _ = session.write_input(&data);
     }
 }
 

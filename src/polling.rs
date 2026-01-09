@@ -40,14 +40,14 @@ pub fn process_tasks_pending_actions(app: &mut App) {
         app.instances.close_pane_by_id(instance_id);
     }
 
-    if let Some(worktree_info) = app.tasks.pending_worktree_deletion.take() {
-        if let Ok(repo_root) = views::worktree::find_repository_root(
+    if let Some(worktree_info) = app.tasks.pending_worktree_deletion.take()
+        && let Ok(repo_root) = views::worktree::find_repository_root(
             std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
                 .as_path(),
-        ) {
-            let _ = views::worktree::delete_worktree(&repo_root, &worktree_info);
-        }
+        )
+    {
+        let _ = views::worktree::delete_worktree(&repo_root, &worktree_info);
     }
 
     if let Some(task_id) = app.tasks.pending_ide_open.take() {
@@ -58,11 +58,11 @@ pub fn process_tasks_pending_actions(app: &mut App) {
         app.open_task_in_terminal(task_id);
     }
 
-    if let Some((task_id, change_request)) = app.tasks.pending_change_request.take() {
-        if let Some(instance_id) = app.tasks.move_task_to_in_progress_by_id(task_id) {
-            app.instances
-                .send_input_to_instance(instance_id, &change_request);
-        }
+    if let Some((task_id, change_request)) = app.tasks.pending_change_request.take()
+        && let Some(instance_id) = app.tasks.move_task_to_in_progress_by_id(task_id)
+    {
+        app.instances
+            .send_input_to_instance(instance_id, &change_request);
     }
 
     app.sync_task_instances();

@@ -33,10 +33,8 @@ impl TasksState {
             self.pending_instance_creation = Some(task.id);
         }
 
-        if is_entering_done {
-            if let Some(instance_id) = task.instance_id.take() {
-                self.pending_instance_termination = Some(instance_id);
-            }
+        if is_entering_done && let Some(instance_id) = task.instance_id.take() {
+            self.pending_instance_termination = Some(instance_id);
         }
 
         self.columns[self.kanban_selected_column]

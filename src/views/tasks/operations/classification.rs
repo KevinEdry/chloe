@@ -17,18 +17,18 @@ impl TasksState {
     }
 
     pub fn poll_classification(&mut self) {
-        if let Some(request) = &self.classification_request {
-            if let Some(result) = request.try_recv() {
-                self.classification_request = None;
+        if let Some(request) = &self.classification_request
+            && let Some(result) = request.try_recv()
+        {
+            self.classification_request = None;
 
-                match result {
-                    Ok(classified) => {
-                        self.apply_classification(classified);
-                    }
-                    Err(_) => {
-                        if let TasksMode::ClassifyingTask { raw_input, .. } = &self.mode {
-                            self.fallback_to_manual(raw_input.clone());
-                        }
+            match result {
+                Ok(classified) => {
+                    self.apply_classification(classified);
+                }
+                Err(_) => {
+                    if let TasksMode::ClassifyingTask { raw_input, .. } = &self.mode {
+                        self.fallback_to_manual(raw_input.clone());
                     }
                 }
             }

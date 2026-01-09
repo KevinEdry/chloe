@@ -1,0 +1,6 @@
+{
+  "/getting-started/page": "app/getting-started/page.js",
+  "/features/page": "app/features/page.js",
+  "/page": "app/page.js",
+  "/keybindings/page": "app/keybindings/page.js"
+}
