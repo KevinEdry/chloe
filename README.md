@@ -1,181 +1,156 @@
-# Chloe - Auto Claude CLI
+<p align="center">
+  <h1 align="center">Chloe</h1>
+  <p>Chloe (a wordplay on "Claude TUI") is a terminal-based task management application built with Rust. It combines a kanban board for tracking work with integrated terminal instances, letting you manage multiple Claude Code sessions in parallel while maintaining visibility and control over what each instance is doing.</p>
+</p>
 
-A powerful terminal-based CLI application built with Rust that provides kanban task management and multiple interactive instance panes.
+<p align="center">
+  <a href="https://github.com/KevinEdry/chloe/actions/workflows/ci.yml">
+    <img src="https://github.com/KevinEdry/chloe/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://github.com/KevinEdry/chloe/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  </a>
+  <a href="https://github.com/KevinEdry/chloe">
+    <img src="https://img.shields.io/badge/unsafe-forbidden-success.svg" alt="Unsafe Forbidden">
+  </a>
+</p>
+
+<details>
+<summary>Table of Contents</summary>
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+
+</details>
 
 ## Features
 
-### 📋 Kanban Board
-- Traditional task board with **To Do**, **In Progress**, and **Done** columns
-- Add, edit, delete, and move tasks between columns
-- Persistent task storage across sessions
-- Task metadata (creation timestamps, descriptions)
+**Task Management** - Macro-level task viewer with kanban board and task list views. Track work across To Do, In Progress, and Done states with persistent storage.
 
-### 💻 Interactive Instances
-- Multiple instance panes in split view
-- Full interactive PTY sessions - run any command
-- **Advanced Session Management** with tmux backend:
-  - Sessions persist across app restarts
-  - Detach/reattach sessions without losing state
-  - Background processes survive app closure
-  - Resume exactly where you left off
-- Horizontal and vertical layouts
-- Switch between panes with keyboard shortcuts
-- Session naming and metadata support
+**Interactive Instances** - Multiple terminal panes with full PTY support. Run any command, switch between panes with keyboard shortcuts.
 
-### 🎨 Modern TUI Interface
-- Tab-based navigation
-- Context-sensitive help overlay
-- Color-coded UI with visual feedback
-- Status bar showing current mode and keybindings
+**Roadmap View** - Visualize project milestones and plan work across time.
 
-### 🔒 Safety Guarantees
-- **100% Safe Rust** - Zero unsafe code (`#![forbid(unsafe_code)]`)
-- **Memory Safe** - Compiler-enforced memory safety
-- **Thread Safe** - No data races or unsafe threading
-- **Statically Verified** - All safety properties checked at compile time
+**Worktrees** - Manage git worktrees for parallel development on multiple branches.
 
 ## Installation
 
 ### Prerequisites
-- Rust 1.70+ (2024 edition support)
-- tmux 2.0+ (optional, required for persistent sessions)
+
+- Rust 1.70+ (2024 edition)
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/yourusername/chloe.git
+git clone https://github.com/KevinEdry/chloe.git
 cd chloe
-cargo build --release
+cargo build --release --locked
 ```
 
-The binary will be available at `target/release/chloe`.
+The binary will be at `target/release/chloe`.
 
-### Run Directly
+### Initialize a Project
 
 ```bash
-cargo run
+chloe init
 ```
+
+This creates a `.chloe/` directory and adds it to `.gitignore`.
 
 ## Usage
 
-### Basic Navigation
+### Global
 
-- **Tab** or **1-2**: Switch between Kanban and Instances tabs
-- **q** or **Ctrl+C**: Quit application
-- **?**: Show help overlay
+| Key | Action |
+|-----|--------|
+| `Tab` / `Shift+Tab` | Cycle tabs |
+| `1` `2` `3` `4` | Jump to Tasks / Instances / Roadmap / Worktree |
+| `q` / `Ctrl+C` | Quit |
 
-### Kanban Tab
+### Tasks View
 
-**Navigation:**
-- **←/→**: Switch between columns
-- **↑/↓**: Select task within column
+| Key | Action |
+|-----|--------|
+| `/` | Toggle Focus/Kanban view |
+| `h` `j` `k` `l` or Arrows | Navigate |
+| `a` | Add task |
+| `e` | Edit task |
+| `d` | Delete task |
+| `Enter` | Move task forward / Open review |
+| `Backspace` | Move task back |
+| `t` | Jump to task's instance |
+| `g` / `G` | Jump to first/last task |
 
-**Actions:**
-- **a**: Add new task
-- **e**: Edit selected task
-- **d**: Delete selected task
-- **Enter**: Move task to next column
-- **Backspace**: Move task to previous column
+### Instances View
 
-**Text Entry Mode:**
-- Type to add text
-- **Enter**: Save
-- **Esc**: Cancel
+| Key | Action |
+|-----|--------|
+| `c` | New pane |
+| `x` | Close pane |
+| `h` `j` `k` `l` or Arrows | Navigate panes |
+| `Enter` | Focus pane |
+| `Esc` | Exit focus |
 
-### Instances Tab
+### Roadmap View
 
-**Pane Management:**
-- **c**: Create new direct PTY pane (not persistent)
-- **t**: Create new tmux-backed pane (persistent)
-- **x**: Close active pane
-- **Arrow Keys**: Navigate between panes
-- **Enter**: Focus on pane (all keys sent to instance)
-- **Esc**: Exit focus mode (return to navigation)
+| Key | Action |
+|-----|--------|
+| `j` `k` or Arrows | Navigate items |
+| `a` | Add item |
+| `e` | Edit item |
+| `d` | Delete item |
+| `t` | Convert to task |
+| `p` | Cycle priority |
+| `g` | Generate roadmap with AI |
 
-**Session Management:**
-- **d**: Detach from current tmux session (keeps it running)
-- **a**: Reattach to detached tmux session
-- Session status indicators:
-  - **[📎]**: Attached to tmux session
-  - **[💤]**: Detached (session running in background)
-  - **[💀]**: Session terminated
+### Worktree View
 
-**Instance Input:**
-- When focused, all keyboard input is forwarded to the instance
-- Special key sequences (Ctrl+C, arrow keys, etc.) work correctly
+| Key | Action |
+|-----|--------|
+| `j` `k` or Arrows | Navigate worktrees |
+| `d` | Delete worktree |
+| `o` | Open in IDE and terminal |
 
-## Configuration
+## Data Storage
 
-Configuration file: `~/.config/chloe/config.toml`
-
-```toml
-theme = "Dark"  # or "Light"
-default_shell = "/bin/zsh"  # or your preferred shell
-auto_save_interval_secs = 30
-```
-
-State file: `~/.config/chloe/state.json` (auto-generated)
-
-## Architecture
-
-Chloe follows a modular architecture with code locality principles:
-
-```
-src/
-├── types/         # Shared types (errors, config)
-├── kanban/        # Kanban feature (logic + UI)
-├── instance/      # Instance feature (logic + UI)
-├── ui/            # Shared UI components
-├── persistence/   # State serialization
-└── common/        # Shared utilities
-```
-
-See [claude.md](./claude.md) for detailed architecture documentation, safety policy, and code quality standards.
-
-## Development
-
-### Format Code
-
-```bash
-cargo fmt
-```
-
-### Run Linter
-
-```bash
-cargo clippy
-```
-
-### Run Tests
-
-```bash
-cargo test
-```
-
-## Known Limitations
-
-- Terminal emulation doesn't support full VT100 spec (no images, limited Unicode)
-- Some TUI programs (vim, emacs) may not render perfectly in direct PTY mode
-- Direct PTY sessions don't persist across app restarts (use tmux-backed panes for persistence)
-- Maximum practical instance panes: 4-6 before UI becomes crowded
-- tmux must be installed for session persistence features
-
-## Dependencies
-
-- [ratatui](https://github.com/ratatui-org/ratatui) - Terminal UI framework
-- [crossterm](https://github.com/crossterm-rs/crossterm) - Terminal backend
-- [portable-pty](https://github.com/wez/wezterm/tree/main/pty) - PTY support
-- [vt100](https://github.com/doy/vt100-rust) - VT100 terminal emulator
-- [serde](https://github.com/serde-rs/serde) - Serialization
-
-## License
-
-MIT License - see LICENSE file for details
+State is stored in `.chloe/state.json` in your project directory, including tasks, instances, roadmap items, and settings.
 
 ## Contributing
 
-Contributions welcome! Please see [docs/development.md](./docs/development.md) for guidelines.
+Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
-## Author
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) and includes CI checks for formatting, linting, and tests.
 
-Built with ❤️ using Rust and Claude Code
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/KevinEdry"><img src="https://avatars.githubusercontent.com/KevinEdry?v=4&s=100" width="100px;" alt="Kevin Edry"/><br /><sub><b>Kevin Edry</b></sub></a><br /><a href="https://github.com/KevinEdry/chloe/commits?author=KevinEdry" title="Code">💻</a> <a href="https://github.com/KevinEdry/chloe/commits?author=KevinEdry" title="Documentation">📖</a> <a href="#maintenance-KevinEdry" title="Maintenance">🚧</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://allcontributors.org) specification.
+
+## Acknowledgements
+
+- [Auto-Claude](https://github.com/AndyMik90/Auto-Claude) by [@AndyMik90](https://github.com/AndyMik90) - Inspiration and implementation guidelines
+- [Ratatui](https://github.com/ratatui/ratatui) - Terminal UI framework
+
+## License
+
+MIT License - see [LICENSE](./LICENSE) for details.
