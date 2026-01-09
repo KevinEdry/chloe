@@ -28,7 +28,7 @@ jobs:
             artifact_name: chloe
             asset_name: chloe-linux-x86_64-musl
 
-          - os: macos-latest
+          - os: macos-13
             target: x86_64-apple-darwin
             artifact_name: chloe
             asset_name: chloe-macos-x86_64
