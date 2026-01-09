@@ -62,7 +62,7 @@ export function Hero() {
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:items-center">
             <button
               onClick={() => navigator.clipboard.writeText('curl -fsSL getchloe.sh/install.sh | bash')}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-base font-medium bg-gradient-to-b from-[var(--color-primary)] to-[var(--color-primary-dark)] text-white shadow-lg shadow-[var(--color-primary)]/25 hover:shadow-[var(--color-primary)]/40 hover:-translate-y-0.5 transition-all"
+              className="inline-flex items-center gap-2 text-base font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -72,7 +72,7 @@ export function Hero() {
             <span className="text-[var(--color-text-muted)]">or</span>
             <Link
               href="/getting-started"
-              className="inline-flex items-center gap-2 text-base font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-base font-medium bg-white/5 border border-white/10 text-[var(--color-text-secondary)] hover:bg-white/10 hover:text-[var(--color-text-primary)] transition-all"
             >
               Get started
               <span aria-hidden="true">→</span>
