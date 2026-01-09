@@ -1,6 +1,6 @@
 use super::InstanceState;
 use crate::views::StatusBarContent;
-use crate::widgets::terminal::{claude_state, content as terminal_content};
+use crate::widgets::terminal::{TerminalView, claude_state};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -138,7 +138,7 @@ fn render_pane(
     f.render_widget(block, area);
 
     if let Some(session) = &pane.pty_session {
-        terminal_content::render(f, session, inner_area);
+        f.render_widget(TerminalView::new(session), inner_area);
     } else {
         let message = "PTY session failed to start";
         let text = Paragraph::new(message).style(Style::default().fg(Color::Red));

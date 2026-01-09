@@ -1,3 +1,5 @@
 pub mod claude_state;
 mod colors;
-pub mod content;
+mod view;
+
+pub use view::TerminalView;

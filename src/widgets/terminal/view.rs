@@ -1,23 +1,35 @@
 use super::colors::convert_vt100_color;
 use crate::views::instances::pty::PtySession;
 use ratatui::{
-    Frame,
+    buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::Paragraph,
+    widgets::{Paragraph, Widget},
 };
 
-pub fn render(frame: &mut Frame, session: &PtySession, area: Rect) {
-    let screen_mutex = session.screen();
-    let Ok(parser) = screen_mutex.lock() else {
-        return;
-    };
+pub struct TerminalView<'a> {
+    session: &'a PtySession,
+}
 
-    let screen = parser.screen();
-    let lines = build_terminal_lines(screen, area);
-    let text = Paragraph::new(lines);
-    frame.render_widget(text, area);
+impl<'a> TerminalView<'a> {
+    pub const fn new(session: &'a PtySession) -> Self {
+        Self { session }
+    }
+}
+
+impl Widget for TerminalView<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let screen_mutex = self.session.screen();
+        let Ok(parser) = screen_mutex.lock() else {
+            return;
+        };
+
+        let screen = parser.screen();
+        let lines = build_terminal_lines(screen, area);
+        let text = Paragraph::new(lines);
+        text.render(area, buf);
+    }
 }
 
 fn build_terminal_lines(screen: &vt100::Screen, area: Rect) -> Vec<Line<'static>> {

@@ -27,7 +27,6 @@ impl FocusState {
             details_scroll: 0,
         }
     }
-
 }
 
 impl Default for FocusState {

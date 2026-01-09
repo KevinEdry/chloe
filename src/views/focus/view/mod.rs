@@ -7,7 +7,7 @@ use super::operations::{get_active_tasks, get_done_tasks};
 use super::state::{FocusMode, FocusPanel};
 use crate::app::App;
 use crate::views::StatusBarContent;
-use crate::widgets::dialogs;
+use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, InputDialog};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -84,19 +84,22 @@ fn get_selected_task(app: &App) -> Option<super::operations::TaskReference<'_>> 
 fn render_dialogs(frame: &mut Frame, mode: &FocusMode, area: Rect) {
     match mode {
         FocusMode::AddingTask { input } => {
-            dialogs::render_input_dialog(frame, "Add Task", input, area);
+            frame.render_widget(InputDialog::new("Add Task", input), area);
         }
         FocusMode::EditingTask { input, .. } => {
-            dialogs::render_input_dialog(frame, "Edit Task", input, area);
+            frame.render_widget(InputDialog::new("Edit Task", input), area);
         }
         FocusMode::ConfirmDelete { .. } => {
-            dialogs::render_confirm_dialog(frame, "Delete Task", "Are you sure? (y/n)", area);
+            frame.render_widget(
+                ConfirmDialog::new("Delete Task", "Are you sure? (y/n)")
+                    .style(DialogStyle::Danger),
+                area,
+            );
         }
         FocusMode::ConfirmStartTask { .. } => {
-            dialogs::render_confirm_dialog(
-                frame,
-                "Start Task",
-                "Move task to In Progress? (y/n)",
+            frame.render_widget(
+                ConfirmDialog::new("Start Task", "Move task to In Progress? (y/n)")
+                    .style(DialogStyle::Success),
                 area,
             );
         }

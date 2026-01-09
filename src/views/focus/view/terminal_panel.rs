@@ -1,5 +1,5 @@
 use crate::views::instances::InstancePane;
-use crate::widgets::terminal::{claude_state, content as terminal_content};
+use crate::widgets::terminal::{TerminalView, claude_state};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -57,7 +57,7 @@ pub fn render(frame: &mut Frame, pane: Option<&InstancePane>, is_focused: bool, 
 
 fn render_pane_content(frame: &mut Frame, pane: &InstancePane, area: Rect) {
     if let Some(session) = &pane.pty_session {
-        terminal_content::render(frame, session, area);
+        frame.render_widget(TerminalView::new(session), area);
     } else {
         let message =
             Paragraph::new("PTY session not available").style(Style::default().fg(Color::Red));
