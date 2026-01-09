@@ -1,0 +1,35 @@
+# Commit message linting configuration
+# Install: cargo install committed
+# Run: committed HEAD~1..HEAD
+
+[subject]
+# Maximum subject line length
+max_length = 72
+# Minimum subject line length
+min_length = 10
+# Must start with capital letter (disabled for conventional commits)
+capitalized = false
+
+[line]
+# Maximum line length for body
+max_length = 100
+
+[conventional]
+# Enforce conventional commits format
+required = true
+# Allowed commit types
+types = [
+  "feat",     # New feature
+  "fix",      # Bug fix
+  "docs",     # Documentation only changes
+  "style",    # Changes that do not affect the meaning of the code
+  "refactor", # Code change that neither fixes a bug nor adds a feature
+  "perf",     # Performance improvement
+  "test",     # Adding missing tests or correcting existing tests
+  "build",    # Changes that affect the build system or external dependencies
+  "ci",       # Changes to CI configuration files and scripts
+  "chore",    # Other changes that don't modify src or test files
+  "revert",   # Reverts a previous commit
+]
+# Allowed scopes (empty means all scopes allowed)
+scopes = []

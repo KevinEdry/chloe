@@ -1,0 +1,22 @@
+{
+  "projectName": "chloe",
+  "projectOwner": "KevinEdry",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": ["README.md"],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "none",
+  "contributorsPerLine": 7,
+  "linkToUsage": true,
+  "skipCi": true,
+  "contributors": [
+    {
+      "login": "KevinEdry",
+      "name": "Kevin Edry",
+      "avatar_url": "https://avatars.githubusercontent.com/KevinEdry",
+      "profile": "https://github.com/KevinEdry",
+      "contributions": ["code", "doc", "maintenance"]
+    }
+  ]
+}
