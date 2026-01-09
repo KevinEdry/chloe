@@ -27,8 +27,6 @@
 
 - [Features](#features)
 - [Installation](#installation)
-- [Usage](#usage)
-- [Configuration](#configuration)
 - [Contributing](#contributing)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
@@ -47,9 +45,15 @@
 
 ## Installation
 
-### Prerequisites
+```bash
+curl -fsSL https://raw.githubusercontent.com/KevinEdry/chloe/main/install.sh | bash
+```
 
-- Rust 1.70+ (2024 edition)
+Or specify a version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KevinEdry/chloe/main/install.sh | bash -s v0.1.1
+```
 
 ### Build from Source
 
@@ -60,68 +64,6 @@ cargo build --release --locked
 ```
 
 The binary will be at `target/release/chloe`.
-
-### Initialize a Project
-
-```bash
-chloe init
-```
-
-This creates a `.chloe/` directory and adds it to `.gitignore`.
-
-## Usage
-
-### Global
-
-| Key | Action |
-|-----|--------|
-| `Tab` / `Shift+Tab` | Cycle tabs |
-| `1` `2` `3` `4` | Jump to Tasks / Instances / Roadmap / Worktree |
-| `q` / `Ctrl+C` | Quit |
-
-### Tasks View
-
-| Key | Action |
-|-----|--------|
-| `/` | Toggle Focus/Kanban view |
-| `h` `j` `k` `l` or Arrows | Navigate |
-| `a` | Add task |
-| `e` | Edit task |
-| `d` | Delete task |
-| `Enter` | Move task forward / Open review |
-| `Backspace` | Move task back |
-| `t` | Jump to task's instance |
-| `g` / `G` | Jump to first/last task |
-
-### Instances View
-
-| Key | Action |
-|-----|--------|
-| `c` | New pane |
-| `x` | Close pane |
-| `h` `j` `k` `l` or Arrows | Navigate panes |
-| `Enter` | Focus pane |
-| `Esc` | Exit focus |
-
-### Roadmap View
-
-| Key | Action |
-|-----|--------|
-| `j` `k` or Arrows | Navigate items |
-| `a` | Add item |
-| `e` | Edit item |
-| `d` | Delete item |
-| `t` | Convert to task |
-| `p` | Cycle priority |
-| `g` | Generate roadmap with AI |
-
-### Worktree View
-
-| Key | Action |
-|-----|--------|
-| `j` `k` or Arrows | Navigate worktrees |
-| `d` | Delete worktree |
-| `o` | Open in IDE and terminal |
 
 ## Data Storage
 
