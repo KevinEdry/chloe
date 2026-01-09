@@ -1,12 +1,15 @@
-use super::helpers::{centered_rect, render_popup_background};
 use crate::app::App;
+use crate::views::tasks::state::ReviewAction;
+use crate::views::worktree::operations::{check_merge_conflicts, get_default_branch};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, Paragraph, Wrap},
 };
+use std::path::Path;
+use uuid::Uuid;
 
 const DIALOG_WIDTH_THRESHOLD: u16 = 80;
 const DIALOG_WIDTH_SMALL: u16 = 80;
@@ -37,7 +40,9 @@ const SPINNER_FRAME_COUNT: u128 = 10;
 const EXIT_CONFIRM_DIALOG_WIDTH_PERCENT: u16 = 50;
 const EXIT_CONFIRM_DIALOG_HEIGHT_PERCENT: u16 = 25;
 
-pub fn render_input_dialog(f: &mut Frame, title: &str, input: &str, area: Rect) {
+const PERCENTAGE_FULL: u16 = 100;
+
+pub fn render_input_dialog(frame: &mut Frame, title: &str, input: &str, area: Rect) {
     let dialog_width = if area.width < DIALOG_WIDTH_THRESHOLD {
         DIALOG_WIDTH_SMALL
     } else {
@@ -50,7 +55,7 @@ pub fn render_input_dialog(f: &mut Frame, title: &str, input: &str, area: Rect) 
     };
     let dialog_area = centered_rect(dialog_width, dialog_height, area);
 
-    render_popup_background(f, dialog_area);
+    render_popup_background(frame, dialog_area);
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -67,7 +72,7 @@ pub fn render_input_dialog(f: &mut Frame, title: &str, input: &str, area: Rect) 
         ))
         .style(Style::default().bg(Color::Black));
 
-    f.render_widget(block, dialog_area);
+    frame.render_widget(block, dialog_area);
 
     let inner_area = Rect {
         x: dialog_area.x + DIALOG_PADDING,
@@ -80,32 +85,32 @@ pub fn render_input_dialog(f: &mut Frame, title: &str, input: &str, area: Rect) 
         .style(Style::default().fg(Color::White).bg(Color::Black))
         .wrap(Wrap { trim: false });
 
-    f.render_widget(input_text, inner_area);
+    frame.render_widget(input_text, inner_area);
 
     let cursor_x = dialog_area.x + DIALOG_PADDING + (input.len() as u16 % inner_area.width);
     let cursor_y = dialog_area.y + DIALOG_PADDING + (input.len() as u16 / inner_area.width);
-    f.set_cursor_position((cursor_x, cursor_y));
+    frame.set_cursor_position((cursor_x, cursor_y));
 }
 
-pub fn render_confirm_dialog(f: &mut Frame, message: &str, area: Rect) {
+pub fn render_confirm_dialog(frame: &mut Frame, message: &str, area: Rect) {
     let dialog_area = centered_rect(
         CONFIRM_DIALOG_WIDTH_PERCENT,
         CONFIRM_DIALOG_HEIGHT_PERCENT,
         area,
     );
 
-    render_popup_background(f, dialog_area);
+    render_popup_background(frame, dialog_area);
 
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
         .title(Span::styled(
-            " ⚠ Confirm ",
+            " Confirm ",
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         ))
         .style(Style::default().bg(Color::Black));
 
-    f.render_widget(block, dialog_area);
+    frame.render_widget(block, dialog_area);
 
     let inner_area = Rect {
         x: dialog_area.x + DIALOG_PADDING,
@@ -123,17 +128,17 @@ pub fn render_confirm_dialog(f: &mut Frame, message: &str, area: Rect) {
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: false });
 
-    f.render_widget(text, inner_area);
+    frame.render_widget(text, inner_area);
 }
 
-pub fn render_classifying_dialog(f: &mut Frame, raw_input: &str, area: Rect) {
+pub fn render_classifying_dialog(frame: &mut Frame, raw_input: &str, area: Rect) {
     let dialog_area = centered_rect(
         CLASSIFYING_DIALOG_WIDTH_PERCENT,
         CLASSIFYING_DIALOG_HEIGHT_PERCENT,
         area,
     );
 
-    render_popup_background(f, dialog_area);
+    render_popup_background(frame, dialog_area);
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -150,7 +155,7 @@ pub fn render_classifying_dialog(f: &mut Frame, raw_input: &str, area: Rect) {
         ))
         .style(Style::default().bg(Color::Black));
 
-    f.render_widget(block, dialog_area);
+    frame.render_widget(block, dialog_area);
 
     let inner_area = Rect {
         x: dialog_area.x + DIALOG_PADDING,
@@ -196,15 +201,15 @@ pub fn render_classifying_dialog(f: &mut Frame, raw_input: &str, area: Rect) {
         .alignment(Alignment::Left)
         .wrap(Wrap { trim: false });
 
-    f.render_widget(text, inner_area);
+    frame.render_widget(text, inner_area);
 }
 
 pub fn render_review_popup(
-    f: &mut Frame,
+    frame: &mut Frame,
     app: &App,
-    task_index: usize,
+    task_id: Uuid,
     scroll_offset: usize,
-    selected_action: crate::views::kanban::ReviewAction,
+    selected_action: ReviewAction,
     area: Rect,
 ) {
     let dialog_area = centered_rect(
@@ -213,19 +218,14 @@ pub fn render_review_popup(
         area,
     );
 
-    render_popup_background(f, dialog_area);
+    render_popup_background(frame, dialog_area);
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(0), Constraint::Length(3)])
         .split(dialog_area);
 
-    let review_column_index = 2;
-    let task = app
-        .kanban
-        .columns
-        .get(review_column_index)
-        .and_then(|column| column.tasks.get(task_index));
+    let task = app.tasks.find_task_by_id(task_id);
 
     let output_text = if let Some(task) = task {
         if let Some(instance_id) = task.instance_id {
@@ -269,7 +269,7 @@ pub fn render_review_popup(
         .style(Style::default().bg(Color::Black));
 
     let inner_area = block.inner(chunks[0]);
-    f.render_widget(block, chunks[0]);
+    frame.render_widget(block, chunks[0]);
 
     let visible_lines: Vec<Line> = output_lines
         .iter()
@@ -282,17 +282,47 @@ pub fn render_review_popup(
         .alignment(Alignment::Left)
         .wrap(Wrap { trim: false });
 
-    f.render_widget(text, inner_area);
+    frame.render_widget(text, inner_area);
 
-    render_action_buttons(f, selected_action, chunks[1]);
+    let (default_branch, has_conflicts) = get_merge_info(app, task_id);
+    render_action_buttons(
+        frame,
+        selected_action,
+        default_branch.as_deref(),
+        has_conflicts,
+        chunks[1],
+    );
+}
+
+fn get_merge_info(app: &App, task_id: Uuid) -> (Option<String>, bool) {
+    let task = app.tasks.find_task_by_id(task_id);
+
+    let Some(task) = task else {
+        return (None, false);
+    };
+
+    let Some(worktree_info) = &task.worktree_info else {
+        return (None, false);
+    };
+
+    let repository_path = Path::new(".");
+    let default_branch = get_default_branch(repository_path).ok();
+    let has_conflicts = check_merge_conflicts(repository_path, worktree_info)
+        .ok()
+        .flatten()
+        .is_some();
+
+    (default_branch, has_conflicts)
 }
 
 fn render_action_buttons(
-    f: &mut Frame,
-    selected_action: crate::views::kanban::ReviewAction,
+    frame: &mut Frame,
+    selected_action: ReviewAction,
+    default_branch: Option<&str>,
+    has_conflicts: bool,
     area: Rect,
 ) {
-    let actions = crate::views::kanban::ReviewAction::all();
+    let actions = ReviewAction::all();
     let button_constraints = vec![Constraint::Percentage(BUTTON_WIDTH_PERCENT); BUTTON_COUNT];
 
     let button_areas = Layout::default()
@@ -311,7 +341,8 @@ fn render_action_buttons(
             Style::default().fg(Color::Cyan).bg(Color::Black)
         };
 
-        let button = Paragraph::new(action.label())
+        let label = action.label(default_branch, has_conflicts);
+        let button = Paragraph::new(label)
             .alignment(Alignment::Center)
             .style(style)
             .block(
@@ -326,18 +357,18 @@ fn render_action_buttons(
                     }),
             );
 
-        f.render_widget(button, button_areas[index]);
+        frame.render_widget(button, button_areas[index]);
     }
 }
 
-pub fn render_exit_confirmation_dialog(f: &mut Frame, area: Rect) {
+pub fn render_exit_confirmation_dialog(frame: &mut Frame, area: Rect) {
     let dialog_area = centered_rect(
         EXIT_CONFIRM_DIALOG_WIDTH_PERCENT,
         EXIT_CONFIRM_DIALOG_HEIGHT_PERCENT,
         area,
     );
 
-    render_popup_background(f, dialog_area);
+    render_popup_background(frame, dialog_area);
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -354,7 +385,7 @@ pub fn render_exit_confirmation_dialog(f: &mut Frame, area: Rect) {
         ))
         .style(Style::default().bg(Color::Black));
 
-    f.render_widget(block, dialog_area);
+    frame.render_widget(block, dialog_area);
 
     let inner_area = Rect {
         x: dialog_area.x + DIALOG_PADDING,
@@ -398,5 +429,29 @@ pub fn render_exit_confirmation_dialog(f: &mut Frame, area: Rect) {
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: false });
 
-    f.render_widget(text, inner_area);
+    frame.render_widget(text, inner_area);
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((PERCENTAGE_FULL - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((PERCENTAGE_FULL - percent_y) / 2),
+        ])
+        .split(area);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((PERCENTAGE_FULL - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((PERCENTAGE_FULL - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
+}
+
+fn render_popup_background(frame: &mut Frame, area: Rect) {
+    frame.render_widget(Clear, area);
 }

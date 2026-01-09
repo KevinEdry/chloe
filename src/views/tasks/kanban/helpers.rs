@@ -44,6 +44,6 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
         .split(popup_layout[1])[1]
 }
 
-pub fn render_popup_background(f: &mut Frame, area: Rect) {
-    f.render_widget(Clear, area);
+pub fn render_popup_background(frame: &mut Frame, area: Rect) {
+    frame.render_widget(Clear, area);
 }

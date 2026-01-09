@@ -1,4 +1,4 @@
-use crate::views::focus::operations::TaskReference;
+use crate::views::tasks::operations::TaskReference;
 use ratatui::{
     Frame,
     layout::Rect,

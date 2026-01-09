@@ -1,5 +1,5 @@
 use crate::app::App;
-use crate::views::focus::state::FocusPanel;
+use crate::views::tasks::state::FocusPanel;
 use crate::widgets::task::TaskItem;
 use ratatui::{
     Frame,
@@ -10,11 +10,15 @@ use ratatui::{
 };
 
 pub fn render(frame: &mut Frame, app: &App, area: Rect) {
-    let state = &app.focus;
-    let columns = &app.kanban.columns;
-    let is_focused = state.focused_panel == FocusPanel::ActiveTasks;
+    let state = &app.tasks;
+    let columns = &state.columns;
+    let is_focused = state.focus_panel == FocusPanel::ActiveTasks;
 
-    let active_task_count: usize = columns.iter().take(3).map(|c| c.tasks.len()).sum();
+    let active_task_count: usize = columns
+        .iter()
+        .take(3)
+        .map(|column| column.tasks.len())
+        .sum();
 
     let border_color = if is_focused {
         Color::Cyan
@@ -40,7 +44,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     if active_task_count > 0 {
         let position_text = format!(
             " {} of {} ",
-            state.active_selected_index + 1,
+            state.focus_active_index + 1,
             active_task_count
         );
         block = block.title_bottom(
@@ -76,7 +80,7 @@ fn render_empty_state(frame: &mut Frame, area: Rect) {
         )])),
         ListItem::new(Line::from("")),
         ListItem::new(Line::from(vec![Span::styled(
-            "Go to Kanban to add tasks",
+            "Press 'a' to add a task",
             Style::default().fg(Color::DarkGray),
         )])),
     ]);
@@ -86,8 +90,8 @@ fn render_empty_state(frame: &mut Frame, area: Rect) {
 fn build_task_list_items(app: &App, is_panel_focused: bool) -> Vec<ListItem<'static>> {
     let mut items = Vec::new();
     let mut current_index = 0;
-    let columns = &app.kanban.columns;
-    let selected_index = app.focus.active_selected_index;
+    let columns = &app.tasks.columns;
+    let selected_index = app.tasks.focus_active_index;
 
     for (column_index, column) in columns.iter().take(3).enumerate() {
         if !column.tasks.is_empty() {
@@ -131,7 +135,7 @@ fn create_column_header(name: &str, column_index: usize) -> ListItem<'static> {
 
 fn create_task_item(
     title: &str,
-    task_type: crate::views::kanban::TaskType,
+    task_type: crate::views::tasks::TaskType,
     is_selected: bool,
     claude_state: Option<crate::views::instances::ClaudeState>,
 ) -> ListItem<'static> {

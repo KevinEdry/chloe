@@ -111,7 +111,6 @@ pub enum RoadmapStatus {
     Cancelled,
 }
 
-
 impl Default for RoadmapStatus {
     fn default() -> Self {
         Self::Planned

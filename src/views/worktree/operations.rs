@@ -338,17 +338,6 @@ pub fn merge_worktree_to_main(
         return Err(anyhow!("Git merge failed: {error_message}"));
     }
 
-    let push_output = std::process::Command::new("git")
-        .arg("push")
-        .current_dir(repository_path)
-        .output()
-        .context("Failed to push to remote")?;
-
-    if !push_output.status.success() {
-        let error_message = String::from_utf8_lossy(&push_output.stderr);
-        return Err(anyhow!("Git push failed: {error_message}"));
-    }
-
     Ok(MergeResult::Success)
 }
 

@@ -9,12 +9,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-pub fn render(
-    frame: &mut Frame,
-    pane: Option<&mut InstancePane>,
-    is_focused: bool,
-    area: Rect,
-) {
+pub fn render(frame: &mut Frame, pane: Option<&mut InstancePane>, is_focused: bool, area: Rect) {
     let border_color = if is_focused {
         Color::Green
     } else {
@@ -61,12 +56,7 @@ pub fn render(
     }
 }
 
-fn render_pane_content(
-    frame: &mut Frame,
-    pane: &mut InstancePane,
-    is_focused: bool,
-    area: Rect,
-) {
+fn render_pane_content(frame: &mut Frame, pane: &mut InstancePane, is_focused: bool, area: Rect) {
     let Some(session) = &mut pane.pty_session else {
         let message =
             Paragraph::new("PTY session not available").style(Style::default().fg(Color::Red));

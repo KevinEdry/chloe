@@ -1,5 +1,5 @@
 use crate::app::App;
-use crate::views::focus::state::FocusPanel;
+use crate::views::tasks::state::FocusPanel;
 use crate::widgets::task::TaskItem;
 use ratatui::{
     Frame,
@@ -10,9 +10,9 @@ use ratatui::{
 };
 
 pub fn render(frame: &mut Frame, app: &App, area: Rect) {
-    let state = &app.focus;
-    let columns = &app.kanban.columns;
-    let is_focused = state.focused_panel == FocusPanel::DoneTasks;
+    let state = &app.tasks;
+    let columns = &state.columns;
+    let is_focused = state.focus_panel == FocusPanel::DoneTasks;
 
     let done_column = columns.get(3);
     let done_count = done_column.map(|column| column.tasks.len()).unwrap_or(0);
@@ -39,7 +39,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         .border_style(Style::default().fg(border_color));
 
     if done_count > 0 {
-        let position_text = format!(" {} of {} ", state.done_selected_index + 1, done_count);
+        let position_text = format!(" {} of {} ", state.focus_done_index + 1, done_count);
         block = block.title_bottom(
             Line::from(vec![Span::styled(
                 position_text,
@@ -77,8 +77,8 @@ fn render_empty_state(frame: &mut Frame, area: Rect) {
 
 fn build_done_task_items(app: &App, is_panel_focused: bool) -> Vec<ListItem<'static>> {
     let mut items = Vec::new();
-    let columns = &app.kanban.columns;
-    let selected_index = app.focus.done_selected_index;
+    let columns = &app.tasks.columns;
+    let selected_index = app.tasks.focus_done_index;
 
     let Some(done_column) = columns.get(3) else {
         return items;
@@ -94,7 +94,7 @@ fn build_done_task_items(app: &App, is_panel_focused: bool) -> Vec<ListItem<'sta
 
 fn create_task_item(
     title: &str,
-    task_type: crate::views::kanban::TaskType,
+    task_type: crate::views::tasks::TaskType,
     is_selected: bool,
 ) -> ListItem<'static> {
     let mut item = TaskItem::new(title, task_type)

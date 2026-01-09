@@ -60,11 +60,8 @@ impl Widget for ConfirmDialog<'_> {
         let inner_area = block.inner(popup_area);
         block.render(popup_area, buf);
 
-        let text = Paragraph::new(vec![
-            Line::from(""),
-            Line::from(Span::raw(self.message)),
-        ])
-        .alignment(Alignment::Center);
+        let text = Paragraph::new(vec![Line::from(""), Line::from(Span::raw(self.message))])
+            .alignment(Alignment::Center);
 
         text.render(inner_area, buf);
     }

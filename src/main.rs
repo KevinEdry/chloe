@@ -100,16 +100,12 @@ fn run_app<B: ratatui::backend::Backend>(
                 Event::Key(key) => {
                     let instances_terminal_focused = app.active_tab == Tab::Instances
                         && app.instances.mode == views::instances::InstanceMode::Focused;
-                    let focus_terminal_focused = app.active_tab == Tab::Focus
-                        && app.focus.mode == views::focus::FocusMode::TerminalFocused;
-                    let terminal_is_focused = instances_terminal_focused || focus_terminal_focused;
+                    let tasks_terminal_focused =
+                        app.active_tab == Tab::Tasks && app.tasks.is_terminal_focused();
+                    let terminal_is_focused = instances_terminal_focused || tasks_terminal_focused;
 
-                    let focus_is_typing = app.active_tab == Tab::Focus
-                        && matches!(
-                            app.focus.mode,
-                            views::focus::FocusMode::AddingTask { .. }
-                                | views::focus::FocusMode::EditingTask { .. }
-                        );
+                    let tasks_is_typing =
+                        app.active_tab == Tab::Tasks && app.tasks.is_typing_mode();
 
                     if app.showing_exit_confirmation {
                         match key.code {
@@ -131,7 +127,7 @@ fn run_app<B: ratatui::backend::Backend>(
                             } else if instances_terminal_focused {
                                 views::instances::events::handle_key_event(&mut app.instances, key);
                             } else {
-                                polling::process_focus_event(app, key);
+                                polling::process_tasks_event(app, key);
                             }
                         }
                         KeyCode::Char('c')
@@ -142,7 +138,7 @@ fn run_app<B: ratatui::backend::Backend>(
                             } else if instances_terminal_focused {
                                 views::instances::events::handle_key_event(&mut app.instances, key);
                             } else {
-                                polling::process_focus_event(app, key);
+                                polling::process_tasks_event(app, key);
                             }
                         }
                         KeyCode::Tab | KeyCode::BackTab => {
@@ -155,36 +151,31 @@ fn run_app<B: ratatui::backend::Backend>(
                             } else if instances_terminal_focused {
                                 views::instances::events::handle_key_event(&mut app.instances, key);
                             } else {
-                                polling::process_focus_event(app, key);
+                                polling::process_tasks_event(app, key);
                             }
                         }
-                        KeyCode::Char('1') if !terminal_is_focused && !focus_is_typing => {
-                            app.switch_tab(Tab::Focus);
+                        KeyCode::Char('1') if !terminal_is_focused && !tasks_is_typing => {
+                            app.switch_tab(Tab::Tasks);
                         }
-                        KeyCode::Char('2') if !terminal_is_focused && !focus_is_typing => {
-                            app.switch_tab(Tab::Kanban);
-                        }
-                        KeyCode::Char('3') if !terminal_is_focused && !focus_is_typing => {
+                        KeyCode::Char('2') if !terminal_is_focused && !tasks_is_typing => {
                             app.switch_tab(Tab::Instances);
                         }
-                        KeyCode::Char('4') if !terminal_is_focused && !focus_is_typing => {
+                        KeyCode::Char('3') if !terminal_is_focused && !tasks_is_typing => {
                             app.switch_tab(Tab::Roadmap);
                         }
-                        KeyCode::Char('5') if !terminal_is_focused && !focus_is_typing => {
+                        KeyCode::Char('4') if !terminal_is_focused && !tasks_is_typing => {
                             app.switch_tab(Tab::Worktree);
                         }
                         _ => match app.active_tab {
-                            Tab::Kanban => {
-                                let is_normal_mode =
-                                    app.kanban.mode == views::kanban::KanbanMode::Normal;
+                            Tab::Tasks => {
+                                let is_normal_mode = app.tasks.is_normal_mode();
                                 let is_jump_to_instance_key = key.code == KeyCode::Char('t')
                                     || key.code == KeyCode::Char('T');
 
                                 if is_normal_mode && is_jump_to_instance_key {
                                     app.jump_to_task_instance();
                                 } else {
-                                    views::kanban::events::handle_key_event(&mut app.kanban, key);
-                                    polling::process_kanban_pending_actions(app);
+                                    polling::process_tasks_event(app, key);
                                 }
                             }
                             Tab::Instances => {
@@ -198,9 +189,6 @@ fn run_app<B: ratatui::backend::Backend>(
                             Tab::Worktree => {
                                 app.worktree.handle_key_event(key);
                                 polling::process_worktree_pending_actions(app);
-                            }
-                            Tab::Focus => {
-                                polling::process_focus_event(app, key);
                             }
                         },
                     }

@@ -1,6 +1,6 @@
 use crate::helpers::text;
 use crate::views::instances::ClaudeState;
-use crate::views::kanban::TaskType;
+use crate::views::tasks::TaskType;
 use crate::widgets::claude_indicator;
 use ratatui::{
     style::{Color, Modifier, Style},
@@ -75,14 +75,13 @@ impl TaskItem {
 
         let mut spans = vec![
             self.build_selection_indicator(),
-            Span::styled(
-                format!("[{badge_text}]"),
-                Style::default().fg(badge_color),
-            ),
+            Span::styled(format!("[{badge_text}]"), Style::default().fg(badge_color)),
             Span::raw(" "),
             Span::styled(
                 truncated_title,
-                Style::default().fg(title_color).add_modifier(title_modifier),
+                Style::default()
+                    .fg(title_color)
+                    .add_modifier(title_modifier),
             ),
         ];
 

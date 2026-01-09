@@ -1,26 +1,17 @@
 use crate::app::{App, Tab};
 use crate::events::EventListener;
 use crate::views;
-use crate::views::focus::FocusPanel;
-use crate::views::focus::operations::{
-    get_active_task_count, get_active_tasks, get_done_task_count, get_done_tasks,
-};
+use crate::views::tasks::{FocusPanel, TasksAction, TasksMode, get_active_tasks, get_done_tasks};
 use crossterm::event::KeyEvent;
 
 pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
-    if app.active_tab == Tab::Kanban {
-        app.kanban.poll_classification();
-    }
-
-    if app.active_tab == Tab::Focus {
-        let was_classifying =
-            matches!(app.focus.mode, views::focus::FocusMode::ClassifyingTask { .. });
-        app.kanban.poll_classification();
-        let is_still_classifying =
-            matches!(app.kanban.mode, views::kanban::KanbanMode::ClassifyingTask { .. });
+    if app.active_tab == Tab::Tasks {
+        let was_classifying = matches!(app.tasks.mode, TasksMode::ClassifyingTask { .. });
+        app.tasks.poll_classification();
+        let is_still_classifying = matches!(app.tasks.mode, TasksMode::ClassifyingTask { .. });
 
         if was_classifying && !is_still_classifying {
-            app.focus.mode = views::focus::FocusMode::Normal;
+            app.tasks.mode = TasksMode::Normal;
         }
     }
 
@@ -44,12 +35,12 @@ pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
     app.auto_transition_completed_tasks();
 }
 
-pub fn process_kanban_pending_actions(app: &mut App) {
-    if let Some(instance_id) = app.kanban.pending_instance_termination.take() {
+pub fn process_tasks_pending_actions(app: &mut App) {
+    if let Some(instance_id) = app.tasks.pending_instance_termination.take() {
         app.instances.close_pane_by_id(instance_id);
     }
 
-    if let Some(worktree_info) = app.kanban.pending_worktree_deletion.take() {
+    if let Some(worktree_info) = app.tasks.pending_worktree_deletion.take() {
         if let Ok(repo_root) = views::worktree::find_repository_root(
             std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
@@ -59,16 +50,16 @@ pub fn process_kanban_pending_actions(app: &mut App) {
         }
     }
 
-    if let Some(task_index) = app.kanban.pending_ide_open.take() {
-        app.open_task_in_ide(task_index);
+    if let Some(task_id) = app.tasks.pending_ide_open.take() {
+        app.open_task_in_ide(task_id);
     }
 
-    if let Some(task_index) = app.kanban.pending_terminal_switch.take() {
-        app.open_task_in_terminal(task_index);
+    if let Some(task_id) = app.tasks.pending_terminal_switch.take() {
+        app.open_task_in_terminal(task_id);
     }
 
-    if let Some((task_index, change_request)) = app.kanban.pending_change_request.take() {
-        if let Some(instance_id) = app.kanban.move_task_to_in_progress(task_index) {
+    if let Some((task_id, change_request)) = app.tasks.pending_change_request.take() {
+        if let Some(instance_id) = app.tasks.move_task_to_in_progress_by_id(task_id) {
             app.instances
                 .send_input_to_instance(instance_id, &change_request);
         }
@@ -81,7 +72,7 @@ pub fn process_roadmap_action(app: &mut App, action: views::roadmap::events::Roa
     match action {
         views::roadmap::events::RoadmapAction::ConvertToTask(item_index) => {
             app.convert_roadmap_item_to_task(item_index);
-            app.active_tab = Tab::Kanban;
+            app.active_tab = Tab::Tasks;
         }
         views::roadmap::events::RoadmapAction::SaveState => {
             let _ = app.save();
@@ -106,91 +97,80 @@ pub fn process_worktree_pending_actions(app: &mut App) {
     }
 }
 
-pub fn process_focus_event(app: &mut App, key: KeyEvent) {
-    let selected_instance_id = match app.focus.focused_panel {
+pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
+    let selected_instance_id = match app.tasks.focus_panel {
         FocusPanel::ActiveTasks => {
-            let tasks = get_active_tasks(&app.kanban.columns);
+            let tasks = get_active_tasks(&app.tasks.columns);
             tasks
                 .into_iter()
-                .nth(app.focus.active_selected_index)
+                .nth(app.tasks.focus_active_index)
                 .and_then(|task_ref| task_ref.task.instance_id)
         }
         FocusPanel::DoneTasks => {
-            let tasks = get_done_tasks(&app.kanban.columns);
+            let tasks = get_done_tasks(&app.tasks.columns);
             tasks
                 .into_iter()
-                .nth(app.focus.done_selected_index)
+                .nth(app.tasks.focus_done_index)
                 .and_then(|task_ref| task_ref.task.instance_id)
         }
     };
 
-    let action = views::focus::handle_key_event(
-        &mut app.focus,
-        key,
-        &app.kanban.columns,
-        selected_instance_id,
-    );
+    let action = views::tasks::handle_key_event(&mut app.tasks, key, selected_instance_id);
 
     match action {
-        views::focus::FocusAction::None => {}
-        views::focus::FocusAction::JumpToInstance(instance_id) => {
+        TasksAction::None => {}
+        TasksAction::JumpToInstance(instance_id) => {
             app.active_tab = Tab::Instances;
             app.instances.select_pane_by_id(instance_id);
             app.instances.mode = views::instances::InstanceMode::Focused;
         }
-        views::focus::FocusAction::SendToTerminal(instance_id, data) => {
+        TasksAction::SendToTerminal(instance_id, data) => {
             if !data.is_empty() {
                 app.instances.send_raw_input_to_instance(instance_id, &data);
             }
         }
-        views::focus::FocusAction::CreateTask(title) => {
-            app.focus.mode = views::focus::FocusMode::ClassifyingTask {
+        TasksAction::CreateTask(title) => {
+            app.tasks.mode = TasksMode::ClassifyingTask {
                 raw_input: title.clone(),
+                edit_task_id: None,
             };
-            app.kanban.start_classification(title);
+            app.tasks.start_classification(title);
         }
-        views::focus::FocusAction::UpdateTask { task_id, new_title } => {
-            app.kanban.update_task_title_by_id(task_id, new_title);
+        TasksAction::UpdateTask { task_id, new_title } => {
+            app.tasks.update_task_title_by_id(task_id, new_title);
             let _ = app.save();
         }
-        views::focus::FocusAction::DeleteTask(task_id) => {
-            if let Some(instance_id) = app.kanban.delete_task_by_id(task_id) {
+        TasksAction::DeleteTask(task_id) => {
+            if let Some(instance_id) = app.tasks.delete_task_by_id(task_id) {
                 app.instances.close_pane_by_id(instance_id);
             }
             let _ = app.save();
         }
-        views::focus::FocusAction::StartTask(task_id) => {
-            app.kanban.move_task_to_in_progress_by_id(task_id);
+        TasksAction::StartTask(task_id) => {
+            app.tasks.move_task_to_in_progress_by_id(task_id);
             app.sync_task_instances();
             let _ = app.save();
         }
-        views::focus::FocusAction::CancelClassification => {
-            app.kanban.cancel_classification();
+        TasksAction::CancelClassification => {
+            app.tasks.cancel_classification();
         }
-        views::focus::FocusAction::OpenInIDE(task_id) => {
-            if let Some(task_index) = app.kanban.find_task_index_by_id(task_id) {
-                app.open_task_in_ide(task_index);
+        TasksAction::OpenInIDE(task_id) => {
+            app.open_task_in_ide(task_id);
+        }
+        TasksAction::SwitchToTerminal(task_id) => {
+            app.open_task_in_terminal(task_id);
+        }
+        TasksAction::RequestChanges { task_id, message } => {
+            if let Some(instance_id) = app.tasks.move_task_to_in_progress_by_id(task_id) {
+                app.instances.send_input_to_instance(instance_id, &message);
             }
         }
-        views::focus::FocusAction::SwitchToTerminal(task_id) => {
-            if let Some(task_index) = app.kanban.find_task_index_by_id(task_id) {
-                app.open_task_in_terminal(task_index);
-            }
-        }
-        views::focus::FocusAction::RequestChanges { task_id, message } => {
-            if let Some(task_index) = app.kanban.find_task_index_by_id(task_id) {
-                if let Some(instance_id) = app.kanban.move_task_to_in_progress(task_index) {
-                    app.instances
-                        .send_input_to_instance(instance_id, &message);
-                }
-            }
-        }
-        views::focus::FocusAction::MergeBranch(task_id) => {
+        TasksAction::MergeBranch(task_id) => {
             app.merge_task_branch(task_id);
         }
     }
 
-    let active_count = get_active_task_count(&app.kanban.columns);
-    let done_count = get_done_task_count(&app.kanban.columns);
-    app.focus.clamp_selection(active_count, done_count);
+    app.tasks.clamp_focus_selection();
+
+    process_tasks_pending_actions(app);
 }

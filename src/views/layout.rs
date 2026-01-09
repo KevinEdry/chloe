@@ -1,5 +1,6 @@
-use super::{focus, footer, instances, kanban, roadmap, tab_bar, worktree};
+use super::{footer, instances, roadmap, tab_bar, tasks, worktree};
 use crate::app::{App, Tab};
+use crate::views::tasks::TasksViewMode;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -37,26 +38,34 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     tab_bar::render(frame, app, layout.tab_bar);
 
     match app.active_tab {
-        Tab::Kanban => kanban::view::render(frame, app, layout.content),
+        Tab::Tasks => match app.tasks.view_mode {
+            TasksViewMode::Focus => tasks::focus::view::render(frame, app, layout.content),
+            TasksViewMode::Kanban => tasks::kanban::view::render(frame, app, layout.content),
+        },
         Tab::Instances => instances::view::render(frame, &mut app.instances, layout.content),
         Tab::Roadmap => roadmap::view::render(frame, app, layout.content),
         Tab::Worktree => worktree::view::render(frame, layout.content, &app.worktree),
-        Tab::Focus => focus::view::render(frame, app, layout.content),
     }
 
     let status_content = match app.active_tab {
-        Tab::Kanban => kanban::view::get_status_bar_content(&app.kanban, layout.footer.width),
+        Tab::Tasks => match app.tasks.view_mode {
+            TasksViewMode::Focus => {
+                tasks::focus::view::get_status_bar_content(app, layout.footer.width)
+            }
+            TasksViewMode::Kanban => {
+                tasks::kanban::view::get_status_bar_content(app, layout.footer.width)
+            }
+        },
         Tab::Instances => {
             instances::view::get_status_bar_content(&app.instances, layout.footer.width)
         }
         Tab::Roadmap => roadmap::view::get_status_bar_content(&app.roadmap, layout.footer.width),
         Tab::Worktree => worktree::view::get_status_bar_content(&app.worktree, layout.footer.width),
-        Tab::Focus => focus::view::get_status_bar_content(app, layout.footer.width),
     };
 
     footer::render_footer(frame, layout.footer, status_content);
 
     if app.showing_exit_confirmation {
-        kanban::dialogs::render_exit_confirmation_dialog(frame, frame.area());
+        tasks::dialogs::render_exit_confirmation_dialog(frame, frame.area());
     }
 }

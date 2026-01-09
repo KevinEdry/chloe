@@ -113,8 +113,7 @@ fn render_cursor<S: Screen>(screen: &S, area: Rect, buf: &mut Buffer, cursor: &C
     let cursor_x = area.x + cursor_col;
     let cursor_y = area.y + cursor_row;
 
-    let is_within_bounds =
-        cursor_x < area.x + area.width && cursor_y < area.y + area.height;
+    let is_within_bounds = cursor_x < area.x + area.width && cursor_y < area.y + area.height;
 
     if !is_within_bounds {
         return;

@@ -3,6 +3,7 @@ use super::helpers::{
     wrap_text,
 };
 use crate::app::App;
+use crate::views::tasks::Task;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -16,8 +17,8 @@ const COLUMN_WIDTH_PERCENT: u16 = 25;
 const TASK_CARD_HEIGHT: u16 = 7;
 const MAX_DESCRIPTION_LINES: usize = 3;
 
-pub fn render_columns(f: &mut Frame, app: &App, area: Rect) {
-    let state = &app.kanban;
+pub fn render_columns(frame: &mut Frame, app: &App, area: Rect) {
+    let state = &app.tasks;
     let column_count = state.columns.len();
 
     let constraints = if area.width < COLUMN_WIDTH_THRESHOLD {
@@ -34,7 +35,7 @@ pub fn render_columns(f: &mut Frame, app: &App, area: Rect) {
     for (column_index, (column, chunk)) in
         state.columns.iter().zip(column_chunks.iter()).enumerate()
     {
-        let is_selected = column_index == state.selected_column;
+        let is_selected = column_index == state.kanban_selected_column;
         let border_color = if is_selected {
             COLUMN_COLORS_SELECTED[column_index]
         } else {
@@ -69,8 +70,8 @@ pub fn render_columns(f: &mut Frame, app: &App, area: Rect) {
             .title(title_text);
 
         if !column.tasks.is_empty() && is_selected {
-            if let Some(selected_idx) = state.selected_task {
-                let position_text = format!(" {} of {} ", selected_idx + 1, column.tasks.len());
+            if let Some(selected_index) = state.kanban_selected_task {
+                let position_text = format!(" {} of {} ", selected_index + 1, column.tasks.len());
                 column_block = column_block.title_bottom(
                     Line::from(vec![Span::styled(
                         position_text,
@@ -84,7 +85,7 @@ pub fn render_columns(f: &mut Frame, app: &App, area: Rect) {
         }
 
         let inner_area = column_block.inner(*chunk);
-        f.render_widget(column_block, *chunk);
+        frame.render_widget(column_block, *chunk);
 
         if column.tasks.is_empty() {
             continue;
@@ -94,9 +95,9 @@ pub fn render_columns(f: &mut Frame, app: &App, area: Rect) {
         let available_height = inner_area.height;
         let cards_that_fit = (available_height / card_height) as usize;
 
-        let start_index = if let Some(selected_idx) = state.selected_task {
+        let start_index = if let Some(selected_index) = state.kanban_selected_task {
             if is_selected {
-                selected_idx.saturating_sub(cards_that_fit / 2)
+                selected_index.saturating_sub(cards_that_fit / 2)
             } else {
                 0
             }
@@ -125,22 +126,16 @@ pub fn render_columns(f: &mut Frame, app: &App, area: Rect) {
                 height: card_height.min(available_height - y_offset),
             };
 
-            let is_selected_task = is_selected && state.selected_task == Some(task_index);
+            let is_selected_task = is_selected && state.kanban_selected_task == Some(task_index);
 
-            render_task_card(f, app, task, card_area, is_selected_task);
+            render_task_card(frame, app, task, card_area, is_selected_task);
 
             y_offset += card_height;
         }
     }
 }
 
-fn render_task_card(
-    f: &mut Frame,
-    app: &App,
-    task: &crate::views::kanban::Task,
-    area: Rect,
-    is_selected: bool,
-) {
+fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_selected: bool) {
     let badge_color = task.task_type.color();
     let created = task.created_at.format("%Y/%m/%d-%H:%M:%S").to_string();
 
@@ -209,22 +204,24 @@ fn render_task_card(
         .title(title_line);
 
     let inner = block.inner(area);
-    f.render_widget(block, area);
+    frame.render_widget(block, area);
 
     let max_width = inner.width.saturating_sub(2) as usize;
 
     let mut lines = vec![];
 
     if !task.description.is_empty() {
-        let max_desc_lines = MAX_DESCRIPTION_LINES;
+        let max_description_lines = MAX_DESCRIPTION_LINES;
         let wrapped_lines = wrap_text(&task.description, max_width);
-        let has_more = wrapped_lines.len() > max_desc_lines;
+        let has_more = wrapped_lines.len() > max_description_lines;
 
-        for (index, desc_line) in wrapped_lines.iter().take(max_desc_lines).enumerate() {
-            let line_text = if has_more && index == max_desc_lines - 1 {
-                format!("{}...", desc_line)
+        for (index, description_line) in
+            wrapped_lines.iter().take(max_description_lines).enumerate()
+        {
+            let line_text = if has_more && index == max_description_lines - 1 {
+                format!("{}...", description_line)
             } else {
-                desc_line.clone()
+                description_line.clone()
             };
 
             lines.push(Line::from(Span::styled(
@@ -242,5 +239,5 @@ fn render_task_card(
 
     let text = Paragraph::new(lines);
 
-    f.render_widget(text, inner);
+    frame.render_widget(text, inner);
 }
