@@ -28,16 +28,6 @@ impl<'a, S: Screen> PseudoTerminal<'a, S> {
         }
     }
 
-    pub fn block(mut self, block: Block<'a>) -> Self {
-        self.block = Some(block);
-        self
-    }
-
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
-    }
-
     pub fn cursor(mut self, cursor: Cursor) -> Self {
         self.cursor = cursor;
         self
@@ -46,15 +36,6 @@ impl<'a, S: Screen> PseudoTerminal<'a, S> {
     pub const fn scroll_offset(mut self, offset: usize) -> Self {
         self.scroll_offset = offset;
         self
-    }
-
-    pub const fn show_scrollbar(mut self, show: bool) -> Self {
-        self.show_scrollbar = show;
-        self
-    }
-
-    pub const fn screen(&self) -> &S {
-        self.screen
     }
 }
 

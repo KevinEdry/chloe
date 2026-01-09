@@ -1,5 +1,5 @@
 use super::generator::{GeneratedRoadmap, RoadmapGenerationRequest};
-use super::state::{RoadmapItem, RoadmapPriority, RoadmapState, RoadmapStatus};
+use super::state::{RoadmapItem, RoadmapPriority, RoadmapState};
 use chrono::Utc;
 use uuid::Uuid;
 
@@ -61,20 +61,6 @@ impl RoadmapState {
         }
     }
 
-    pub fn update_item_description(&mut self, index: usize, description: String) {
-        if let Some(item) = self.items.get_mut(index) {
-            item.description = description;
-            item.updated_at = Utc::now();
-        }
-    }
-
-    pub fn update_item_status(&mut self, index: usize, status: RoadmapStatus) {
-        if let Some(item) = self.items.get_mut(index) {
-            item.status = status;
-            item.updated_at = Utc::now();
-        }
-    }
-
     pub fn update_item_priority(&mut self, index: usize, priority: RoadmapPriority) {
         if let Some(item) = self.items.get_mut(index) {
             let item_id = item.id;
@@ -82,36 +68,6 @@ impl RoadmapState {
             item.updated_at = Utc::now();
             self.sort_by_priority();
             self.select_item_by_id(item_id);
-        }
-    }
-
-    pub fn add_user_story(&mut self, index: usize, story: String) {
-        if let Some(item) = self.items.get_mut(index) {
-            item.user_stories.push(story);
-            item.updated_at = Utc::now();
-        }
-    }
-
-    pub fn add_acceptance_criterion(&mut self, index: usize, criterion: String) {
-        if let Some(item) = self.items.get_mut(index) {
-            item.acceptance_criteria.push(criterion);
-            item.updated_at = Utc::now();
-        }
-    }
-
-    pub fn add_dependency(&mut self, index: usize, dependency_id: Uuid) {
-        if let Some(item) = self.items.get_mut(index) {
-            if !item.dependencies.contains(&dependency_id) {
-                item.dependencies.push(dependency_id);
-                item.updated_at = Utc::now();
-            }
-        }
-    }
-
-    pub fn remove_dependency(&mut self, index: usize, dependency_id: Uuid) {
-        if let Some(item) = self.items.get_mut(index) {
-            item.dependencies.retain(|id| *id != dependency_id);
-            item.updated_at = Utc::now();
         }
     }
 
@@ -139,10 +95,6 @@ impl RoadmapState {
             Some(_) => 0,
             None => 0,
         });
-    }
-
-    pub fn find_item_by_id(&self, id: Uuid) -> Option<&RoadmapItem> {
-        self.items.iter().find(|item| item.id == id)
     }
 
     pub fn start_generation(&mut self, project_path: String) {

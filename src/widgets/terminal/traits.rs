@@ -1,7 +1,6 @@
 use ratatui::buffer::Cell as BufferCell;
 
 pub trait Cell {
-    fn has_contents(&self) -> bool;
     fn apply(&self, cell: &mut BufferCell);
 }
 

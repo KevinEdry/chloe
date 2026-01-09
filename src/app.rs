@@ -299,22 +299,6 @@ impl App {
         }
     }
 
-    pub fn switch_to_task_instance(&mut self, task_index: usize) -> bool {
-        let review_column_index = 2;
-        if let Some(task) = self
-            .kanban
-            .columns
-            .get(review_column_index)
-            .and_then(|col| col.tasks.get(task_index))
-        {
-            if let Some(instance_id) = task.instance_id {
-                self.active_tab = Tab::Instances;
-                return self.instances.select_pane_by_id(instance_id);
-            }
-        }
-        false
-    }
-
     pub fn convert_roadmap_item_to_task(&mut self, item_index: usize) {
         if let Some(item) = self.roadmap.items.get(item_index) {
             let title = item.title.clone();

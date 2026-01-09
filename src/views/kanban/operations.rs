@@ -324,22 +324,6 @@ impl KanbanState {
         });
     }
 
-    pub fn toggle_pause(&mut self) -> Option<(uuid::Uuid, bool)> {
-        let is_in_progress_column = self.selected_column == 1;
-        if !is_in_progress_column {
-            return None;
-        }
-
-        let task_index = self.selected_task?;
-        let task = self.columns[self.selected_column]
-            .tasks
-            .get_mut(task_index)?;
-        let instance_id = task.instance_id?;
-
-        task.is_paused = !task.is_paused;
-        Some((instance_id, task.is_paused))
-    }
-
     pub fn move_task_to_review_by_instance(&mut self, instance_id: uuid::Uuid) -> bool {
         let in_progress_column_index = 1;
         let review_column_index = 2;
