@@ -1,6 +1,9 @@
 <p align="center">
-  <h1 align="center">Chloe</h1>
-  <p>Chloe (a wordplay on "Claude TUI") is a terminal-based task management application built with Rust. It combines a kanban board for tracking work with integrated terminal instances, letting you manage multiple Claude Code sessions in parallel while maintaining visibility and control over what each instance is doing.</p>
+  <img src="docs/public/logos/logo-with-name.svg" alt="Chloe" width="340">
+</p>
+
+<p align="center">
+  Chloe (a wordplay on "Claude TUI") is a terminal-based task management application built with Rust. It combines a kanban board for tracking work with integrated terminal instances, letting you manage multiple Claude Code sessions in parallel while maintaining visibility and control over what each instance is doing.
 </p>
 
 <p align="center">
@@ -13,6 +16,10 @@
   <a href="https://github.com/KevinEdry/chloe">
     <img src="https://img.shields.io/badge/unsafe-forbidden-success.svg" alt="Unsafe Forbidden">
   </a>
+</p>
+
+<p align="center">
+  <img src="docs/public/demo.gif" alt="Chloe Demo" width="800">
 </p>
 
 <details>
