@@ -1,0 +1,24 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c084fc;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Back pane -->
+  <rect x="12" y="6" width="46" height="32" rx="4" stroke="#52525b" stroke-width="2" fill="#1a1726"/>
+  <text x="18" y="18" font-family="monospace" font-size="10" fill="#a1a1aa">&gt;</text>
+  <line x1="26" y1="23" x2="34" y2="23" stroke="#71717a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Middle pane -->
+  <rect x="8" y="14" width="46" height="32" rx="4" stroke="#71717a" stroke-width="2" fill="#1a1726"/>
+  <text x="14" y="26" font-family="monospace" font-size="10" fill="#a1a1aa">&gt;</text>
+  <line x1="22" y1="31" x2="32" y2="31" stroke="#71717a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Front pane (highlighted) -->
+  <rect x="4" y="22" width="46" height="32" rx="4" stroke="url(#grad3)" stroke-width="2.5" fill="#13111c"/>
+  <text x="10" y="36" font-family="monospace" font-size="10" fill="#fafafa">&gt;</text>
+  <line x1="18" y1="41" x2="28" y2="41" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round"/>
+</svg>

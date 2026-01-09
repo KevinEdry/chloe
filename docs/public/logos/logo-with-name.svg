@@ -1,0 +1,27 @@
+<svg width="115" height="36" viewBox="0 0 115 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c084fc;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Back pane -->
+  <rect x="8" y="1" width="32" height="22" rx="3" stroke="#52525b" stroke-width="1.5" fill="#1a1726"/>
+  <text x="12" y="10" font-family="monospace" font-size="7" fill="#a1a1aa">&gt;</text>
+  <line x1="18" y1="14" x2="24" y2="14" stroke="#71717a" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Middle pane -->
+  <rect x="5" y="6" width="32" height="22" rx="3" stroke="#71717a" stroke-width="1.5" fill="#1a1726"/>
+  <text x="9" y="15" font-family="monospace" font-size="7" fill="#a1a1aa">&gt;</text>
+  <line x1="15" y1="19" x2="22" y2="19" stroke="#71717a" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Front pane (highlighted) -->
+  <rect x="2" y="12" width="32" height="22" rx="3" stroke="url(#grad3)" stroke-width="2" fill="#13111c"/>
+  <text x="6" y="22" font-family="monospace" font-size="7" fill="#fafafa">&gt;</text>
+  <line x1="12" y1="26" x2="20" y2="26" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Chloe text -->
+  <text x="42" y="27" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#fafafa">Chloe</text>
+</svg>
