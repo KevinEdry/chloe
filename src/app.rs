@@ -338,6 +338,119 @@ impl App {
             let _ = self.config.terminal_command.open_at_path(&worktree.path);
         }
     }
+
+    pub fn merge_task_branch(&mut self, task_id: uuid::Uuid) {
+        let task = match self.kanban.find_task_by_id(task_id) {
+            Some(t) => t,
+            None => return,
+        };
+
+        let worktree_info = match &task.worktree_info {
+            Some(info) => info.clone(),
+            None => {
+                self.kanban.move_task_to_done_by_id(task_id);
+                let _ = self.save();
+                return;
+            }
+        };
+
+        let current_dir = match std::env::current_dir() {
+            Ok(dir) => dir,
+            Err(_) => return,
+        };
+
+        let repository_root = match crate::views::worktree::find_repository_root(&current_dir) {
+            Ok(root) => root,
+            Err(_) => return,
+        };
+
+        let has_conflicts =
+            crate::views::worktree::check_merge_conflicts(&repository_root, &worktree_info)
+                .ok()
+                .flatten()
+                .is_some();
+
+        if has_conflicts {
+            self.resolve_task_conflicts(task_id);
+            return;
+        }
+
+        let merge_result =
+            crate::views::worktree::merge_worktree_to_main(&repository_root, &worktree_info);
+
+        match merge_result {
+            Ok(crate::views::worktree::MergeResult::Success) => {
+                let _ = crate::views::worktree::delete_worktree(&repository_root, &worktree_info);
+                self.kanban.move_task_to_done_by_id(task_id);
+                let _ = self.save();
+            }
+            Ok(crate::views::worktree::MergeResult::Conflicts { conflicted_files }) => {
+                let conflict_message = format!(
+                    "Please resolve merge conflicts in the following files:\n{}\n\nThen commit the resolution.",
+                    conflicted_files.join("\n")
+                );
+                if let Some(task_index) = self.kanban.find_task_index_by_id(task_id) {
+                    if let Some(instance_id) = self.kanban.move_task_to_in_progress(task_index) {
+                        self.instances
+                            .send_input_to_instance(instance_id, &conflict_message);
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+    }
+
+    pub fn resolve_task_conflicts(&mut self, task_id: uuid::Uuid) {
+        let task = match self.kanban.find_task_by_id(task_id) {
+            Some(t) => t,
+            None => return,
+        };
+
+        let worktree_info = match &task.worktree_info {
+            Some(info) => info.clone(),
+            None => return,
+        };
+
+        let current_dir = match std::env::current_dir() {
+            Ok(dir) => dir,
+            Err(_) => return,
+        };
+
+        let repository_root = match crate::views::worktree::find_repository_root(&current_dir) {
+            Ok(root) => root,
+            Err(_) => return,
+        };
+
+        let conflicts =
+            crate::views::worktree::check_merge_conflicts(&repository_root, &worktree_info)
+                .ok()
+                .flatten()
+                .unwrap_or_default();
+
+        let default_branch = crate::views::worktree::get_default_branch(&repository_root)
+            .unwrap_or_else(|_| "main".to_string());
+
+        let conflict_message = if conflicts.is_empty() {
+            format!(
+                "Please merge branch '{}' into '{}' and resolve any conflicts that arise.",
+                worktree_info.branch_name, default_branch
+            )
+        } else {
+            format!(
+                "Please resolve the following merge conflicts when merging '{}' into '{}':\n{}\n\nResolve the conflicts and commit the changes.",
+                worktree_info.branch_name,
+                default_branch,
+                conflicts.join("\n")
+            )
+        };
+
+        if let Some(task_index) = self.kanban.find_task_index_by_id(task_id) {
+            if let Some(instance_id) = self.kanban.move_task_to_in_progress(task_index) {
+                self.instances
+                    .send_input_to_instance(instance_id, &conflict_message);
+            }
+        }
+    }
 }
 
 impl Default for App {

@@ -1,7 +1,7 @@
 use super::operations::{
     TaskReference, get_active_task_count, get_active_tasks, get_done_task_count, get_done_tasks,
 };
-use super::state::{FocusMode, FocusPanel, FocusState};
+use super::state::{FocusMode, FocusPanel, FocusReviewAction, FocusState};
 use crate::views::kanban::Column;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use uuid::Uuid;
@@ -15,7 +15,10 @@ pub enum FocusAction {
     DeleteTask(Uuid),
     StartTask(Uuid),
     CancelClassification,
-    SaveState,
+    OpenInIDE(Uuid),
+    SwitchToTerminal(Uuid),
+    RequestChanges { task_id: Uuid, message: String },
+    MergeBranch(Uuid),
 }
 
 pub fn handle_key_event(
@@ -57,6 +60,14 @@ pub fn handle_key_event(
             handle_confirm_start_task_mode(state, key, *task_id)
         }
         FocusMode::ClassifyingTask { .. } => handle_classifying_task_mode(state, key),
+        FocusMode::ReviewPopup {
+            task_id,
+            scroll_offset,
+            selected_action,
+        } => handle_review_popup_mode(state, key, *task_id, *scroll_offset, *selected_action),
+        FocusMode::ReviewRequestChanges { task_id, .. } => {
+            handle_review_request_changes_mode(state, key, *task_id)
+        }
     }
 }
 
@@ -111,6 +122,7 @@ fn handle_normal_mode(
             if let Some(task_ref) = selected_task {
                 let is_planning = task_ref.column_index == 0;
                 let is_in_progress = task_ref.column_index == 1;
+                let is_review = task_ref.column_index == 2;
 
                 if is_planning {
                     state.mode = FocusMode::ConfirmStartTask {
@@ -124,6 +136,13 @@ fn handle_normal_mode(
                     } else {
                         FocusAction::None
                     }
+                } else if is_review {
+                    state.mode = FocusMode::ReviewPopup {
+                        task_id: task_ref.task.id,
+                        scroll_offset: 0,
+                        selected_action: FocusReviewAction::ReviewInIDE,
+                    };
+                    FocusAction::None
                 } else {
                     FocusAction::None
                 }
@@ -327,5 +346,153 @@ fn convert_key_to_bytes(key: KeyEvent) -> Vec<u8> {
         KeyCode::Insert => b"\x1b[2~".to_vec(),
         KeyCode::Esc => b"\x1b".to_vec(),
         _ => Vec::new(),
+    }
+}
+
+fn handle_review_popup_mode(
+    state: &mut FocusState,
+    key: KeyEvent,
+    task_id: Uuid,
+    scroll_offset: usize,
+    selected_action: FocusReviewAction,
+) -> FocusAction {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            state.mode = FocusMode::Normal;
+            FocusAction::None
+        }
+        KeyCode::Char('j') => {
+            state.mode = FocusMode::ReviewPopup {
+                task_id,
+                scroll_offset: scroll_offset.saturating_add(1),
+                selected_action,
+            };
+            FocusAction::None
+        }
+        KeyCode::Char('k') => {
+            state.mode = FocusMode::ReviewPopup {
+                task_id,
+                scroll_offset: scroll_offset.saturating_sub(1),
+                selected_action,
+            };
+            FocusAction::None
+        }
+        KeyCode::PageDown => {
+            state.mode = FocusMode::ReviewPopup {
+                task_id,
+                scroll_offset: scroll_offset.saturating_add(10),
+                selected_action,
+            };
+            FocusAction::None
+        }
+        KeyCode::PageUp => {
+            state.mode = FocusMode::ReviewPopup {
+                task_id,
+                scroll_offset: scroll_offset.saturating_sub(10),
+                selected_action,
+            };
+            FocusAction::None
+        }
+        KeyCode::Left | KeyCode::Char('h') => {
+            let actions = FocusReviewAction::all();
+            let current_index = actions
+                .iter()
+                .position(|action| *action == selected_action)
+                .unwrap_or(0);
+            let new_index = if current_index == 0 {
+                actions.len() - 1
+            } else {
+                current_index - 1
+            };
+            state.mode = FocusMode::ReviewPopup {
+                task_id,
+                scroll_offset,
+                selected_action: actions[new_index],
+            };
+            FocusAction::None
+        }
+        KeyCode::Right | KeyCode::Char('l') | KeyCode::Tab => {
+            let actions = FocusReviewAction::all();
+            let current_index = actions
+                .iter()
+                .position(|action| *action == selected_action)
+                .unwrap_or(0);
+            let new_index = (current_index + 1) % actions.len();
+            state.mode = FocusMode::ReviewPopup {
+                task_id,
+                scroll_offset,
+                selected_action: actions[new_index],
+            };
+            FocusAction::None
+        }
+        KeyCode::Enter => execute_review_action(state, task_id, selected_action),
+        _ => FocusAction::None,
+    }
+}
+
+fn execute_review_action(
+    state: &mut FocusState,
+    task_id: Uuid,
+    action: FocusReviewAction,
+) -> FocusAction {
+    match action {
+        FocusReviewAction::ReviewInIDE => {
+            state.mode = FocusMode::Normal;
+            FocusAction::OpenInIDE(task_id)
+        }
+        FocusReviewAction::ReviewInTerminal => {
+            state.mode = FocusMode::Normal;
+            FocusAction::SwitchToTerminal(task_id)
+        }
+        FocusReviewAction::RequestChanges => {
+            state.mode = FocusMode::ReviewRequestChanges {
+                task_id,
+                input: String::new(),
+            };
+            FocusAction::None
+        }
+        FocusReviewAction::MergeToBranch => {
+            state.mode = FocusMode::Normal;
+            FocusAction::MergeBranch(task_id)
+        }
+    }
+}
+
+fn handle_review_request_changes_mode(
+    state: &mut FocusState,
+    key: KeyEvent,
+    task_id: Uuid,
+) -> FocusAction {
+    let input = match &mut state.mode {
+        FocusMode::ReviewRequestChanges { input, .. } => input,
+        _ => return FocusAction::None,
+    };
+
+    match key.code {
+        KeyCode::Char(character) => {
+            input.push(character);
+            FocusAction::None
+        }
+        KeyCode::Backspace => {
+            input.pop();
+            FocusAction::None
+        }
+        KeyCode::Enter => {
+            let change_request = input.clone();
+            state.mode = FocusMode::Normal;
+            if change_request.is_empty() {
+                FocusAction::None
+            } else {
+                FocusAction::RequestChanges {
+                    task_id,
+                    message: change_request,
+                }
+            }
+        }
+        KeyCode::Esc => {
+            state.mode = FocusMode::Normal;
+            FocusAction::None
+        }
+        _ => FocusAction::None,
     }
 }

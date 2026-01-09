@@ -1,5 +1,6 @@
 mod details_panel;
 mod done_tasks;
+mod review_dialog;
 mod task_list;
 mod terminal_panel;
 
@@ -61,7 +62,7 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     let is_terminal_focused = matches!(app.focus.mode, FocusMode::TerminalFocused);
     terminal_panel::render(frame, instance_pane, is_terminal_focused, right_chunks[1]);
 
-    render_dialogs(frame, &app.focus.mode, area);
+    render_dialogs(frame, app, &app.focus.mode, area);
 }
 
 fn get_selected_task(app: &App) -> Option<super::operations::TaskReference<'_>> {
@@ -77,7 +78,7 @@ fn get_selected_task(app: &App) -> Option<super::operations::TaskReference<'_>> 
     }
 }
 
-fn render_dialogs(frame: &mut Frame, mode: &FocusMode, area: Rect) {
+fn render_dialogs(frame: &mut Frame, app: &App, mode: &FocusMode, area: Rect) {
     match mode {
         FocusMode::AddingTask { input } => {
             frame.render_widget(InputDialog::new("Add Task", input), area);
@@ -102,6 +103,16 @@ fn render_dialogs(frame: &mut Frame, mode: &FocusMode, area: Rect) {
         FocusMode::ClassifyingTask { raw_input } => {
             frame.render_widget(LoadingDialog::new("Loading", raw_input), area);
         }
+        FocusMode::ReviewPopup {
+            task_id,
+            scroll_offset,
+            selected_action,
+        } => {
+            review_dialog::render(frame, app, *task_id, *scroll_offset, *selected_action, area);
+        }
+        FocusMode::ReviewRequestChanges { input, .. } => {
+            frame.render_widget(InputDialog::new("Request Changes", input), area);
+        }
         FocusMode::Normal | FocusMode::TerminalFocused => {}
     }
 }
@@ -120,6 +131,8 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         FocusMode::ConfirmDelete { .. } => ("DELETE", Color::Red),
         FocusMode::ConfirmStartTask { .. } => ("START", Color::Green),
         FocusMode::ClassifyingTask { .. } => ("CLASSIFYING", Color::Yellow),
+        FocusMode::ReviewPopup { .. } => ("REVIEW", Color::Magenta),
+        FocusMode::ReviewRequestChanges { .. } => ("REQUEST CHANGES", Color::Yellow),
     };
 
     let active_count: usize = app
@@ -147,6 +160,8 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
                 "y:confirm  n:cancel"
             }
             FocusMode::ClassifyingTask { .. } => "Esc:cancel",
+            FocusMode::ReviewPopup { .. } => "hl:buttons  jk:scroll  Enter:select  Esc:close",
+            FocusMode::ReviewRequestChanges { .. } => "Enter:send  Esc:cancel",
         }
     } else {
         match &state.mode {
@@ -161,6 +176,12 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
                 "Press y to confirm, n or Esc to cancel"
             }
             FocusMode::ClassifyingTask { .. } => "AI is classifying your task...  Esc:cancel",
+            FocusMode::ReviewPopup { .. } => {
+                "h/l:switch-buttons  j/k:scroll  Enter:select-action  Esc/q:close"
+            }
+            FocusMode::ReviewRequestChanges { .. } => {
+                "Type your change request  Enter:send  Esc:cancel"
+            }
         }
     };
 

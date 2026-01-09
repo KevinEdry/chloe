@@ -535,4 +535,47 @@ impl KanbanState {
         }
         None
     }
+
+    pub fn find_task_index_by_id(&self, task_id: uuid::Uuid) -> Option<usize> {
+        let review_column_index = 2;
+        self.columns
+            .get(review_column_index)?
+            .tasks
+            .iter()
+            .position(|task| task.id == task_id)
+    }
+
+    pub fn find_task_by_id(&self, task_id: uuid::Uuid) -> Option<&super::Task> {
+        for column in &self.columns {
+            for task in &column.tasks {
+                if task.id == task_id {
+                    return Some(task);
+                }
+            }
+        }
+        None
+    }
+
+    pub fn move_task_to_done_by_id(&mut self, task_id: uuid::Uuid) -> bool {
+        let review_column_index = 2;
+        let done_column_index = 3;
+
+        let task_index = self.columns
+            .get(review_column_index)
+            .and_then(|column| column.tasks.iter().position(|task| task.id == task_id));
+
+        let task_index = match task_index {
+            Some(i) => i,
+            None => return false,
+        };
+
+        if self.columns.len() <= done_column_index {
+            return false;
+        }
+
+        let task = self.columns[review_column_index].tasks.remove(task_index);
+        self.columns[done_column_index].tasks.push(task);
+
+        true
+    }
 }

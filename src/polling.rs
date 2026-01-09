@@ -167,8 +167,26 @@ pub fn process_focus_event(app: &mut App, key: KeyEvent) {
         views::focus::FocusAction::CancelClassification => {
             app.kanban.cancel_classification();
         }
-        views::focus::FocusAction::SaveState => {
-            let _ = app.save();
+        views::focus::FocusAction::OpenInIDE(task_id) => {
+            if let Some(task_index) = app.kanban.find_task_index_by_id(task_id) {
+                app.open_task_in_ide(task_index);
+            }
+        }
+        views::focus::FocusAction::SwitchToTerminal(task_id) => {
+            if let Some(task_index) = app.kanban.find_task_index_by_id(task_id) {
+                app.open_task_in_terminal(task_index);
+            }
+        }
+        views::focus::FocusAction::RequestChanges { task_id, message } => {
+            if let Some(task_index) = app.kanban.find_task_index_by_id(task_id) {
+                if let Some(instance_id) = app.kanban.move_task_to_in_progress(task_index) {
+                    app.instances
+                        .send_input_to_instance(instance_id, &message);
+                }
+            }
+        }
+        views::focus::FocusAction::MergeBranch(task_id) => {
+            app.merge_task_branch(task_id);
         }
     }
 

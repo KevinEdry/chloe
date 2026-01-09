@@ -44,4 +44,50 @@ pub enum FocusMode {
     ConfirmDelete { task_id: Uuid },
     ConfirmStartTask { task_id: Uuid },
     ClassifyingTask { raw_input: String },
+    ReviewPopup {
+        task_id: Uuid,
+        scroll_offset: usize,
+        selected_action: FocusReviewAction,
+    },
+    ReviewRequestChanges {
+        task_id: Uuid,
+        input: String,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum FocusReviewAction {
+    ReviewInIDE,
+    ReviewInTerminal,
+    RequestChanges,
+    MergeToBranch,
+}
+
+impl FocusReviewAction {
+    pub const fn all() -> [Self; 4] {
+        [
+            Self::ReviewInIDE,
+            Self::ReviewInTerminal,
+            Self::RequestChanges,
+            Self::MergeToBranch,
+        ]
+    }
+
+    pub fn label(&self, branch_name: Option<&str>, has_conflicts: bool) -> String {
+        match self {
+            Self::ReviewInIDE => "Review in IDE".to_string(),
+            Self::ReviewInTerminal => "Review in Terminal".to_string(),
+            Self::RequestChanges => "Request Changes".to_string(),
+            Self::MergeToBranch => {
+                if has_conflicts {
+                    "Resolve Conflicts".to_string()
+                } else {
+                    match branch_name {
+                        Some(name) => format!("Merge to {}", name),
+                        None => "Mark Complete".to_string(),
+                    }
+                }
+            }
+        }
+    }
 }

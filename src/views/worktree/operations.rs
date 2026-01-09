@@ -94,6 +94,82 @@ pub fn is_git_repository(path: &Path) -> bool {
     Repository::discover(path).is_ok()
 }
 
+/// Get the default branch name (main or master) for the repository
+pub fn get_default_branch(repository_path: &Path) -> Result<String> {
+    let repository = Repository::open(repository_path).context("Failed to open git repository")?;
+
+    if repository.find_branch("main", BranchType::Local).is_ok() {
+        return Ok("main".to_string());
+    }
+
+    if repository.find_branch("master", BranchType::Local).is_ok() {
+        return Ok("master".to_string());
+    }
+
+    let head = repository.head().context("Failed to get HEAD reference")?;
+    if let Some(name) = head.shorthand() {
+        return Ok(name.to_string());
+    }
+
+    Ok("main".to_string())
+}
+
+/// Check if merging a branch into the default branch would cause conflicts
+pub fn check_merge_conflicts(
+    repository_path: &Path,
+    worktree_info: &WorktreeInfo,
+) -> Result<Option<Vec<String>>> {
+    let repository = Repository::open(repository_path).context("Failed to open git repository")?;
+    let default_branch = get_default_branch(repository_path)?;
+
+    let our_branch = repository
+        .find_branch(&default_branch, BranchType::Local)
+        .context("Failed to find default branch")?;
+    let their_branch = repository
+        .find_branch(&worktree_info.branch_name, BranchType::Local)
+        .context("Failed to find worktree branch")?;
+
+    let our_commit = our_branch
+        .get()
+        .peel_to_commit()
+        .context("Failed to get default branch commit")?;
+    let their_commit = their_branch
+        .get()
+        .peel_to_commit()
+        .context("Failed to get worktree branch commit")?;
+
+    let ancestor = repository
+        .find_commit(
+            repository
+                .merge_base(our_commit.id(), their_commit.id())
+                .context("Failed to find merge base")?,
+        )
+        .context("Failed to find ancestor commit")?;
+
+    let mut merge_options = git2::MergeOptions::new();
+    let index = repository
+        .merge_commits(&ancestor, &their_commit, Some(&mut merge_options))
+        .context("Failed to perform merge analysis")?;
+
+    if index.has_conflicts() {
+        let conflicts: Vec<String> = index
+            .conflicts()
+            .context("Failed to get conflicts")?
+            .filter_map(|conflict| conflict.ok())
+            .filter_map(|conflict| {
+                conflict
+                    .our
+                    .or(conflict.their)
+                    .or(conflict.ancestor)
+                    .and_then(|entry| String::from_utf8(entry.path.clone()).ok())
+            })
+            .collect();
+        return Ok(Some(conflicts));
+    }
+
+    Ok(None)
+}
+
 /// Get the repository root for a given path
 pub fn find_repository_root(path: &Path) -> Result<PathBuf> {
     let repository = Repository::discover(path).context("Not a git repository")?;
