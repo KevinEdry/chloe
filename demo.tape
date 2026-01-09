@@ -10,7 +10,7 @@ Set Height 700
 Set Theme "Catppuccin Mocha"
 Set Padding 10
 Set Framerate 30
-Set PlaybackSpeed 0.5
+Set PlaybackSpeed 1
 
 # Start the application
 Type "chloe"
@@ -29,21 +29,21 @@ Type "a"
 Sleep 500ms
 Type "Implement user authentication"
 Enter
-Sleep 1s
+Sleep 8s
 
 # Add another task
 Type "a"
 Sleep 500ms
 Type "Write API documentation"
 Enter
-Sleep 1s
+Sleep 8s
 
 # Add a third task
 Type "a"
 Sleep 500ms
 Type "Fix login bug"
 Enter
-Sleep 1s
+Sleep 8s
 
 # Navigate tasks with vim keys
 Type "j"
@@ -54,6 +54,8 @@ Type "k"
 Sleep 500ms
 
 # Move a task to In Progress (Enter)
+Enter
+Sleep 1s
 Enter
 Sleep 1s
 
@@ -75,7 +77,7 @@ Sleep 1s
 
 # Focus the pane to type
 Enter
-Sleep 500ms
+Sleep 1s
 
 # Run a simple command
 Type "echo 'Hello from Chloe!'"
