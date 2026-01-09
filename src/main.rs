@@ -100,6 +100,13 @@ fn run_app<B: ratatui::backend::Backend>(
                     let instance_is_focused = app.active_tab == Tab::Instances
                         && app.instances.mode == views::instances::InstanceMode::Focused;
 
+                    let focus_is_typing = app.active_tab == Tab::Focus
+                        && matches!(
+                            app.focus.mode,
+                            views::focus::FocusMode::AddingTask { .. }
+                                | views::focus::FocusMode::EditingTask { .. }
+                        );
+
                     if app.showing_exit_confirmation {
                         match key.code {
                             KeyCode::Char('y') | KeyCode::Char('Y') => {
@@ -137,19 +144,19 @@ fn run_app<B: ratatui::backend::Backend>(
                                 views::instances::events::handle_key_event(&mut app.instances, key);
                             }
                         }
-                        KeyCode::Char('1') if !instance_is_focused => {
+                        KeyCode::Char('1') if !instance_is_focused && !focus_is_typing => {
                             app.switch_tab(Tab::Kanban);
                         }
-                        KeyCode::Char('2') if !instance_is_focused => {
+                        KeyCode::Char('2') if !instance_is_focused && !focus_is_typing => {
                             app.switch_tab(Tab::Instances);
                         }
-                        KeyCode::Char('3') if !instance_is_focused => {
+                        KeyCode::Char('3') if !instance_is_focused && !focus_is_typing => {
                             app.switch_tab(Tab::Roadmap);
                         }
-                        KeyCode::Char('4') if !instance_is_focused => {
+                        KeyCode::Char('4') if !instance_is_focused && !focus_is_typing => {
                             app.switch_tab(Tab::Worktree);
                         }
-                        KeyCode::Char('5') if !instance_is_focused => {
+                        KeyCode::Char('5') if !instance_is_focused && !focus_is_typing => {
                             app.switch_tab(Tab::Focus);
                         }
                         _ => match app.active_tab {
