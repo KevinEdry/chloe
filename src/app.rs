@@ -11,11 +11,11 @@ const DEFAULT_PTY_COLUMNS: u16 = 80;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tab {
+    Focus,
     Kanban,
     Instances,
     Roadmap,
     Worktree,
-    Focus,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,7 +34,7 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         Self {
-            active_tab: Tab::Kanban,
+            active_tab: Tab::Focus,
             kanban: KanbanState::new(),
             instances: InstanceState::new(),
             roadmap: RoadmapState::new(),
@@ -83,11 +83,25 @@ impl App {
 
     pub fn next_tab(&mut self) {
         self.active_tab = match self.active_tab {
+            Tab::Focus => Tab::Kanban,
             Tab::Kanban => Tab::Instances,
             Tab::Instances => Tab::Roadmap,
             Tab::Roadmap => Tab::Worktree,
             Tab::Worktree => Tab::Focus,
-            Tab::Focus => Tab::Kanban,
+        };
+
+        if self.active_tab == Tab::Worktree {
+            self.worktree.mark_needs_refresh();
+        }
+    }
+
+    pub fn previous_tab(&mut self) {
+        self.active_tab = match self.active_tab {
+            Tab::Focus => Tab::Worktree,
+            Tab::Kanban => Tab::Focus,
+            Tab::Instances => Tab::Kanban,
+            Tab::Roadmap => Tab::Instances,
+            Tab::Worktree => Tab::Roadmap,
         };
 
         if self.active_tab == Tab::Worktree {

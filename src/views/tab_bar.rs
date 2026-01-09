@@ -8,11 +8,11 @@ use ratatui::{
 };
 
 const TAB_COLORS: [Color; 5] = [
+    Color::LightBlue, // Focus
     Color::Cyan,      // Kanban
     Color::Yellow,    // Instances
     Color::Magenta,   // Roadmap
     Color::Green,     // Worktree
-    Color::LightBlue, // Focus
 ];
 
 const TAB_COLORS_INACTIVE: [Color; 5] = [
@@ -23,7 +23,7 @@ const TAB_COLORS_INACTIVE: [Color; 5] = [
     Color::DarkGray,
 ];
 
-const TAB_NAMES: [&str; 5] = ["Kanban", "Instances", "Roadmap", "Worktree", "Focus"];
+const TAB_NAMES: [&str; 5] = ["Focus", "Kanban", "Instances", "Roadmap", "Worktree"];
 
 const DIRECTORY_PADDING: u16 = 2;
 
@@ -47,11 +47,11 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         .split(inner);
 
     let selected_index = match app.active_tab {
-        Tab::Kanban => 0,
-        Tab::Instances => 1,
-        Tab::Roadmap => 2,
-        Tab::Worktree => 3,
-        Tab::Focus => 4,
+        Tab::Focus => 0,
+        Tab::Kanban => 1,
+        Tab::Instances => 2,
+        Tab::Roadmap => 3,
+        Tab::Worktree => 4,
     };
 
     let tab_spans: Vec<Span> = TAB_NAMES
