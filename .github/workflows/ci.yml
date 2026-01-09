@@ -87,4 +87,4 @@ jobs:
           tool: committed
 
       - name: Lint commits
-        run: committed origin/${{ github.base_ref }}..HEAD
+        run: committed --no-merge-commit origin/${{ github.base_ref }}..HEAD
