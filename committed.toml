@@ -4,7 +4,7 @@
 
 [subject]
 # Maximum subject line length
-max_length = 72
+max_length = 100
 # Minimum subject line length
 min_length = 10
 # Must start with capital letter (disabled for conventional commits)
