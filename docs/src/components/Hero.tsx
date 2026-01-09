@@ -87,10 +87,10 @@ export function Hero() {
               <div className="relative bg-[#0d0d12] border border-white/10 rounded-lg p-4">
                 <div className="flex items-center justify-between gap-4">
                   <code className="text-sm text-[var(--color-text-secondary)] font-mono overflow-x-auto">
-                    curl -fsSL https://raw.githubusercontent.com/KevinEdry/chloe/main/install.sh | bash
+                    curl -fsSL getchloe.sh/install.sh | bash
                   </code>
                   <button
-                    onClick={() => navigator.clipboard.writeText('curl -fsSL https://raw.githubusercontent.com/KevinEdry/chloe/main/install.sh | bash')}
+                    onClick={() => navigator.clipboard.writeText('curl -fsSL getchloe.sh/install.sh | bash')}
                     className="flex-shrink-0 p-2 rounded-md hover:bg-white/10 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                     title="Copy to clipboard"
                   >

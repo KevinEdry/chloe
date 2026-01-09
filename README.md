@@ -46,13 +46,13 @@
 ## Installation
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/KevinEdry/chloe/main/install.sh | bash
+curl -fsSL getchloe.sh/install.sh | bash
 ```
 
 Or specify a version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/KevinEdry/chloe/main/install.sh | bash -s v0.1.1
+curl -fsSL getchloe.sh/install.sh | bash -s v0.1.1
 ```
 
 ### Build from Source
