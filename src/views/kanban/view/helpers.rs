@@ -112,7 +112,9 @@ pub fn get_claude_state_indicator_for_card(
 
     match state {
         crate::views::instances::ClaudeState::Idle => (" ", Color::Gray),
-        crate::views::instances::ClaudeState::Running if should_flash => ("●", Color::Rgb(255, 165, 0)),
+        crate::views::instances::ClaudeState::Running if should_flash => {
+            ("●", Color::Rgb(255, 165, 0))
+        }
         crate::views::instances::ClaudeState::Running => (" ", Color::Rgb(255, 165, 0)),
         crate::views::instances::ClaudeState::NeedsPermissions => ("●", Color::Rgb(138, 43, 226)),
         crate::views::instances::ClaudeState::Done => ("●", Color::Green),

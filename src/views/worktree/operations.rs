@@ -67,12 +67,11 @@ fn generate_claude_settings(worktree_path: &Path, task_id: &Uuid) -> Result<()> 
     });
 
     let claude_dir = worktree_path.join(".claude");
-    fs::create_dir_all(&claude_dir)
-        .context("Failed to create .claude directory")?;
+    fs::create_dir_all(&claude_dir).context("Failed to create .claude directory")?;
 
     let settings_path = claude_dir.join("settings.local.json");
-    let settings_content = serde_json::to_string_pretty(&settings)
-        .context("Failed to serialize Claude settings")?;
+    let settings_content =
+        serde_json::to_string_pretty(&settings).context("Failed to serialize Claude settings")?;
 
     fs::write(&settings_path, settings_content)
         .context("Failed to write .claude/settings.local.json")?;

@@ -78,8 +78,10 @@ fn send_input_to_instance(state: &mut InstanceState, key: KeyEvent) {
 }
 
 pub fn handle_mouse_event(state: &mut InstanceState, mouse: MouseEvent) {
-    let is_scroll_event =
-        matches!(mouse.kind, MouseEventKind::ScrollUp | MouseEventKind::ScrollDown);
+    let is_scroll_event = matches!(
+        mouse.kind,
+        MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
+    );
     if !is_scroll_event {
         return;
     }

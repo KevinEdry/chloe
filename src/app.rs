@@ -202,7 +202,12 @@ impl App {
             return;
         };
 
-        let Some(pane) = self.instances.panes.iter_mut().find(|p| p.id == instance_id) else {
+        let Some(pane) = self
+            .instances
+            .panes
+            .iter_mut()
+            .find(|p| p.id == instance_id)
+        else {
             return;
         };
 

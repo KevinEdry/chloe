@@ -287,7 +287,11 @@ pub fn render_review_popup(
     render_action_buttons(f, selected_action, chunks[1]);
 }
 
-fn render_action_buttons(f: &mut Frame, selected_action: crate::views::kanban::ReviewAction, area: Rect) {
+fn render_action_buttons(
+    f: &mut Frame,
+    selected_action: crate::views::kanban::ReviewAction,
+    area: Rect,
+) {
     let actions = crate::views::kanban::ReviewAction::all();
     let button_constraints = vec![Constraint::Percentage(BUTTON_WIDTH_PERCENT); BUTTON_COUNT];
 

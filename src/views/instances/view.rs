@@ -1,5 +1,6 @@
 use super::InstanceState;
 use crate::views::StatusBarContent;
+use crate::widgets::terminal::{claude_state, content as terminal_content};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -97,7 +98,7 @@ fn render_pane(
             Modifier::empty()
         });
 
-    let (state_indicator, indicator_color) = get_claude_state_indicator(pane.claude_state);
+    let (state_indicator, indicator_color) = claude_state::get_indicator_dot(pane.claude_state);
 
     let pane_name = if let Some(name) = &pane.name {
         name.clone()
@@ -137,127 +138,11 @@ fn render_pane(
     f.render_widget(block, area);
 
     if let Some(session) = &pane.pty_session {
-        render_instance_content(f, session, inner_area);
+        terminal_content::render(f, session, inner_area);
     } else {
         let message = "PTY session failed to start";
         let text = Paragraph::new(message).style(Style::default().fg(Color::Red));
         f.render_widget(text, inner_area);
-    }
-}
-
-fn get_claude_state_indicator(state: super::ClaudeState) -> (&'static str, Color) {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    const BLINK_DURATION_MS: u128 = 500;
-    const BLINK_PHASES: u128 = 2;
-
-    let should_flash = match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => (duration.as_millis() / BLINK_DURATION_MS) % BLINK_PHASES == 0,
-        Err(_) => true,
-    };
-
-    match state {
-        super::ClaudeState::Idle => (" ", Color::Gray),
-        super::ClaudeState::Running if should_flash => ("●", Color::Rgb(255, 165, 0)),
-        super::ClaudeState::Running => (" ", Color::Rgb(255, 165, 0)),
-        super::ClaudeState::NeedsPermissions => ("●", Color::Rgb(138, 43, 226)),
-        super::ClaudeState::Done => ("●", Color::Green),
-    }
-}
-
-fn render_instance_content(f: &mut Frame, session: &super::pty::PtySession, area: Rect) {
-    if let Ok(parser) = session.screen().lock() {
-        let screen = parser.screen();
-        let mut lines = Vec::new();
-
-        let max_rows = area.height.min(screen.size().0);
-        let max_cols = area.width.min(screen.size().1);
-
-        for row in 0..max_rows {
-            let mut line_spans = Vec::new();
-            let mut current_text = String::new();
-            let mut current_style = Style::default();
-            let mut last_fg = vt100::Color::Default;
-            let mut last_bg = vt100::Color::Default;
-            let mut last_attrs = (false, false, false);
-
-            for col in 0..max_cols {
-                let cell = match screen.cell(row, col) {
-                    Some(c) => c,
-                    None => continue,
-                };
-
-                let fg = cell.fgcolor();
-                let bg = cell.bgcolor();
-                let attrs = (cell.bold(), cell.italic(), cell.underline());
-
-                if fg != last_fg || bg != last_bg || attrs != last_attrs {
-                    if !current_text.is_empty() {
-                        line_spans.push(Span::styled(current_text.clone(), current_style));
-                        current_text.clear();
-                    }
-
-                    current_style = Style::default()
-                        .fg(convert_vt100_color(fg))
-                        .bg(convert_vt100_color(bg));
-
-                    if attrs.0 {
-                        current_style = current_style.add_modifier(Modifier::BOLD);
-                    }
-                    if attrs.1 {
-                        current_style = current_style.add_modifier(Modifier::ITALIC);
-                    }
-                    if attrs.2 {
-                        current_style = current_style.add_modifier(Modifier::UNDERLINED);
-                    }
-
-                    last_fg = fg;
-                    last_bg = bg;
-                    last_attrs = attrs;
-                }
-
-                current_text.push_str(&cell.contents());
-            }
-
-            if !current_text.is_empty() {
-                line_spans.push(Span::styled(current_text, current_style));
-            }
-
-            if line_spans.is_empty() {
-                line_spans.push(Span::raw(""));
-            }
-
-            lines.push(Line::from(line_spans));
-        }
-
-        let text = Paragraph::new(lines);
-        f.render_widget(text, area);
-    }
-}
-
-fn convert_vt100_color(color: vt100::Color) -> Color {
-    match color {
-        vt100::Color::Default => Color::Reset,
-        vt100::Color::Idx(idx) => match idx {
-            0 => Color::Black,
-            1 => Color::Red,
-            2 => Color::Green,
-            3 => Color::Yellow,
-            4 => Color::Blue,
-            5 => Color::Magenta,
-            6 => Color::Cyan,
-            7 => Color::Gray,
-            8 => Color::DarkGray,
-            9 => Color::LightRed,
-            10 => Color::LightGreen,
-            11 => Color::LightYellow,
-            12 => Color::LightBlue,
-            13 => Color::LightMagenta,
-            14 => Color::LightCyan,
-            15 => Color::White,
-            _ => Color::Reset,
-        },
-        vt100::Color::Rgb(r, g, b) => Color::Rgb(r, g, b),
     }
 }
 

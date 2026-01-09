@@ -54,11 +54,7 @@ pub fn render_confirm_dialog(frame: &mut Frame, title: &str, message: &str, area
 
     let block = Block::default()
         .title(title)
-        .title_style(
-            Style::default()
-                .fg(Color::Red)
-                .add_modifier(Modifier::BOLD),
-        )
+        .title_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Red))
         .padding(Padding::uniform(1));

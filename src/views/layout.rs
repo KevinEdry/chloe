@@ -50,9 +50,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             instances::view::get_status_bar_content(&app.instances, layout.footer.width)
         }
         Tab::Roadmap => roadmap::view::get_status_bar_content(&app.roadmap, layout.footer.width),
-        Tab::Worktree => {
-            worktree::view::get_status_bar_content(&app.worktree, layout.footer.width)
-        }
+        Tab::Worktree => worktree::view::get_status_bar_content(&app.worktree, layout.footer.width),
         Tab::Focus => focus::view::get_status_bar_content(app, layout.footer.width),
     };
 

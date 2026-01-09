@@ -166,8 +166,8 @@ fn render_task_card(
         Style::default().fg(border_color)
     };
 
-    let has_indicator =
-        claude_indicator.is_some() && claude_indicator != Some(crate::views::instances::ClaudeState::Idle);
+    let has_indicator = claude_indicator.is_some()
+        && claude_indicator != Some(crate::views::instances::ClaudeState::Idle);
     let indicator_width = if has_indicator { 2 } else { 0 };
 
     let available_title_width = title_max_width.saturating_sub(8 + indicator_width);

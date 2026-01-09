@@ -1,0 +1,145 @@
+use crate::app::App;
+use crate::views::focus::state::FocusPanel;
+use ratatui::{
+    Frame,
+    layout::{Alignment, Rect},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, Borders, List, ListItem},
+};
+
+const TITLE_ELLIPSIS_THRESHOLD: usize = 25;
+
+pub fn render(frame: &mut Frame, app: &App, area: Rect) {
+    let state = &app.focus;
+    let columns = &app.kanban.columns;
+    let is_focused = state.focused_panel == FocusPanel::DoneTasks;
+
+    let done_column = columns.get(3);
+    let done_count = done_column.map(|column| column.tasks.len()).unwrap_or(0);
+
+    let border_color = if is_focused {
+        Color::Green
+    } else {
+        Color::DarkGray
+    };
+    let title_color = if is_focused {
+        Color::Green
+    } else {
+        Color::DarkGray
+    };
+
+    let mut block = Block::default()
+        .title("Done")
+        .title_style(
+            Style::default()
+                .fg(title_color)
+                .add_modifier(Modifier::BOLD),
+        )
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(border_color));
+
+    if done_count > 0 {
+        let position_text = format!(" {} of {} ", state.done_selected_index + 1, done_count);
+        block = block.title_bottom(
+            Line::from(vec![Span::styled(
+                position_text,
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            )])
+            .alignment(Alignment::Right),
+        );
+    }
+
+    let inner_area = block.inner(area);
+    frame.render_widget(block, area);
+
+    if done_count == 0 {
+        render_empty_state(frame, inner_area);
+        return;
+    }
+
+    let items = build_done_task_items(app, is_focused);
+    let list = List::new(items);
+    frame.render_widget(list, inner_area);
+}
+
+fn render_empty_state(frame: &mut Frame, area: Rect) {
+    let empty_message = List::new(vec![
+        ListItem::new(Line::from("")),
+        ListItem::new(Line::from(vec![Span::styled(
+            "No completed tasks",
+            Style::default().fg(Color::DarkGray),
+        )])),
+    ]);
+    frame.render_widget(empty_message, area);
+}
+
+fn build_done_task_items(app: &App, is_panel_focused: bool) -> Vec<ListItem<'static>> {
+    let mut items = Vec::new();
+    let columns = &app.kanban.columns;
+    let selected_index = app.focus.done_selected_index;
+
+    let Some(done_column) = columns.get(3) else {
+        return items;
+    };
+
+    for (index, task) in done_column.tasks.iter().enumerate() {
+        let is_selected = is_panel_focused && index == selected_index;
+        items.push(create_task_item(&task.title, task.task_type, is_selected));
+    }
+
+    items
+}
+
+fn create_task_item(
+    title: &str,
+    task_type: crate::views::kanban::TaskType,
+    is_selected: bool,
+) -> ListItem<'static> {
+    let truncated_title = if title.len() > TITLE_ELLIPSIS_THRESHOLD {
+        format!("{}...", &title[..TITLE_ELLIPSIS_THRESHOLD])
+    } else {
+        title.to_string()
+    };
+
+    let badge_text = task_type.badge_text();
+
+    let title_color = if is_selected {
+        Color::White
+    } else {
+        Color::DarkGray
+    };
+
+    let badge_color = if is_selected {
+        Color::Green
+    } else {
+        Color::DarkGray
+    };
+
+    let spans = vec![
+        if is_selected {
+            Span::styled("▶ ", Style::default().fg(Color::Green))
+        } else {
+            Span::raw("  ")
+        },
+        Span::styled(
+            format!("[{}]", badge_text),
+            Style::default().fg(badge_color),
+        ),
+        Span::raw(" "),
+        Span::styled(
+            truncated_title,
+            Style::default()
+                .fg(title_color)
+                .add_modifier(if is_selected {
+                    Modifier::BOLD
+                } else {
+                    Modifier::empty()
+                }),
+        ),
+    ];
+
+    ListItem::new(Line::from(spans))
+}

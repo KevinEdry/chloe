@@ -1,7 +1,10 @@
 use crate::app::{App, Tab};
 use crate::events::EventListener;
 use crate::views;
-use crate::views::focus::operations::get_ordered_tasks;
+use crate::views::focus::FocusPanel;
+use crate::views::focus::operations::{
+    get_active_task_count, get_active_tasks, get_done_task_count, get_done_tasks,
+};
 use crossterm::event::KeyEvent;
 
 pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
@@ -54,7 +57,8 @@ pub fn process_kanban_pending_actions(app: &mut App) {
 
     if let Some((task_index, change_request)) = app.kanban.pending_change_request.take() {
         if let Some(instance_id) = app.kanban.move_task_to_in_progress(task_index) {
-            app.instances.send_input_to_instance(instance_id, &change_request);
+            app.instances
+                .send_input_to_instance(instance_id, &change_request);
         }
     }
 
@@ -91,11 +95,22 @@ pub fn process_worktree_pending_actions(app: &mut App) {
 }
 
 pub fn process_focus_event(app: &mut App, key: KeyEvent) {
-    let tasks = get_ordered_tasks(&app.kanban.columns);
-
-    let selected_instance_id = tasks
-        .get(app.focus.selected_index)
-        .and_then(|task_ref| task_ref.task.instance_id);
+    let selected_instance_id = match app.focus.focused_panel {
+        FocusPanel::ActiveTasks => {
+            let tasks = get_active_tasks(&app.kanban.columns);
+            tasks
+                .into_iter()
+                .nth(app.focus.active_selected_index)
+                .and_then(|task_ref| task_ref.task.instance_id)
+        }
+        FocusPanel::DoneTasks => {
+            let tasks = get_done_tasks(&app.kanban.columns);
+            tasks
+                .into_iter()
+                .nth(app.focus.done_selected_index)
+                .and_then(|task_ref| task_ref.task.instance_id)
+        }
+    };
 
     let action = views::focus::handle_key_event(
         &mut app.focus,
@@ -140,6 +155,7 @@ pub fn process_focus_event(app: &mut App, key: KeyEvent) {
         }
     }
 
-    let updated_tasks = get_ordered_tasks(&app.kanban.columns);
-    app.focus.clamp_selection(updated_tasks.len());
+    let active_count = get_active_task_count(&app.kanban.columns);
+    let done_count = get_done_task_count(&app.kanban.columns);
+    app.focus.clamp_selection(active_count, done_count);
 }

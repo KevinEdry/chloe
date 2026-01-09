@@ -7,7 +7,9 @@ pub fn handle_key_event(state: &mut KanbanState, key: KeyEvent) {
         KanbanMode::AddingTask { .. } => handle_text_input_mode(state, key, false),
         KanbanMode::EditingTask { .. } => handle_text_input_mode(state, key, true),
         KanbanMode::ConfirmDelete { task_index } => handle_confirm_delete(state, key, *task_index),
-        KanbanMode::ConfirmMoveBack { task_index } => handle_confirm_move_back(state, key, *task_index),
+        KanbanMode::ConfirmMoveBack { task_index } => {
+            handle_confirm_move_back(state, key, *task_index)
+        }
         KanbanMode::ClassifyingTask { .. } => handle_classifying_mode(state, key),
         KanbanMode::ReviewPopup {
             task_index,

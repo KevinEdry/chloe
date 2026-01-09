@@ -1,5 +1,4 @@
-use crate::views::focus::operations::{TaskReference, get_ordered_tasks};
-use crate::views::kanban::Column;
+use crate::views::focus::operations::TaskReference;
 use ratatui::{
     Frame,
     layout::Rect,
@@ -8,7 +7,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 
-pub fn render(frame: &mut Frame, columns: &[Column], selected_index: usize, area: Rect) {
+pub fn render(frame: &mut Frame, selected_task: Option<&TaskReference<'_>>, area: Rect) {
     let block = Block::default()
         .title("Details")
         .title_style(
@@ -22,9 +21,7 @@ pub fn render(frame: &mut Frame, columns: &[Column], selected_index: usize, area
     let inner_area = block.inner(area);
     frame.render_widget(block, area);
 
-    let tasks = get_ordered_tasks(columns);
-
-    if let Some(task_ref) = tasks.get(selected_index) {
+    if let Some(task_ref) = selected_task {
         render_task_details(frame, task_ref, inner_area);
     } else {
         render_no_selection(frame, inner_area);
@@ -66,7 +63,10 @@ fn render_task_details(frame: &mut Frame, task_ref: &TaskReference<'_>, area: Re
         )]));
 
         for line in task.description.lines() {
-            lines.push(Line::from(Span::styled(line, Style::default().fg(Color::White))));
+            lines.push(Line::from(Span::styled(
+                line,
+                Style::default().fg(Color::White),
+            )));
         }
         lines.push(Line::from(""));
     }

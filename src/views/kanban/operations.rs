@@ -63,7 +63,10 @@ impl KanbanState {
             _ => TaskType::Task,
         };
 
-        if let super::KanbanMode::ClassifyingTask { edit_task_index, .. } = self.mode {
+        if let super::KanbanMode::ClassifyingTask {
+            edit_task_index, ..
+        } = self.mode
+        {
             if let Some(task_index) = edit_task_index {
                 self.edit_task_with_classification(
                     task_index,
@@ -80,7 +83,10 @@ impl KanbanState {
     }
 
     pub fn fallback_to_manual(&mut self, raw_input: String) {
-        if let super::KanbanMode::ClassifyingTask { edit_task_index, .. } = self.mode {
+        if let super::KanbanMode::ClassifyingTask {
+            edit_task_index, ..
+        } = self.mode
+        {
             if let Some(task_index) = edit_task_index {
                 self.edit_task(task_index, raw_input, String::new());
             } else {
@@ -181,11 +187,14 @@ impl KanbanState {
             Err(_) => return,
         };
 
-        let worktree_info =
-            match crate::views::worktree::create_worktree(&repository_root, &task.title, &task.id) {
-                Ok(info) => info,
-                Err(_) => return,
-            };
+        let worktree_info = match crate::views::worktree::create_worktree(
+            &repository_root,
+            &task.title,
+            &task.id,
+        ) {
+            Ok(info) => info,
+            Err(_) => return,
+        };
 
         task.worktree_info = Some(worktree_info);
     }
@@ -210,9 +219,7 @@ impl KanbanState {
         let has_instance = task.instance_id.is_some();
 
         if is_in_progress_column && has_instance {
-            self.mode = super::KanbanMode::ConfirmMoveBack {
-                task_index: task_index,
-            };
+            self.mode = super::KanbanMode::ConfirmMoveBack { task_index };
             return;
         }
 

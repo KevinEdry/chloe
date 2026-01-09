@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
 
 const VERSION_TEXT: &str = "Chloe v0.1.0";
@@ -42,8 +42,7 @@ pub fn render_footer(frame: &mut Frame, area: Rect, content: StatusBarContent) {
         Style::default().fg(Color::DarkGray),
     ));
 
-    let status = Paragraph::new(Line::from(spans))
-    .block(
+    let status = Paragraph::new(Line::from(spans)).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::DarkGray)),

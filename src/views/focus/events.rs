@@ -1,5 +1,7 @@
-use super::operations::{TaskReference, get_ordered_tasks};
-use super::state::{FocusMode, FocusState};
+use super::operations::{
+    TaskReference, get_active_task_count, get_active_tasks, get_done_task_count, get_done_tasks,
+};
+use super::state::{FocusMode, FocusPanel, FocusState};
 use crate::views::kanban::Column;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use uuid::Uuid;
@@ -21,14 +23,29 @@ pub fn handle_key_event(
     columns: &[Column],
     selected_instance_id: Option<Uuid>,
 ) -> FocusAction {
-    let tasks = get_ordered_tasks(columns);
-    let total_tasks = tasks.len();
-    let selected_task = tasks.get(state.selected_index);
+    let active_count = get_active_task_count(columns);
+    let done_count = get_done_task_count(columns);
+
+    let selected_task = match state.focused_panel {
+        FocusPanel::ActiveTasks => {
+            let tasks = get_active_tasks(columns);
+            tasks.into_iter().nth(state.active_selected_index)
+        }
+        FocusPanel::DoneTasks => {
+            let tasks = get_done_tasks(columns);
+            tasks.into_iter().nth(state.done_selected_index)
+        }
+    };
 
     match &state.mode {
-        FocusMode::Normal => {
-            handle_normal_mode(state, key, total_tasks, selected_task, selected_instance_id)
-        }
+        FocusMode::Normal => handle_normal_mode(
+            state,
+            key,
+            active_count,
+            done_count,
+            selected_task.as_ref(),
+            selected_instance_id,
+        ),
         FocusMode::TerminalFocused => {
             handle_terminal_focused_mode(state, key, selected_instance_id)
         }
@@ -44,17 +61,25 @@ pub fn handle_key_event(
 fn handle_normal_mode(
     state: &mut FocusState,
     key: KeyEvent,
-    total_tasks: usize,
+    active_count: usize,
+    done_count: usize,
     selected_task: Option<&TaskReference<'_>>,
     selected_instance_id: Option<Uuid>,
 ) -> FocusAction {
     match key.code {
         KeyCode::Char('j') | KeyCode::Down => {
-            state.select_next(total_tasks);
+            state.select_next(active_count, done_count);
             FocusAction::None
         }
         KeyCode::Char('k') | KeyCode::Up => {
             state.select_previous();
+            FocusAction::None
+        }
+        KeyCode::Tab => {
+            match state.focused_panel {
+                FocusPanel::ActiveTasks => state.switch_to_done_panel(done_count),
+                FocusPanel::DoneTasks => state.switch_to_active_panel(active_count),
+            }
             FocusAction::None
         }
         KeyCode::Char('a') => {
@@ -207,11 +232,7 @@ fn handle_editing_task_mode(state: &mut FocusState, key: KeyEvent) -> FocusActio
     }
 }
 
-fn handle_confirm_delete_mode(
-    state: &mut FocusState,
-    key: KeyEvent,
-    task_id: Uuid,
-) -> FocusAction {
+fn handle_confirm_delete_mode(state: &mut FocusState, key: KeyEvent, task_id: Uuid) -> FocusAction {
     match key.code {
         KeyCode::Char('y' | 'Y') => {
             state.mode = FocusMode::Normal;

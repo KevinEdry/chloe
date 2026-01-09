@@ -186,7 +186,10 @@ fn run_app<B: ratatui::backend::Backend>(
                 }
                 Event::Mouse(mouse_event) => {
                     if app.active_tab == Tab::Instances {
-                        views::instances::events::handle_mouse_event(&mut app.instances, mouse_event);
+                        views::instances::events::handle_mouse_event(
+                            &mut app.instances,
+                            mouse_event,
+                        );
                     }
                 }
                 _ => {}
