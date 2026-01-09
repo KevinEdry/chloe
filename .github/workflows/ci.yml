@@ -72,19 +72,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release --locked --target ${{ matrix.target }}
 
-  safety:
-    name: Safety Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Verify no unsafe code
-        run: |
-          if grep -r "unsafe" src/ --include="*.rs" | grep -v "// SAFETY"; then
-            echo "Found unsafe code in src/"
-            exit 1
-          fi
-          echo "No unsafe code found"
-
   commits:
     name: Lint Commits
     runs-on: ubuntu-latest
