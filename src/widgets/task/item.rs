@@ -53,6 +53,11 @@ impl TaskItem {
         self
     }
 
+    pub const fn title_max_length(mut self, length: usize) -> Self {
+        self.title_max_length = length;
+        self
+    }
+
     pub fn build(self) -> ListItem<'static> {
         let truncated_title = text::truncate(&self.title, self.title_max_length);
 

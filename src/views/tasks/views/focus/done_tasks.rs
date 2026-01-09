@@ -59,9 +59,21 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         return;
     }
 
-    let items = build_done_task_items(app, is_focused);
+    let title_max_length = calculate_title_max_length(inner_area.width);
+    let items = build_done_task_items(app, is_focused, title_max_length);
     let list = List::new(items);
     frame.render_widget(list, inner_area);
+}
+
+fn calculate_title_max_length(panel_width: u16) -> usize {
+    const SELECTION_INDICATOR_WIDTH: usize = 2;
+    const BADGE_MAX_WIDTH: usize = 7;
+    const SPACE_AFTER_BADGE: usize = 1;
+    const SAFETY_MARGIN: usize = 1;
+
+    let fixed_width = SELECTION_INDICATOR_WIDTH + BADGE_MAX_WIDTH + SPACE_AFTER_BADGE + SAFETY_MARGIN;
+
+    (panel_width as usize).saturating_sub(fixed_width)
 }
 
 fn render_empty_state(frame: &mut Frame, area: Rect) {
@@ -75,7 +87,11 @@ fn render_empty_state(frame: &mut Frame, area: Rect) {
     frame.render_widget(empty_message, area);
 }
 
-fn build_done_task_items(app: &App, is_panel_focused: bool) -> Vec<ListItem<'static>> {
+fn build_done_task_items(
+    app: &App,
+    is_panel_focused: bool,
+    title_max_length: usize,
+) -> Vec<ListItem<'static>> {
     let mut items = Vec::new();
     let columns = &app.tasks.columns;
     let selected_index = app.tasks.focus_done_index;
@@ -86,7 +102,12 @@ fn build_done_task_items(app: &App, is_panel_focused: bool) -> Vec<ListItem<'sta
 
     for (index, task) in done_column.tasks.iter().enumerate() {
         let is_selected = is_panel_focused && index == selected_index;
-        items.push(create_task_item(&task.title, task.task_type, is_selected));
+        items.push(create_task_item(
+            &task.title,
+            task.task_type,
+            is_selected,
+            title_max_length,
+        ));
     }
 
     items
@@ -96,10 +117,12 @@ fn create_task_item(
     title: &str,
     task_type: crate::views::tasks::TaskType,
     is_selected: bool,
+    title_max_length: usize,
 ) -> ListItem<'static> {
     let mut item = TaskItem::new(title, task_type)
         .selected(is_selected)
-        .selection_color(Color::Green);
+        .selection_color(Color::Green)
+        .title_max_length(title_max_length);
 
     if !is_selected {
         item = item.badge_color(Color::DarkGray);
