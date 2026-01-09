@@ -1,0 +1,319 @@
+@import 'tailwindcss';
+@import 'nextra-theme-docs/style.css';
+
+@variant dark (&:where(.dark *));
+
+@theme {
+  --color-background: #0a0a0f;
+  --color-surface: #13111c;
+  --color-surface-elevated: #1a1726;
+  --color-border: #2a2438;
+  --color-border-light: #3d3454;
+  --color-primary: #a855f7;
+  --color-primary-light: #c084fc;
+  --color-primary-dark: #9333ea;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #71717a;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    background-color: var(--color-background);
+  }
+
+  body {
+    background-color: var(--color-background);
+  }
+
+  /* Nextra theme overrides - scoped to Nextra elements */
+  .dark,
+  :root {
+    --nextra-bg: 10 10 15;
+    --nextra-content-width: 90rem;
+    --nextra-primary-hue: 270deg;
+    --nextra-primary-saturation: 91%;
+    --nextra-primary-lightness: 65%;
+  }
+
+  .nextra-navbar {
+    background: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+
+  .nextra-navbar-blur {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Remove navbar bottom shadow */
+  :is(html[class~=dark] .dark\:nx-shadow-\[0_-12px_16px_\#111\]) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Remove header inset shadow */
+  :is(html[class~=dark] .dark\:nx-shadow-\[0_-1px_0_rgba\(255\,255\,255\,\.1\)_inset\]) {
+    background: transparent !important;
+  }
+
+  .nextra-sidebar {
+    background-color: var(--color-background) !important;
+  }
+
+  .nextra-toc {
+    background-color: var(--color-background) !important;
+  }
+
+  article.nextra-content {
+    background-color: var(--color-background);
+  }
+
+  .nextra-border {
+    border-color: var(--color-border) !important;
+  }
+
+  /* Nextra content area styles */
+  article.nextra-content a {
+    color: var(--color-primary-light);
+  }
+
+  article.nextra-content a:hover {
+    color: var(--color-primary);
+  }
+
+  article.nextra-content h1,
+  article.nextra-content h2,
+  article.nextra-content h3,
+  article.nextra-content h4,
+  article.nextra-content h5,
+  article.nextra-content h6 {
+    color: var(--color-text-primary);
+  }
+
+  article.nextra-content p,
+  article.nextra-content li,
+  article.nextra-content td,
+  article.nextra-content th {
+    color: var(--color-text-secondary);
+  }
+
+  article.nextra-content pre {
+    background-color: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+  }
+
+  article.nextra-content code {
+    background-color: var(--color-surface-elevated) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-primary-light) !important;
+  }
+
+  article.nextra-content pre code {
+    background-color: transparent !important;
+    border: none !important;
+    color: var(--color-text-secondary) !important;
+  }
+
+  article.nextra-content table {
+    border-color: var(--color-border) !important;
+  }
+
+  article.nextra-content th {
+    background-color: var(--color-surface-elevated) !important;
+    border-color: var(--color-border) !important;
+  }
+
+  article.nextra-content td {
+    border-color: var(--color-border) !important;
+  }
+
+  article.nextra-content tr:nth-child(even) {
+    background-color: var(--color-surface) !important;
+  }
+
+  article.nextra-content blockquote {
+    border-left-color: var(--color-primary) !important;
+    background-color: var(--color-surface) !important;
+  }
+
+  article.nextra-content hr {
+    border-color: var(--color-border) !important;
+  }
+
+  /* Nextra search and input */
+  .nextra-search input {
+    background-color: var(--color-surface) !important;
+    border-color: var(--color-border) !important;
+  }
+
+  .nextra-search input:focus {
+    border-color: var(--color-primary) !important;
+  }
+
+  /* Sidebar navigation - purple accent */
+  .nextra-sidebar a[data-active="true"],
+  .nextra-sidebar [data-active="true"] > a {
+    color: var(--color-primary-light) !important;
+    background-color: rgba(168, 85, 247, 0.1) !important;
+  }
+
+  .nextra-sidebar a:hover {
+    color: var(--color-primary-light) !important;
+  }
+
+  /* TOC navigation - purple accent */
+  .nextra-toc a[data-active="true"],
+  .nextra-toc li[data-active="true"] > a {
+    color: var(--color-primary-light) !important;
+  }
+
+  .nextra-toc a:hover {
+    color: var(--color-primary-light) !important;
+  }
+
+  /* Override Nextra's blue primary color classes */
+  .nextra-sidebar [class*="text-primary"] {
+    color: var(--color-primary-light) !important;
+  }
+
+  .nextra-toc [class*="text-primary"] {
+    color: var(--color-primary-light) !important;
+  }
+
+  /* Footer styles */
+  footer.nextra-footer,
+  .nextra-footer-container {
+    background-color: var(--color-surface) !important;
+  }
+}
+
+@layer components {
+  .landing-gradient-bg {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(120, 119, 198, 0.15), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(78, 81, 102, 0.1), transparent),
+      radial-gradient(ellipse 50% 30% at 20% 30%, rgba(100, 100, 140, 0.08), transparent);
+  }
+
+  .landing-glow {
+    box-shadow: 0 0 80px rgba(168, 85, 247, 0.3), 0 0 32px rgba(168, 85, 247, 0.2);
+  }
+
+  .landing-glow-sm {
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.2), 0 0 16px rgba(168, 85, 247, 0.15);
+  }
+
+  .landing-card {
+    background: linear-gradient(to bottom, var(--color-surface-elevated), var(--color-surface));
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .landing-card:hover {
+    border-color: var(--color-border-light);
+    box-shadow: 0 0 32px rgba(168, 85, 247, 0.1);
+  }
+
+  .gradient-text {
+    background: linear-gradient(to right, var(--color-primary-light), var(--color-primary), #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .btn-primary {
+    background: linear-gradient(to bottom, var(--color-primary), var(--color-primary-dark));
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid var(--color-border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-border-light);
+    background: var(--color-surface-elevated);
+  }
+
+  .terminal-window {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: var(--color-surface-elevated);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .terminal-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .terminal-body {
+    padding: 1.25rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .code-block {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875rem;
+    overflow-x: auto;
+  }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(to bottom right, var(--color-primary), var(--color-primary-dark));
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+
+  .kbd {
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+}
