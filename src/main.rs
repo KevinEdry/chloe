@@ -93,7 +93,10 @@ fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
     event_listener: &events::EventListener,
-) -> io::Result<()> {
+) -> io::Result<()>
+where
+    io::Error: From<B::Error>,
+{
     loop {
         terminal.draw(|f| views::render(f, app))?;
 

@@ -87,7 +87,11 @@ fn render_list(frame: &mut Frame, area: Rect, state: &PullRequestsState) {
     frame.render_widget(list, area);
 }
 
-fn create_list_item(index: usize, pull_request: &PullRequest, state: &PullRequestsState) -> ListItem<'static> {
+fn create_list_item(
+    index: usize,
+    pull_request: &PullRequest,
+    state: &PullRequestsState,
+) -> ListItem<'static> {
     let is_selected = state.selected_index == Some(index);
 
     let state_indicator = match pull_request.state {

@@ -215,7 +215,14 @@ fn refresh_pull_requests(app: &mut App) {
 fn fetch_pull_requests_from_github() -> Result<Vec<views::pull_requests::state::PullRequest>, String>
 {
     let output = std::process::Command::new("gh")
-        .args(["pr", "list", "--json", "number,title,author,headRefName,baseRefName,state,isDraft,additions,deletions,url", "--limit", "50"])
+        .args([
+            "pr",
+            "list",
+            "--json",
+            "number,title,author,headRefName,baseRefName,state,isDraft,additions,deletions,url",
+            "--limit",
+            "50",
+        ])
         .output()
         .map_err(|error| format!("Failed to run gh command: {error}. Is GitHub CLI installed?"))?;
 
@@ -231,8 +238,8 @@ fn fetch_pull_requests_from_github() -> Result<Vec<views::pull_requests::state::
 fn parse_github_pull_requests(
     json_output: &str,
 ) -> Result<Vec<views::pull_requests::state::PullRequest>, String> {
-    let parsed: serde_json::Value =
-        serde_json::from_str(json_output).map_err(|error| format!("Failed to parse JSON: {error}"))?;
+    let parsed: serde_json::Value = serde_json::from_str(json_output)
+        .map_err(|error| format!("Failed to parse JSON: {error}"))?;
 
     let array = parsed
         .as_array()
@@ -252,9 +259,18 @@ fn parse_github_pull_requests(
             let branch = item.get("headRefName")?.as_str()?.to_string();
             let base_branch = item.get("baseRefName")?.as_str()?.to_string();
             let state_string = item.get("state")?.as_str()?;
-            let is_draft = item.get("isDraft").and_then(serde_json::Value::as_bool).unwrap_or(false);
-            let additions = item.get("additions").and_then(serde_json::Value::as_u64).unwrap_or(0);
-            let deletions = item.get("deletions").and_then(serde_json::Value::as_u64).unwrap_or(0);
+            let is_draft = item
+                .get("isDraft")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false);
+            let additions = item
+                .get("additions")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or(0);
+            let deletions = item
+                .get("deletions")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or(0);
             let url = item.get("url")?.as_str()?.to_string();
 
             let state = match state_string {
