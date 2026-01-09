@@ -19,7 +19,10 @@ impl TasksState {
             self.try_create_worktree_for_task(task_index);
         }
 
-        let task = match self.columns[self.kanban_selected_column]
+        let done_column_index = 3;
+        let is_entering_done = self.kanban_selected_column + 1 == done_column_index;
+
+        let mut task = match self.columns[self.kanban_selected_column]
             .tasks
             .get(task_index)
             .cloned()
@@ -30,6 +33,12 @@ impl TasksState {
 
         if is_entering_in_progress {
             self.pending_instance_creation = Some(task.id);
+        }
+
+        if is_entering_done {
+            if let Some(instance_id) = task.instance_id.take() {
+                self.pending_instance_termination = Some(instance_id);
+            }
         }
 
         self.columns[self.kanban_selected_column]
@@ -183,7 +192,12 @@ impl TasksState {
         let task = &self.columns[review_column_index].tasks[task_index];
         self.try_cleanup_worktree(task);
 
-        let task = self.columns[review_column_index].tasks.remove(task_index);
+        let mut task = self.columns[review_column_index].tasks.remove(task_index);
+
+        if let Some(instance_id) = task.instance_id.take() {
+            self.pending_instance_termination = Some(instance_id);
+        }
+
         self.columns[done_column_index].tasks.push(task);
 
         true
