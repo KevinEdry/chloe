@@ -23,12 +23,7 @@ jobs:
             artifact_name: chloe
             asset_name: chloe-linux-x86_64
 
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            artifact_name: chloe
-            asset_name: chloe-linux-x86_64-musl
-
-          - os: macos-13
+          - os: macos-15-intel
             target: x86_64-apple-darwin
             artifact_name: chloe
             asset_name: chloe-macos-x86_64
@@ -40,10 +35,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-
-      - name: Install musl tools
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: sudo apt-get install -y musl-tools
 
       - uses: dtolnay/rust-toolchain@stable
         with:
