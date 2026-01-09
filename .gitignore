@@ -19,3 +19,6 @@ config.toml
 
 # Event files
 .chloe/events/
+
+# Next.js build output
+docs/.next/
