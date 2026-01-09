@@ -15,8 +15,8 @@ const LEFT_PANEL_PERCENT: u16 = 35;
 const RIGHT_PANEL_PERCENT: u16 = 65;
 const ACTIVE_TASKS_PANEL_PERCENT: u16 = 65;
 const DONE_TASKS_PANEL_PERCENT: u16 = 35;
-const DETAILS_PANEL_PERCENT: u16 = 20;
-const TERMINAL_PANEL_PERCENT: u16 = 80;
+const DETAILS_PANEL_PERCENT: u16 = 30;
+const TERMINAL_PANEL_PERCENT: u16 = 70;
 const STATUS_BAR_WIDTH_THRESHOLD: u16 = 80;
 
 pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
