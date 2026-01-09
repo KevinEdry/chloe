@@ -7,21 +7,23 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-const TAB_COLORS: [Color; 4] = [
+const TAB_COLORS: [Color; 5] = [
     Color::LightBlue, // Tasks
     Color::Yellow,    // Instances
     Color::Magenta,   // Roadmap
     Color::Green,     // Worktree
+    Color::Cyan,      // PullRequests
 ];
 
-const TAB_COLORS_INACTIVE: [Color; 4] = [
+const TAB_COLORS_INACTIVE: [Color; 5] = [
+    Color::DarkGray,
     Color::DarkGray,
     Color::DarkGray,
     Color::DarkGray,
     Color::DarkGray,
 ];
 
-const TAB_NAMES: [&str; 4] = ["Tasks", "Instances", "Roadmap", "Worktree"];
+const TAB_NAMES: [&str; 5] = ["Tasks", "Instances", "Roadmap", "Worktree", "PRs"];
 
 const DIRECTORY_PADDING: u16 = 2;
 
@@ -50,6 +52,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         Tab::Instances => 1,
         Tab::Roadmap => 2,
         Tab::Worktree => 3,
+        Tab::PullRequests => 4,
     };
 
     let tab_spans: Vec<Span> = TAB_NAMES

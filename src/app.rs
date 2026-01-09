@@ -1,5 +1,6 @@
 use crate::types::Config;
 use crate::views::instances::InstanceState;
+use crate::views::pull_requests::PullRequestsState;
 use crate::views::roadmap::RoadmapState;
 use crate::views::tasks::{TaskType, TasksState};
 use crate::views::worktree::WorktreeTabState;
@@ -14,6 +15,7 @@ pub enum Tab {
     Instances,
     Roadmap,
     Worktree,
+    PullRequests,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,6 +25,7 @@ pub struct App {
     pub instances: InstanceState,
     pub roadmap: RoadmapState,
     pub worktree: WorktreeTabState,
+    pub pull_requests: PullRequestsState,
     pub config: Config,
     #[serde(skip)]
     pub showing_exit_confirmation: bool,
@@ -37,6 +40,7 @@ impl App {
             instances: InstanceState::new(),
             roadmap: RoadmapState::new(),
             worktree: WorktreeTabState::new(),
+            pull_requests: PullRequestsState::new(),
             config: Config::default(),
             showing_exit_confirmation: false,
         }
@@ -75,6 +79,10 @@ impl App {
         if tab == Tab::Worktree {
             self.worktree.mark_needs_refresh();
         }
+
+        if tab == Tab::PullRequests {
+            self.pull_requests.mark_needs_refresh();
+        }
     }
 
     pub fn next_tab(&mut self) {
@@ -82,24 +90,34 @@ impl App {
             Tab::Tasks => Tab::Instances,
             Tab::Instances => Tab::Roadmap,
             Tab::Roadmap => Tab::Worktree,
-            Tab::Worktree => Tab::Tasks,
+            Tab::Worktree => Tab::PullRequests,
+            Tab::PullRequests => Tab::Tasks,
         };
 
         if self.active_tab == Tab::Worktree {
             self.worktree.mark_needs_refresh();
         }
+
+        if self.active_tab == Tab::PullRequests {
+            self.pull_requests.mark_needs_refresh();
+        }
     }
 
     pub fn previous_tab(&mut self) {
         self.active_tab = match self.active_tab {
-            Tab::Tasks => Tab::Worktree,
+            Tab::Tasks => Tab::PullRequests,
             Tab::Instances => Tab::Tasks,
             Tab::Roadmap => Tab::Instances,
             Tab::Worktree => Tab::Roadmap,
+            Tab::PullRequests => Tab::Worktree,
         };
 
         if self.active_tab == Tab::Worktree {
             self.worktree.mark_needs_refresh();
+        }
+
+        if self.active_tab == Tab::PullRequests {
+            self.pull_requests.mark_needs_refresh();
         }
     }
 

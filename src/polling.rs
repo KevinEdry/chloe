@@ -1,6 +1,7 @@
 use crate::app::{App, Tab};
 use crate::events::EventListener;
 use crate::views;
+use crate::views::pull_requests::events::PullRequestsAction;
 use crate::views::tasks::{FocusPanel, TasksAction, TasksMode, get_active_tasks, get_done_tasks};
 use crossterm::event::KeyEvent;
 
@@ -26,6 +27,10 @@ pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
 
     if app.active_tab == Tab::Worktree {
         app.worktree.poll_worktrees();
+    }
+
+    if app.active_tab == Tab::PullRequests && app.pull_requests.should_refresh() {
+        refresh_pull_requests(app);
     }
 
     for event in event_listener.poll_events() {
@@ -173,4 +178,121 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
     app.tasks.clamp_focus_selection();
 
     process_tasks_pending_actions(app);
+}
+
+pub fn process_pull_requests_action(app: &mut App, action: &PullRequestsAction) {
+    match action {
+        PullRequestsAction::Refresh => {
+            refresh_pull_requests(app);
+        }
+        PullRequestsAction::OpenInBrowser => {
+            if let Some(pull_request) = app.pull_requests.get_selected_pull_request() {
+                let url = pull_request.url.clone();
+                let _ = open_url_in_browser(&url);
+            }
+        }
+        PullRequestsAction::None => {}
+    }
+}
+
+fn refresh_pull_requests(app: &mut App) {
+    app.pull_requests.is_loading = true;
+
+    let pull_requests = fetch_pull_requests_from_github();
+
+    match pull_requests {
+        Ok(pull_requests) => {
+            app.pull_requests.set_pull_requests(pull_requests);
+            app.pull_requests.mark_refreshed();
+        }
+        Err(error) => {
+            app.pull_requests.set_error(error);
+            app.pull_requests.mark_refreshed();
+        }
+    }
+}
+
+fn fetch_pull_requests_from_github() -> Result<Vec<views::pull_requests::state::PullRequest>, String>
+{
+    let output = std::process::Command::new("gh")
+        .args(["pr", "list", "--json", "number,title,author,headRefName,baseRefName,state,isDraft,additions,deletions,url", "--limit", "50"])
+        .output()
+        .map_err(|error| format!("Failed to run gh command: {error}. Is GitHub CLI installed?"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("GitHub CLI error: {stderr}"));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    parse_github_pull_requests(&stdout)
+}
+
+fn parse_github_pull_requests(
+    json_output: &str,
+) -> Result<Vec<views::pull_requests::state::PullRequest>, String> {
+    let parsed: serde_json::Value =
+        serde_json::from_str(json_output).map_err(|error| format!("Failed to parse JSON: {error}"))?;
+
+    let array = parsed
+        .as_array()
+        .ok_or_else(|| "Expected JSON array".to_string())?;
+
+    let pull_requests = array
+        .iter()
+        .filter_map(|item| {
+            let number = item.get("number")?.as_u64()?;
+            let title = item.get("title")?.as_str()?.to_string();
+            let author = item
+                .get("author")
+                .and_then(|author| author.get("login"))
+                .and_then(|login| login.as_str())
+                .unwrap_or("unknown")
+                .to_string();
+            let branch = item.get("headRefName")?.as_str()?.to_string();
+            let base_branch = item.get("baseRefName")?.as_str()?.to_string();
+            let state_string = item.get("state")?.as_str()?;
+            let is_draft = item.get("isDraft").and_then(serde_json::Value::as_bool).unwrap_or(false);
+            let additions = item.get("additions").and_then(serde_json::Value::as_u64).unwrap_or(0);
+            let deletions = item.get("deletions").and_then(serde_json::Value::as_u64).unwrap_or(0);
+            let url = item.get("url")?.as_str()?.to_string();
+
+            let state = match state_string {
+                "CLOSED" => views::pull_requests::state::PullRequestStatusState::Closed,
+                "MERGED" => views::pull_requests::state::PullRequestStatusState::Merged,
+                _ => views::pull_requests::state::PullRequestStatusState::Open,
+            };
+
+            Some(views::pull_requests::state::PullRequest {
+                number,
+                title,
+                author,
+                branch,
+                base_branch,
+                state,
+                is_draft,
+                additions,
+                deletions,
+                url,
+            })
+        })
+        .collect();
+
+    Ok(pull_requests)
+}
+
+fn open_url_in_browser(url: &str) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let command = "open";
+    #[cfg(target_os = "linux")]
+    let command = "xdg-open";
+    #[cfg(target_os = "windows")]
+    let command = "start";
+
+    std::process::Command::new(command)
+        .arg(url)
+        .spawn()
+        .map_err(|error| format!("Failed to open URL: {error}"))?;
+
+    Ok(())
 }

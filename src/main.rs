@@ -170,6 +170,9 @@ fn run_app<B: ratatui::backend::Backend>(
                         KeyCode::Char('4') if !terminal_is_focused && !tasks_is_typing => {
                             app.switch_tab(Tab::Worktree);
                         }
+                        KeyCode::Char('5') if !terminal_is_focused && !tasks_is_typing => {
+                            app.switch_tab(Tab::PullRequests);
+                        }
                         _ => match app.active_tab {
                             Tab::Tasks => {
                                 let is_normal_mode = app.tasks.is_normal_mode();
@@ -193,6 +196,13 @@ fn run_app<B: ratatui::backend::Backend>(
                             Tab::Worktree => {
                                 app.worktree.handle_key_event(key);
                                 polling::process_worktree_pending_actions(app);
+                            }
+                            Tab::PullRequests => {
+                                let action = views::pull_requests::events::handle_key_event(
+                                    &mut app.pull_requests,
+                                    key,
+                                );
+                                polling::process_pull_requests_action(app, &action);
                             }
                         },
                     }
