@@ -129,7 +129,7 @@ where
 
                     match key.code {
                         KeyCode::Char('q' | 'Q') => {
-                            if !terminal_is_focused {
+                            if !terminal_is_focused && !tasks_is_typing {
                                 app.showing_exit_confirmation = true;
                             } else if instances_terminal_focused {
                                 views::instances::events::handle_key_event(&mut app.instances, key);
