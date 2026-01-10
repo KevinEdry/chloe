@@ -8,8 +8,7 @@ pub fn handle_terminal_focused_mode(
     key: KeyEvent,
     selected_instance_id: Option<Uuid>,
 ) -> TasksAction {
-    let is_shift_escape =
-        key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
+    let is_shift_escape = key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
     if is_shift_escape {
         let Some(instance_id) = selected_instance_id else {
             return TasksAction::None;

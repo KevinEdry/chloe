@@ -73,9 +73,4 @@ impl TasksState {
             }
         }
     }
-
-    #[must_use]
-    pub fn has_pending_classifications(&self) -> bool {
-        !self.pending_classifications.is_empty()
-    }
 }
