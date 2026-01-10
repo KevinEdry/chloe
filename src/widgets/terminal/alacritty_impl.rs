@@ -2,9 +2,9 @@ use super::colors::convert_alacritty_color;
 use super::traits::{Cell, Screen};
 use alacritty_terminal::grid::Dimensions;
 use alacritty_terminal::index::{Column, Line, Point};
+use alacritty_terminal::term::Term;
 use alacritty_terminal::term::cell::Cell as AlacrittyCell;
 use alacritty_terminal::term::cell::Flags;
-use alacritty_terminal::term::Term;
 use ratatui::{buffer::Cell as BufferCell, style::Modifier};
 
 impl Cell for AlacrittyCell {
@@ -35,7 +35,7 @@ pub struct AlacrittyScreen<'a, T> {
 }
 
 impl<'a, T> AlacrittyScreen<'a, T> {
-    pub fn new(term: &'a Term<T>) -> Self {
+    pub const fn new(term: &'a Term<T>) -> Self {
         Self { term }
     }
 }
@@ -72,7 +72,10 @@ impl<T> Screen for AlacrittyScreen<'_, T> {
     }
 
     fn hide_cursor(&self) -> bool {
-        !self.term.mode().contains(alacritty_terminal::term::TermMode::SHOW_CURSOR)
+        !self
+            .term
+            .mode()
+            .contains(alacritty_terminal::term::TermMode::SHOW_CURSOR)
     }
 
     fn scrollback(&self) -> usize {

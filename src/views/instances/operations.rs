@@ -84,8 +84,7 @@ impl InstanceState {
 
         let mut pane = InstancePane::new(working_directory.clone(), actual_rows, actual_columns);
 
-        if let Ok(session) =
-            pty::PtySession::spawn(&working_directory, actual_rows, actual_columns)
+        if let Ok(session) = pty::PtySession::spawn(&working_directory, actual_rows, actual_columns)
         {
             let claude_command = if task_description.is_empty() {
                 format!("claude \"{}\"\n", task_title.replace('\"', "\\\""))
@@ -433,8 +432,8 @@ fn find_nearest_pane_in_direction(
             continue;
         }
 
-        let dx = (pane_center_x as i32) - (current_center_x as i32);
-        let dy = (pane_center_y as i32) - (current_center_y as i32);
+        let dx = i32::from(pane_center_x) - i32::from(current_center_x);
+        let dy = i32::from(pane_center_y) - i32::from(current_center_y);
         let distance = dx.abs() + dy.abs();
 
         let is_better = match best_candidate {

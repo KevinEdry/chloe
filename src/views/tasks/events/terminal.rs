@@ -58,17 +58,25 @@ pub fn handle_terminal_scroll_mode(
             state.exit_terminal_scroll_mode();
             TasksAction::ScrollTerminalToBottom(instance_id)
         }
-        KeyCode::Char('j') | KeyCode::Down => {
-            TasksAction::ScrollTerminal { instance_id, delta: -SCROLL_LINES }
-        }
-        KeyCode::Char('k') | KeyCode::Up => {
-            TasksAction::ScrollTerminal { instance_id, delta: SCROLL_LINES }
-        }
+        KeyCode::Char('j') | KeyCode::Down => TasksAction::ScrollTerminal {
+            instance_id,
+            delta: -SCROLL_LINES,
+        },
+        KeyCode::Char('k') | KeyCode::Up => TasksAction::ScrollTerminal {
+            instance_id,
+            delta: SCROLL_LINES,
+        },
         KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            TasksAction::ScrollTerminal { instance_id, delta: -SCROLL_HALF_PAGE }
+            TasksAction::ScrollTerminal {
+                instance_id,
+                delta: -SCROLL_HALF_PAGE,
+            }
         }
         KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            TasksAction::ScrollTerminal { instance_id, delta: SCROLL_HALF_PAGE }
+            TasksAction::ScrollTerminal {
+                instance_id,
+                delta: SCROLL_HALF_PAGE,
+            }
         }
         KeyCode::Char('g') => TasksAction::ScrollTerminalToTop(instance_id),
         KeyCode::Char('G') => TasksAction::ScrollTerminalToBottom(instance_id),

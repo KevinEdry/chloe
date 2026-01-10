@@ -132,9 +132,9 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
             if let Some(pane) = app.instances.find_pane_mut(instance_id) {
                 let max_scrollback = pane.scrollback_len();
                 if delta > 0 {
-                    pane.scroll_up(delta as usize, max_scrollback);
+                    pane.scroll_up(delta.unsigned_abs(), max_scrollback);
                 } else {
-                    pane.scroll_down((-delta) as usize);
+                    pane.scroll_down(delta.unsigned_abs());
                 }
             }
         }

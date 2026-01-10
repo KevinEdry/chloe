@@ -200,7 +200,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
                 "↑↓/jk:navigate  Tab:switch-panel  a:add  e:edit  d:delete  s:start  Enter:focus-terminal  /:switch-view"
             }
             TasksMode::TerminalFocused => "Ctrl+s:scroll-mode  Esc:back-to-navigation",
-            TasksMode::TerminalScroll => "j/k:scroll-line  Ctrl+d/u:half-page  g/G:top/bottom  q/Esc:exit-scroll",
+            TasksMode::TerminalScroll => {
+                "j/k:scroll-line  Ctrl+d/u:half-page  g/G:top/bottom  q/Esc:exit-scroll"
+            }
             TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
                 "Type task title  Enter:save  Esc:cancel"
             }

@@ -135,12 +135,10 @@ impl TasksState {
 
     #[must_use]
     pub const fn is_terminal_focused(&self) -> bool {
-        matches!(self.mode, TasksMode::TerminalFocused | TasksMode::TerminalScroll)
-    }
-
-    #[must_use]
-    pub const fn is_terminal_scroll_mode(&self) -> bool {
-        matches!(self.mode, TasksMode::TerminalScroll)
+        matches!(
+            self.mode,
+            TasksMode::TerminalFocused | TasksMode::TerminalScroll
+        )
     }
 
     #[must_use]

@@ -36,7 +36,7 @@ fn split_area(area: Rect, direction: SplitDirection, ratio: f32) -> (Rect, Rect)
     match direction {
         SplitDirection::Horizontal => {
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-            let first_width = ((area.width as f32) * ratio) as u16;
+            let first_width = (f32::from(area.width) * ratio) as u16;
             let second_width = area.width.saturating_sub(first_width);
 
             let first = Rect {
@@ -55,7 +55,7 @@ fn split_area(area: Rect, direction: SplitDirection, ratio: f32) -> (Rect, Rect)
         }
         SplitDirection::Vertical => {
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-            let first_height = ((area.height as f32) * ratio) as u16;
+            let first_height = (f32::from(area.height) * ratio) as u16;
             let second_height = area.height.saturating_sub(first_height);
 
             let first = Rect {
@@ -85,7 +85,7 @@ pub fn choose_split_direction(pane_area: Rect) -> Option<SplitDirection> {
         (true, false) => Some(SplitDirection::Horizontal),
         (false, true) => Some(SplitDirection::Vertical),
         (true, true) => {
-            let aspect_ratio = pane_area.width as f32 / pane_area.height as f32;
+            let aspect_ratio = f32::from(pane_area.width) / f32::from(pane_area.height);
             if aspect_ratio >= ASPECT_RATIO_THRESHOLD {
                 Some(SplitDirection::Horizontal)
             } else {

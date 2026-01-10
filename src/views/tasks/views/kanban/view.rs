@@ -144,7 +144,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
                 "Type your change request  Enter:save  Esc:cancel"
             }
             TasksMode::TerminalFocused => "Ctrl+s:scroll-mode  Esc:back-to-navigation",
-            TasksMode::TerminalScroll => "j/k:scroll-line  Ctrl+d/u:half-page  g/G:top/bottom  q/Esc:exit-scroll",
+            TasksMode::TerminalScroll => {
+                "j/k:scroll-line  Ctrl+d/u:half-page  g/G:top/bottom  q/Esc:exit-scroll"
+            }
             TasksMode::MergeConfirmation { .. } => "↑↓/jk:select-branch  Enter:merge  Esc/q:cancel",
         }
     };

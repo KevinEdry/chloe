@@ -52,32 +52,30 @@ impl App {
     pub fn load_or_default() -> Self {
         let settings = crate::persistence::storage::load_settings().unwrap_or_default();
 
-        match crate::persistence::storage::load_state() {
-            Ok(mut app) => {
-                let active_instance_ids: Vec<uuid::Uuid> = app
-                    .instances
-                    .collect_panes()
-                    .iter()
-                    .map(|pane| pane.id)
-                    .collect();
-                for column in &mut app.tasks.columns {
-                    for task in &mut column.tasks {
-                        if let Some(instance_id) = task.instance_id
-                            && !active_instance_ids.contains(&instance_id)
-                        {
-                            task.instance_id = None;
-                        }
+        if let Ok(mut app) = crate::persistence::storage::load_state() {
+            let active_instance_ids: Vec<uuid::Uuid> = app
+                .instances
+                .collect_panes()
+                .iter()
+                .map(|pane| pane.id)
+                .collect();
+            for column in &mut app.tasks.columns {
+                for task in &mut column.tasks {
+                    if let Some(instance_id) = task.instance_id
+                        && !active_instance_ids.contains(&instance_id)
+                    {
+                        task.instance_id = None;
                     }
                 }
-
-                app.roadmap.sort_items_by_priority();
-                app.settings = SettingsState::with_settings(settings);
-                app
             }
-            Err(_) => {
-                let mut app = Self::default();
-                app.settings = SettingsState::with_settings(settings);
-                app
+
+            app.roadmap.sort_items_by_priority();
+            app.settings = SettingsState::with_settings(settings);
+            app
+        } else {
+            Self {
+                settings: SettingsState::with_settings(settings),
+                ..Default::default()
             }
         }
     }
@@ -266,7 +264,8 @@ impl App {
     }
 
     #[must_use]
-    pub fn get_instance_output(&self, _instance_id: uuid::Uuid) -> Option<&str> {
+    #[allow(clippy::unused_self)]
+    pub const fn get_instance_output(&self, _instance_id: uuid::Uuid) -> Option<&str> {
         None
     }
 

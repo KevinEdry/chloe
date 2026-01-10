@@ -57,7 +57,7 @@ fn render_panes(f: &mut Frame, state: &mut InstanceState, area: Rect) {
     };
 
     let pane_areas = layout::calculate_pane_areas(area, root);
-    state.pane_areas = pane_areas.clone();
+    state.pane_areas.clone_from(&pane_areas);
 
     resize_panes_to_match_areas(state, &pane_areas);
 

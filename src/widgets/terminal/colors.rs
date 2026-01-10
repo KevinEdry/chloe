@@ -2,7 +2,7 @@ use alacritty_terminal::vte::ansi::Color as AlacrittyColor;
 use alacritty_terminal::vte::ansi::NamedColor;
 use ratatui::style::Color;
 
-pub fn convert_alacritty_color(color: AlacrittyColor) -> Color {
+pub const fn convert_alacritty_color(color: AlacrittyColor) -> Color {
     match color {
         AlacrittyColor::Named(named) => convert_named_color(named),
         AlacrittyColor::Spec(rgb) => Color::Rgb(rgb.r, rgb.g, rgb.b),
@@ -10,7 +10,7 @@ pub fn convert_alacritty_color(color: AlacrittyColor) -> Color {
     }
 }
 
-fn convert_named_color(named: NamedColor) -> Color {
+const fn convert_named_color(named: NamedColor) -> Color {
     match named {
         NamedColor::Black => Color::Black,
         NamedColor::Red => Color::Red,
@@ -28,12 +28,11 @@ fn convert_named_color(named: NamedColor) -> Color {
         NamedColor::BrightMagenta => Color::LightMagenta,
         NamedColor::BrightCyan => Color::LightCyan,
         NamedColor::BrightWhite => Color::White,
-        NamedColor::Foreground | NamedColor::Background => Color::Reset,
         _ => Color::Reset,
     }
 }
 
-fn convert_indexed_color(index: u8) -> Color {
+const fn convert_indexed_color(index: u8) -> Color {
     match index {
         0 => Color::Black,
         1 => Color::Red,

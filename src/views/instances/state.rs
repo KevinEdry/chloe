@@ -16,16 +16,17 @@ pub enum PaneNode {
     Split {
         direction: SplitDirection,
         ratio: f32,
-        first: Box<PaneNode>,
-        second: Box<PaneNode>,
+        first: Box<Self>,
+        second: Box<Self>,
     },
 }
 
 impl PaneNode {
+    #[must_use]
     pub fn collect_panes(&self) -> Vec<&InstancePane> {
         match self {
-            PaneNode::Leaf(pane) => vec![pane],
-            PaneNode::Split { first, second, .. } => {
+            Self::Leaf(pane) => vec![pane],
+            Self::Split { first, second, .. } => {
                 let mut panes = first.collect_panes();
                 panes.extend(second.collect_panes());
                 panes
@@ -33,16 +34,12 @@ impl PaneNode {
         }
     }
 
+    #[must_use]
     pub fn find_pane(&self, id: Uuid) -> Option<&InstancePane> {
         match self {
-            PaneNode::Leaf(pane) => {
-                if pane.id == id {
-                    Some(pane)
-                } else {
-                    None
-                }
-            }
-            PaneNode::Split { first, second, .. } => {
+            Self::Leaf(pane) if pane.id == id => Some(pane),
+            Self::Leaf(_) => None,
+            Self::Split { first, second, .. } => {
                 first.find_pane(id).or_else(|| second.find_pane(id))
             }
         }
@@ -50,30 +47,27 @@ impl PaneNode {
 
     pub fn find_pane_mut(&mut self, id: Uuid) -> Option<&mut InstancePane> {
         match self {
-            PaneNode::Leaf(pane) => {
-                if pane.id == id {
-                    Some(pane)
-                } else {
-                    None
-                }
-            }
-            PaneNode::Split { first, second, .. } => {
+            Self::Leaf(pane) if pane.id == id => Some(pane),
+            Self::Leaf(_) => None,
+            Self::Split { first, second, .. } => {
                 first.find_pane_mut(id).or_else(|| second.find_pane_mut(id))
             }
         }
     }
 
+    #[must_use]
     pub fn first_pane_id(&self) -> Uuid {
         match self {
-            PaneNode::Leaf(pane) => pane.id,
-            PaneNode::Split { first, .. } => first.first_pane_id(),
+            Self::Leaf(pane) => pane.id,
+            Self::Split { first, .. } => first.first_pane_id(),
         }
     }
 
+    #[must_use]
     pub fn pane_count(&self) -> usize {
         match self {
-            PaneNode::Leaf(_) => 1,
-            PaneNode::Split { first, second, .. } => first.pane_count() + second.pane_count(),
+            Self::Leaf(_) => 1,
+            Self::Split { first, second, .. } => first.pane_count() + second.pane_count(),
         }
     }
 }
@@ -106,16 +100,19 @@ impl InstanceState {
         self.root.as_mut()?.find_pane_mut(id)
     }
 
+    #[must_use]
     pub fn pane_count(&self) -> usize {
         self.root.as_ref().map_or(0, PaneNode::pane_count)
     }
 
+    #[must_use]
     pub fn collect_panes(&self) -> Vec<&InstancePane> {
         self.root
             .as_ref()
             .map_or_else(Vec::new, PaneNode::collect_panes)
     }
 
+    #[must_use]
     pub fn find_pane(&self, id: Uuid) -> Option<&InstancePane> {
         self.root.as_ref()?.find_pane(id)
     }
@@ -124,6 +121,7 @@ impl InstanceState {
         self.root.as_mut()?.find_pane_mut(id)
     }
 
+    #[must_use]
     pub fn get_pane_area(&self, id: Uuid) -> Option<Rect> {
         self.pane_areas
             .iter()
@@ -181,14 +179,15 @@ impl InstancePane {
         self.scroll_offset = (self.scroll_offset + lines).min(max_scrollback);
     }
 
-    pub fn scroll_down(&mut self, lines: usize) {
+    pub const fn scroll_down(&mut self, lines: usize) {
         self.scroll_offset = self.scroll_offset.saturating_sub(lines);
     }
 
-    pub fn scroll_to_bottom(&mut self) {
+    pub const fn scroll_to_bottom(&mut self) {
         self.scroll_offset = 0;
     }
 
+    #[must_use]
     pub fn scrollback_len(&self) -> usize {
         let Some(session) = &self.pty_session else {
             return 0;

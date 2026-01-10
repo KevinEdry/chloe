@@ -69,12 +69,11 @@ impl IdeCommand {
     }
 
     #[must_use]
-    pub fn cycle_next(&self) -> Self {
+    pub const fn cycle_next(&self) -> Self {
         match self {
             Self::Cursor => Self::VSCode,
             Self::VSCode => Self::WebStorm,
-            Self::WebStorm => Self::Cursor,
-            Self::Custom(_) => Self::Cursor,
+            Self::WebStorm | Self::Custom(_) => Self::Cursor,
         }
     }
 }
@@ -140,11 +139,10 @@ impl TerminalCommand {
     }
 
     #[must_use]
-    pub fn cycle_next(&self) -> Self {
+    pub const fn cycle_next(&self) -> Self {
         match self {
             Self::AppleTerminal => Self::ITerm2,
-            Self::ITerm2 => Self::AppleTerminal,
-            Self::Custom(_) => Self::AppleTerminal,
+            Self::ITerm2 | Self::Custom(_) => Self::AppleTerminal,
         }
     }
 }
@@ -222,7 +220,7 @@ impl SettingsState {
     }
 
     #[must_use]
-    pub fn with_settings(settings: Settings) -> Self {
+    pub const fn with_settings(settings: Settings) -> Self {
         Self {
             settings,
             selected_index: 0,
@@ -235,15 +233,15 @@ impl SettingsState {
         self.selected_index = (self.selected_index + 1).min(SETTINGS_COUNT - 1);
     }
 
-    pub fn select_previous(&mut self) {
+    pub const fn select_previous(&mut self) {
         self.selected_index = self.selected_index.saturating_sub(1);
     }
 
-    pub fn select_first(&mut self) {
+    pub const fn select_first(&mut self) {
         self.selected_index = 0;
     }
 
-    pub fn select_last(&mut self) {
+    pub const fn select_last(&mut self) {
         self.selected_index = SETTINGS_COUNT - 1;
     }
 
@@ -286,10 +284,10 @@ impl SettingsState {
                 self.edit_buffer.clear();
             }
             SettingsMode::EditingAutoSave => {
-                if let Ok(value) = self.edit_buffer.parse::<u64>() {
-                    if value > 0 {
-                        self.settings.auto_save_interval_seconds = value;
-                    }
+                if let Ok(value) = self.edit_buffer.parse::<u64>()
+                    && value > 0
+                {
+                    self.settings.auto_save_interval_seconds = value;
                 }
                 self.mode = SettingsMode::Normal;
                 self.edit_buffer.clear();

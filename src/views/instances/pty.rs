@@ -1,7 +1,7 @@
 use alacritty_terminal::event::{Event, EventListener, OnResize, WindowSize};
-use alacritty_terminal::tty::EventedPty;
 use alacritty_terminal::grid::Dimensions;
 use alacritty_terminal::term::{Config, Term};
+use alacritty_terminal::tty::EventedPty;
 use alacritty_terminal::tty::{self, Options, Pty};
 use alacritty_terminal::vte::ansi::Processor;
 use std::io::{Read, Write};
@@ -84,12 +84,7 @@ impl PtySession {
             let mut buffer = [0u8; 4096];
             loop {
                 match reader.read(&mut buffer) {
-                    Ok(0) => break,
-                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        thread::sleep(std::time::Duration::from_millis(10));
-                        continue;
-                    }
-                    Err(_) => break,
+                    Ok(0) | Err(_) => break,
                     Ok(bytes_read) => {
                         if sender.send(buffer[..bytes_read].to_vec()).is_err() {
                             break;
