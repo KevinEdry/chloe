@@ -53,8 +53,18 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     let instance_id = selected_task.and_then(|task_ref| task_ref.task.instance_id);
     let instance_pane = instance_id.and_then(|id| app.instances.find_pane_mut(id));
 
-    let is_terminal_focused = matches!(app.tasks.mode, TasksMode::TerminalFocused);
-    terminal_panel::render(frame, instance_pane, is_terminal_focused, right_chunks[1]);
+    let is_terminal_focused = matches!(
+        app.tasks.mode,
+        TasksMode::TerminalFocused | TasksMode::TerminalScroll
+    );
+    let is_scroll_mode = matches!(app.tasks.mode, TasksMode::TerminalScroll);
+    terminal_panel::render(
+        frame,
+        instance_pane,
+        is_terminal_focused,
+        is_scroll_mode,
+        right_chunks[1],
+    );
 
     render_dialogs(frame, app, &app.tasks.mode, area);
 }
@@ -127,7 +137,7 @@ fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
         } => {
             dialogs::render_merge_confirmation(frame, worktree_branch, selected_target, area);
         }
-        TasksMode::Normal | TasksMode::TerminalFocused => {}
+        TasksMode::Normal | TasksMode::TerminalFocused | TasksMode::TerminalScroll => {}
     }
 
     if let Some(error) = &app.tasks.error_message {
@@ -145,6 +155,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             FocusPanel::DoneTasks => ("DONE", Color::Green),
         },
         TasksMode::TerminalFocused => ("TERMINAL", Color::Green),
+        TasksMode::TerminalScroll => ("SCROLL", Color::Yellow),
         TasksMode::AddingTask { .. } => ("ADD TASK", Color::Yellow),
         TasksMode::EditingTask { .. } => ("EDIT TASK", Color::Yellow),
         TasksMode::ConfirmDelete { .. } => ("DELETE", Color::Red),
@@ -171,7 +182,8 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
     let help_text = if width < STATUS_BAR_WIDTH_THRESHOLD {
         match &state.mode {
             TasksMode::Normal => "jk:nav  Tab:panel  a:add  e:edit  d:del  s:start  /:view",
-            TasksMode::TerminalFocused => "Esc:back  Keys→terminal",
+            TasksMode::TerminalFocused => "Ctrl+s:scroll  Esc:back",
+            TasksMode::TerminalScroll => "jk:line  Ctrl+d/u:page  g/G:top/bottom  q:exit",
             TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
                 "Enter:save  Esc:cancel"
             }
@@ -187,7 +199,8 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::Normal => {
                 "↑↓/jk:navigate  Tab:switch-panel  a:add  e:edit  d:delete  s:start  Enter:focus-terminal  /:switch-view"
             }
-            TasksMode::TerminalFocused => "All keys sent to terminal  Esc:back-to-navigation",
+            TasksMode::TerminalFocused => "Ctrl+s:scroll-mode  Esc:back-to-navigation",
+            TasksMode::TerminalScroll => "j/k:scroll-line  Ctrl+d/u:half-page  g/G:top/bottom  q/Esc:exit-scroll",
             TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
                 "Type task title  Enter:save  Esc:cancel"
             }

@@ -68,7 +68,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         } => {
             dialogs::render_merge_confirmation(frame, worktree_branch, selected_target, area);
         }
-        TasksMode::Normal | TasksMode::TerminalFocused => {}
+        TasksMode::Normal | TasksMode::TerminalFocused | TasksMode::TerminalScroll => {}
     }
 
     if let Some(error) = &state.error_message {
@@ -86,7 +86,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         | TasksMode::AddingTask { .. }
         | TasksMode::ConfirmStartTask { .. }
         | TasksMode::MergeConfirmation { .. } => Color::Green,
-        TasksMode::EditingTask { .. } | TasksMode::ReviewRequestChanges { .. } => Color::Yellow,
+        TasksMode::TerminalScroll
+        | TasksMode::EditingTask { .. }
+        | TasksMode::ReviewRequestChanges { .. } => Color::Yellow,
         TasksMode::ConfirmDelete { .. } => Color::Red,
         TasksMode::ConfirmMoveBack { .. } => Color::LightRed,
     };
@@ -94,6 +96,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
     let mode_text = match &state.mode {
         TasksMode::Normal => "KANBAN",
         TasksMode::TerminalFocused => "TERMINAL",
+        TasksMode::TerminalScroll => "SCROLL",
         TasksMode::AddingTask { .. } => "ADD TO PLANNING",
         TasksMode::EditingTask { .. } => "EDIT TASK",
         TasksMode::ConfirmDelete { .. } => "CONFIRM DELETE",
@@ -119,7 +122,8 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             | TasksMode::ConfirmMoveBack { .. }
             | TasksMode::ConfirmStartTask { .. } => "y:yes  n:no",
             TasksMode::ReviewPopup { .. } => "jk:scroll  hl/Tab:button  Enter:action",
-            TasksMode::TerminalFocused => "Esc:back",
+            TasksMode::TerminalFocused => "Ctrl+s:scroll  Esc:back",
+            TasksMode::TerminalScroll => "jk:line  Ctrl+d/u:page  g/G:top/bottom  q:exit",
             TasksMode::MergeConfirmation { .. } => "jk:select  Enter:merge  Esc:cancel",
         }
     } else {
@@ -139,7 +143,8 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::ReviewRequestChanges { .. } => {
                 "Type your change request  Enter:save  Esc:cancel"
             }
-            TasksMode::TerminalFocused => "Esc:back-to-navigation",
+            TasksMode::TerminalFocused => "Ctrl+s:scroll-mode  Esc:back-to-navigation",
+            TasksMode::TerminalScroll => "j/k:scroll-line  Ctrl+d/u:half-page  g/G:top/bottom  q/Esc:exit-scroll",
             TasksMode::MergeConfirmation { .. } => "↑↓/jk:select-branch  Enter:merge  Esc/q:cancel",
         }
     };

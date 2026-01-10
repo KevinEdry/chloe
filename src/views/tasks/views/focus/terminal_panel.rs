@@ -1,6 +1,6 @@
 use crate::views::instances::InstancePane;
 use crate::widgets::claude_indicator;
-use crate::widgets::terminal::{Cursor, PseudoTerminal};
+use crate::widgets::terminal::{AlacrittyScreen, Cursor, PseudoTerminal};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -9,14 +9,24 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-pub fn render(frame: &mut Frame, pane: Option<&mut InstancePane>, is_focused: bool, area: Rect) {
-    let border_color = if is_focused {
+pub fn render(
+    frame: &mut Frame,
+    pane: Option<&mut InstancePane>,
+    is_focused: bool,
+    is_scroll_mode: bool,
+    area: Rect,
+) {
+    let border_color = if is_scroll_mode {
+        Color::Yellow
+    } else if is_focused {
         Color::Green
     } else {
         Color::Cyan
     };
 
-    let title = if is_focused {
+    let title = if is_scroll_mode {
+        "⏸ Terminal (Scroll Mode)"
+    } else if is_focused {
         "● Terminal (Esc to exit)"
     } else {
         "Terminal"
@@ -30,11 +40,7 @@ pub fn render(frame: &mut Frame, pane: Option<&mut InstancePane>, is_focused: bo
                 .add_modifier(Modifier::BOLD),
         )
         .borders(Borders::ALL)
-        .border_style(if is_focused {
-            Style::default().fg(Color::Green)
-        } else {
-            Style::default().fg(Color::Cyan)
-        });
+        .border_style(Style::default().fg(border_color));
 
     if let Some(pane) = &pane {
         let (indicator, color) = claude_indicator::label(pane.claude_state);
@@ -68,20 +74,19 @@ fn render_pane_content(frame: &mut Frame, pane: &mut InstancePane, is_focused: b
     let desired_columns = area.width;
 
     if pane.rows != desired_rows || pane.columns != desired_columns {
-        let _ = session.resize(desired_rows, desired_columns);
+        session.resize(desired_rows, desired_columns);
         pane.rows = desired_rows;
         pane.columns = desired_columns;
     }
 
-    let screen_mutex = session.screen();
-    let Ok(mut parser) = screen_mutex.lock() else {
+    let term_mutex = session.term();
+    let Ok(term) = term_mutex.lock() else {
         return;
     };
 
-    parser.set_scrollback(pane.scroll_offset);
-
+    let screen = AlacrittyScreen::new(&*term);
     let cursor = Cursor::default().visibility(is_focused);
-    let terminal = PseudoTerminal::new(parser.screen())
+    let terminal = PseudoTerminal::new(&screen)
         .cursor(cursor)
         .scroll_offset(pane.scroll_offset);
 
