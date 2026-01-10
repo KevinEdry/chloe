@@ -22,7 +22,7 @@ export function Footer() {
       <div className="flex flex-col gap-1 items-center">
         <ul className="flex gap-5 w-full justify-center text-[var(--color-text-secondary)] font-medium [&_li]:cursor-pointer [&_li:hover]:text-[var(--color-text-muted)]">
           <li>
-            <Link href="/docs">Docs</Link>
+            <Link href="/docs/overview">Docs</Link>
           </li>
           <li>
             <Link href="https://github.com/KevinEdry/chloe" target="_blank">
