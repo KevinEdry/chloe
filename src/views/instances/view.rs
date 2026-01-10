@@ -1,4 +1,5 @@
-use super::InstanceState;
+use super::layout;
+use super::state::{InstancePane, InstanceState};
 use crate::views::StatusBarContent;
 use crate::widgets::claude_indicator;
 use crate::widgets::terminal::{Cursor, PseudoTerminal};
@@ -15,11 +16,12 @@ const STATUS_BAR_WIDTH_THRESHOLD: u16 = 80;
 pub fn render(f: &mut Frame, state: &mut InstanceState, area: Rect) {
     state.last_render_area = Some(area);
 
-    if state.panes.is_empty() {
+    if state.root.is_none() {
         render_empty_state(f, area);
-    } else {
-        render_panes(f, state, area);
+        return;
     }
+
+    render_panes(f, state, area);
 }
 
 fn render_empty_state(f: &mut Frame, area: Rect) {
@@ -50,14 +52,39 @@ fn render_empty_state(f: &mut Frame, area: Rect) {
 }
 
 fn render_panes(f: &mut Frame, state: &mut InstanceState, area: Rect) {
-    let pane_areas =
-        super::layout::calculate_pane_areas(area, state.layout_mode, state.panes.len());
+    let Some(root) = &state.root else {
+        return;
+    };
 
-    for (pane, pane_area) in state.panes.iter_mut().zip(pane_areas.iter()) {
+    let pane_areas = layout::calculate_pane_areas(area, root);
+    state.pane_areas = pane_areas.clone();
+
+    resize_panes_to_match_areas(state, &pane_areas);
+
+    let selected_id = state.selected_pane_id;
+    let is_focused_mode = state.mode == super::InstanceMode::Focused;
+
+    for (index, (pane_id, pane_area)) in pane_areas.iter().enumerate() {
+        let Some(pane) = state.find_pane(*pane_id) else {
+            continue;
+        };
+
+        let is_selected = selected_id == Some(*pane_id);
+        let is_focused = is_selected && is_focused_mode;
+
+        render_pane(f, pane, *pane_area, is_selected, is_focused, index);
+    }
+}
+
+fn resize_panes_to_match_areas(state: &mut InstanceState, pane_areas: &[(uuid::Uuid, Rect)]) {
+    for (pane_id, pane_area) in pane_areas {
         let inner_area = Block::default().borders(Borders::ALL).inner(*pane_area);
-
         let desired_rows = inner_area.height;
         let desired_columns = inner_area.width;
+
+        let Some(pane) = state.find_pane_mut(*pane_id) else {
+            continue;
+        };
 
         if pane.rows != desired_rows || pane.columns != desired_columns {
             if let Some(session) = &pane.pty_session {
@@ -67,17 +94,11 @@ fn render_panes(f: &mut Frame, state: &mut InstanceState, area: Rect) {
             pane.columns = desired_columns;
         }
     }
-
-    for (index, (pane, pane_area)) in state.panes.iter().zip(pane_areas.iter()).enumerate() {
-        let is_selected = index == state.selected_pane;
-        let is_focused = is_selected && state.mode == super::InstanceMode::Focused;
-        render_pane(f, pane, *pane_area, is_selected, is_focused, index);
-    }
 }
 
 fn render_pane(
     f: &mut Frame,
-    pane: &super::InstancePane,
+    pane: &InstancePane,
     area: Rect,
     is_selected: bool,
     is_focused: bool,
@@ -167,22 +188,16 @@ pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarCon
         super::InstanceMode::Scroll => ("SCROLL", Color::Yellow),
     };
 
-    let pane_count = state.panes.len();
-    let layout_name = match state.layout_mode {
-        super::LayoutMode::Single => "Single",
-        super::LayoutMode::HorizontalSplit => "Horizontal",
-        super::LayoutMode::VerticalSplit => "Vertical",
-        super::LayoutMode::Grid => "Grid",
-    };
+    let pane_count = state.pane_count();
 
     let help_text = match state.mode {
         super::InstanceMode::Normal => {
             if pane_count == 0 {
                 "c:create"
             } else if width < STATUS_BAR_WIDTH_THRESHOLD {
-                "Arrows:nav  Enter:focus  c:create  x:close"
+                "h/j/k/l:nav  Enter:focus  c:create  x:close"
             } else {
-                "Arrow-Keys:navigate  Enter:focus  c:create-pane  x:close-pane"
+                "h/j/k/l:navigate  Enter:focus  c:create-pane  x:close-pane"
             }
         }
         super::InstanceMode::Focused => {
@@ -204,7 +219,7 @@ pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarCon
     StatusBarContent {
         mode_text: mode_text.to_string(),
         mode_color,
-        extra_info: Some(format!("Panes: {pane_count}  Layout: {layout_name}  ")),
+        extra_info: Some(format!("Panes: {pane_count}  ")),
         help_text: help_text.to_string(),
     }
 }

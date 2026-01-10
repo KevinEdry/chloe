@@ -51,8 +51,7 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     details_panel::render(frame, selected_task.as_ref(), right_chunks[0]);
 
     let instance_id = selected_task.and_then(|task_ref| task_ref.task.instance_id);
-    let instance_pane =
-        instance_id.and_then(|id| app.instances.panes.iter_mut().find(|pane| pane.id == id));
+    let instance_pane = instance_id.and_then(|id| app.instances.find_pane_mut(id));
 
     let is_terminal_focused = matches!(app.tasks.mode, TasksMode::TerminalFocused);
     terminal_panel::render(frame, instance_pane, is_terminal_focused, right_chunks[1]);

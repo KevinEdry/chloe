@@ -1,4 +1,5 @@
-use super::{InstanceMode, InstanceState};
+use super::operations::NavigationDirection;
+use super::state::{InstanceMode, InstanceState};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key_event(state: &mut InstanceState, key: KeyEvent) {
@@ -11,10 +12,20 @@ pub fn handle_key_event(state: &mut InstanceState, key: KeyEvent) {
 
 fn handle_navigation_mode(state: &mut InstanceState, key: KeyEvent) {
     match key.code {
-        KeyCode::Left | KeyCode::Up => state.previous_pane(),
-        KeyCode::Right | KeyCode::Down => state.next_pane(),
+        KeyCode::Char('h') | KeyCode::Left => {
+            state.navigate_to_pane_in_direction(NavigationDirection::Left);
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            state.navigate_to_pane_in_direction(NavigationDirection::Down);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            state.navigate_to_pane_in_direction(NavigationDirection::Up);
+        }
+        KeyCode::Char('l') | KeyCode::Right => {
+            state.navigate_to_pane_in_direction(NavigationDirection::Right);
+        }
         KeyCode::Enter => {
-            if !state.panes.is_empty() {
+            if state.pane_count() > 0 {
                 state.mode = InstanceMode::Focused;
             }
         }
@@ -24,6 +35,8 @@ fn handle_navigation_mode(state: &mut InstanceState, key: KeyEvent) {
             state.create_pane(DEFAULT_ROWS, DEFAULT_COLUMNS);
         }
         KeyCode::Char('x') => state.close_pane(),
+        KeyCode::Tab => state.next_pane(),
+        KeyCode::BackTab => state.previous_pane(),
         _ => {}
     }
 }
