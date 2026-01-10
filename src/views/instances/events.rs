@@ -31,6 +31,13 @@ const SCROLL_LINES: usize = 3;
 const PAGE_SCROLL_LINES: usize = 10;
 
 fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
+    let is_shift_escape =
+        key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
+    if is_shift_escape {
+        send_escape_to_instance(state);
+        return;
+    }
+
     if key.code == KeyCode::Esc {
         state.mode = InstanceMode::Normal;
         return;
@@ -74,6 +81,15 @@ fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
     }
 
     send_input_to_instance(state, key);
+}
+
+fn send_escape_to_instance(state: &mut InstanceState) {
+    if let Some(pane) = state.selected_pane_mut() {
+        pane.scroll_to_bottom();
+        if let Some(session) = &mut pane.pty_session {
+            let _ = session.write_input(b"\x1b");
+        }
+    }
 }
 
 fn send_input_to_instance(state: &mut InstanceState, key: KeyEvent) {

@@ -8,6 +8,15 @@ pub fn handle_terminal_focused_mode(
     key: KeyEvent,
     selected_instance_id: Option<Uuid>,
 ) -> TasksAction {
+    let is_shift_escape =
+        key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
+    if is_shift_escape {
+        let Some(instance_id) = selected_instance_id else {
+            return TasksAction::None;
+        };
+        return TasksAction::SendToTerminal(instance_id, b"\x1b".to_vec());
+    }
+
     if key.code == KeyCode::Esc {
         state.exit_terminal_mode();
         return TasksAction::None;
