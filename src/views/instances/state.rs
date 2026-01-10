@@ -106,4 +106,5 @@ pub enum LayoutMode {
 pub enum InstanceMode {
     Normal,
     Focused,
+    Scroll,
 }

@@ -210,14 +210,7 @@ where
                         },
                     }
                 }
-                Event::Mouse(mouse_event) => {
-                    if app.active_tab == Tab::Instances {
-                        views::instances::events::handle_mouse_event(
-                            &mut app.instances,
-                            mouse_event,
-                        );
-                    }
-                }
+                Event::Mouse(_mouse_event) => {}
                 _ => {}
             }
         }
