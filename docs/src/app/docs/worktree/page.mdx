@@ -1,0 +1,111 @@
+import { Callout } from 'nextra/components'
+
+export const metadata = {
+  title: 'Worktree',
+  description: 'Manage Git worktrees in Chloe. Work on multiple branches simultaneously, open worktrees in your IDE, and handle merge operations with Claude assistance.',
+  keywords: ['Chloe worktree', 'git worktrees', 'parallel branches', 'git management', 'branch workflow'],
+  alternates: { canonical: '/docs/worktree' },
+}
+
+# Worktree
+
+The Worktree tab displays and manages Git worktrees in your repository, enabling parallel development on multiple branches.
+
+![Worktree navigation](/docs/worktree-navigate.gif)
+
+## What are Git Worktrees?
+
+Git worktrees allow you to have multiple working directories from a single repository. Each worktree can be on a different branch, enabling you to:
+
+- Work on multiple features simultaneously
+- Keep your main branch clean while experimenting
+- Isolate Claude's work from your main codebase
+
+<Callout type="info">
+When you start a task in Chloe, it can automatically create a worktree for isolated development.
+</Callout>
+
+## Worktree List
+
+The tab displays all worktrees in your repository:
+
+| Column | Description |
+|--------|-------------|
+| **Path** | Directory location of the worktree |
+| **Branch** | Which branch the worktree is tracking |
+| **Status** | Indicators for bare/detached state |
+
+
+## Auto-Refresh
+
+The worktree list automatically refreshes every 2 seconds when the tab is visible, so you'll see new worktrees appear as Claude creates them.
+
+## Opening Worktrees
+
+Press `o` on a selected worktree to open it:
+
+- Opens in your configured IDE
+- Opens a terminal at the worktree path
+
+![Opening worktree](/docs/worktree-open.gif)
+
+## Deleting Worktrees
+
+Press `d` to delete a worktree:
+
+1. A confirmation dialog appears
+2. Press `y` to confirm or `n` to cancel
+3. The worktree directory is removed
+
+<Callout type="warning">
+Deleting a worktree removes its directory. Make sure any changes are committed or merged first.
+</Callout>
+
+## Task Integration
+
+Tasks can be linked to worktrees through the `WorktreeInfo` field:
+
+- **Branch Name**: The branch being worked on
+- **Path**: Location of the worktree
+
+When reviewing a task, you can:
+- Open the worktree in your IDE
+- Merge the worktree branch to main
+- Resolve conflicts if they occur
+
+## Merge Operations
+
+From the Tasks tab review popup, you can merge worktree changes:
+
+1. Select "Merge to Branch" in the review popup
+2. Chloe attempts to merge the worktree branch to main
+3. If conflicts are detected, the option changes to "Resolve Conflicts"
+4. Claude is prompted to fix any merge conflicts
+
+
+## Keybindings
+
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Select next worktree |
+| `k` / `↑` | Select previous worktree |
+| `d` | Delete worktree |
+| `o` | Open in IDE/terminal |
+
+## Repository Detection
+
+Chloe automatically detects the repository root and lists all worktrees. If you're not in a Git repository, an error message is displayed.
+
+## Worktree Properties
+
+| Property | Description |
+|----------|-------------|
+| **Path** | Absolute path to the worktree directory |
+| **Branch Name** | The branch this worktree tracks |
+| **Is Bare** | Whether this is a bare repository |
+| **Is Detached** | Whether HEAD is detached |
+| **Auto Created** | Whether Chloe created this worktree |
+
+<Callout>
+Worktrees created by Chloe are marked as "Auto Created" and can be safely cleaned up after merging.
+</Callout>

@@ -1,0 +1,134 @@
+import { Callout } from 'nextra/components'
+
+export const metadata = {
+  title: 'Roadmap',
+  description: 'Strategic planning with Chloe Roadmap tab. Create high-level features, set priorities, use AI generation, and convert roadmap items to actionable tasks.',
+  keywords: ['Chloe roadmap', 'project planning', 'AI roadmap generation', 'feature planning', 'priority management'],
+  alternates: { canonical: '/docs/roadmap' },
+}
+
+# Roadmap
+
+The Roadmap tab is for strategic planning - high-level features and initiatives that break down into individual tasks.
+
+![Roadmap overview](/docs/roadmap-create.gif)
+
+## Roadmap Items
+
+Each roadmap item represents a larger feature or initiative:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | Feature or initiative name |
+| **Description** | What it does |
+| **Rationale** | Why it's important |
+| **User Stories** | List of use cases |
+| **Acceptance Criteria** | Definition of done |
+| **Status** | Planned, In Progress, Completed, Cancelled |
+| **Priority** | High, Medium, or Low |
+| **Dependencies** | Links to other roadmap items |
+| **Tags** | Categorization labels |
+
+## Priority Levels
+
+Items are sorted by priority and displayed with color indicators:
+
+| Priority | Color | Meaning |
+|----------|-------|---------|
+| **High** | Red | Critical path, do first |
+| **Medium** | Yellow | Important but not blocking |
+| **Low** | Gray | Nice to have, backlog |
+
+![Changing priorities](/docs/roadmap-priority.gif)
+
+## Creating Roadmap Items
+
+Press `a` to add a new roadmap item:
+
+1. Enter the title
+2. Press `Enter` to save
+3. The item appears with Medium priority by default
+
+
+## AI Generation
+
+Press `g` or `G` to generate a roadmap using AI:
+
+1. Chloe analyzes your project
+2. AI suggests features and improvements
+3. Items are created with appropriate priorities
+
+![AI roadmap generation](/docs/roadmap-generate.gif)
+
+<Callout type="info">
+AI generation examines your codebase structure, existing features, and common patterns to suggest relevant roadmap items.
+</Callout>
+
+## Converting to Tasks
+
+When you're ready to work on a roadmap item:
+
+1. Select the item with `j`/`k`
+2. Press `t` to convert to a task
+3. The item becomes a task in the Tasks tab
+
+This creates a direct link between your strategic planning and day-to-day execution.
+
+![Converting to task](/docs/roadmap-to-task.gif)
+
+## Managing Items
+
+### Edit
+
+Press `e` to edit the selected item's title.
+
+### Delete
+
+Press `d` to delete an item (requires confirmation with `y`/`n`).
+
+### Change Priority
+
+Press `p` to cycle through priorities:
+
+```
+High → Medium → Low → High
+```
+
+## Keybindings
+
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Select next item |
+| `k` / `↑` | Select previous item |
+| `a` | Add new item |
+| `e` | Edit item title |
+| `d` | Delete item |
+| `t` | Convert to task |
+| `p` | Cycle priority |
+| `g` / `G` | Generate roadmap with AI |
+
+## Status Workflow
+
+Roadmap items have four possible statuses:
+
+```
+Planned → In Progress → Completed
+                    ↘ Cancelled
+```
+
+- **Planned**: Not yet started
+- **In Progress**: Active development
+- **Completed**: Done and shipped
+- **Cancelled**: Decided not to pursue
+
+## Dependencies
+
+Roadmap items can depend on other items. Dependencies are tracked by ID and displayed in the item details.
+
+<Callout type="warning">
+Dependencies help you understand the order of work, but Chloe doesn't enforce them - you can start any item regardless of dependency status.
+</Callout>
+
+## Persistence
+
+All roadmap data is saved to your project's `.chloe/state.json` file and survives app restarts.

@@ -1,0 +1,161 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+
+export const metadata = {
+  title: 'Tasks',
+  description: 'Learn how to use the Tasks tab in Chloe. Manage your work with a Kanban board, create tasks, link them to Claude Code instances, and review completed work.',
+  keywords: ['Chloe tasks', 'Kanban board', 'task management', 'Claude Code tasks', 'workflow management'],
+  alternates: { canonical: '/docs/tasks' },
+}
+
+# Tasks
+
+The Tasks tab is the primary workflow hub of Chloe, managing your work through a Kanban-based system with four columns.
+
+![Tasks Focus View](/docs/tasks-view-toggle.gif)
+
+## Columns
+
+Tasks flow through four columns representing their lifecycle:
+
+| Column | Description |
+|--------|-------------|
+| **Planning** | Backlog for new tasks waiting to be started |
+| **In Progress** | Active work with linked terminal instances |
+| **Review** | Completed work awaiting your approval |
+| **Done** | Finished tasks (persistent archive) |
+
+## View Modes
+
+Toggle between views with the `/` key.
+
+### Focus View (Default)
+
+The focus view shows your active tasks in a list format with a details panel on the right.
+
+
+- **Left panel**: Active tasks (Planning + In Progress)
+- **Right panel**: Selected task details
+- **Bottom section**: Completed tasks
+
+### Kanban View
+
+The Kanban view displays all four columns visually, similar to a traditional Kanban board.
+
+
+## Task Types
+
+Each task has a type displayed as a colored badge:
+
+| Type | Color | Use Case |
+|------|-------|----------|
+| **Feature** | Purple | New functionality |
+| **Bug** | Red | Something broken |
+| **Chore** | Gray | Maintenance work |
+| **Task** | Blue | General tasks |
+
+<Callout type="info">
+When creating a task, Chloe can use AI to automatically classify the task type based on its title and description.
+</Callout>
+
+## Creating Tasks
+
+<Steps>
+### Press `a` to add a new task
+
+A text input appears at the bottom of the screen.
+
+### Type your task title
+
+Be descriptive - this will be sent to Claude when the task starts.
+
+### Press Enter to save
+
+The task appears in the Planning column.
+</Steps>
+
+![Creating a task](/docs/tasks-create.gif)
+
+## Starting a Task
+
+When you're ready to work on a task:
+
+1. Navigate to the task in the Planning column
+2. Press `s` to start the task
+
+This automatically:
+- Moves the task to In Progress
+- Creates a new terminal instance
+- Sends your task to Claude Code with the prompt:
+  ```
+  Work on this task:
+
+  Title: [your task title]
+
+  Description: [your task description]
+  ```
+
+![Starting a task](/docs/tasks-start.gif)
+
+## Terminal Focus Mode
+
+When a task is In Progress, press `Enter` to enter Terminal Focus Mode:
+
+- All keyboard input goes directly to the terminal
+- Watch Claude work on your task in real-time
+- Press `Esc` to exit and return to task navigation
+
+![Terminal focus mode](/docs/tasks-terminal-focus.gif)
+
+## Review Workflow
+
+When Claude completes a task, it automatically moves to the Review column. Press `Enter` on a review task to see your options:
+
+
+| Action | Description |
+|--------|-------------|
+| **Review in IDE** | Opens the changed files in your configured IDE |
+| **Review in Terminal** | Opens a terminal at the worktree location |
+| **Request Changes** | Send feedback to Claude for revisions |
+| **Merge to Branch** | Merge the worktree changes to your main branch |
+
+<Callout type="warning">
+If merge conflicts are detected, the "Merge to Branch" option changes to "Resolve Conflicts" and Claude will be prompted to fix them.
+</Callout>
+
+## Keybindings
+
+### Navigation
+
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Select next task |
+| `k` / `↑` | Select previous task |
+| `h` / `←` | Previous column (Kanban view) |
+| `l` / `→` | Next column (Kanban view) |
+| `g` | Jump to first task |
+| `G` | Jump to last task |
+| `Tab` | Switch between active/done panels |
+| `/` | Toggle Focus/Kanban view |
+
+### Actions
+
+| Key | Action |
+|-----|--------|
+| `a` | Add new task |
+| `e` | Edit task title |
+| `d` | Delete task (with confirmation) |
+| `s` | Start task (Planning → In Progress) |
+| `Enter` | Context-aware action (start/focus/review) |
+| `t` / `T` | Jump to task's terminal instance |
+
+## Task Properties
+
+Each task stores:
+
+- **Title**: The task name shown in the list
+- **Description**: Detailed information sent to Claude
+- **Type**: Feature, Bug, Chore, or Task
+- **Instance ID**: Link to the terminal running this task
+- **Worktree Info**: Git branch and path for isolated work
+- **Created At**: When the task was created
+- **Is Paused**: Whether the task is temporarily paused
