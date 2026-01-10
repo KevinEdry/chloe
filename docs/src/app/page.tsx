@@ -1,4 +1,4 @@
-import { Hero, Demo, Features } from '@/components'
+import { Demo, Features, Hero } from '@/components'
 
 export default function LandingPage() {
   return (

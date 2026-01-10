@@ -1,0 +1,143 @@
+import { Callout, Tabs } from 'nextra/components'
+
+# Keybinds
+
+Chloe is designed for keyboard-driven navigation. All actions are accessible without a mouse.
+
+<Callout type="info">
+  Chloe uses vim-style navigation (`h`/`j`/`k`/`l`) throughout. Arrow keys also work everywhere.
+</Callout>
+
+## Global Keybinds
+
+These work from any view.
+
+| Key | Action |
+|-----|--------|
+| `Tab` / `Shift+Tab` | Cycle through tabs |
+| `1` | Jump to Tasks view |
+| `2` | Jump to Instances view |
+| `3` | Jump to Roadmap view |
+| `4` | Jump to Worktree view |
+| `q` / `Ctrl+C` | Quit Chloe |
+
+## View-Specific Keybinds
+
+<Tabs items={['Tasks', 'Instances', 'Roadmap', 'Worktree']}>
+  <Tabs.Tab>
+    ### Navigation
+
+    | Key | Action |
+    |-----|--------|
+    | `h` or `Left` | Move to previous column |
+    | `l` or `Right` | Move to next column |
+    | `j` or `Down` | Move to next task |
+    | `k` or `Up` | Move to previous task |
+    | `g` | Jump to first task in column |
+    | `G` | Jump to last task in column |
+    | `/` | Toggle between Kanban and Focus view |
+
+    ### Task Actions
+
+    | Key | Action |
+    |-----|--------|
+    | `a` | Add new task |
+    | `e` | Edit selected task |
+    | `d` | Delete selected task |
+    | `Enter` | Move task forward (To Do → In Progress → Done) |
+    | `Backspace` | Move task backward (Done → In Progress → To Do) |
+    | `t` | Jump to task's linked instance |
+
+    ### Review Mode
+
+    | Key | Action |
+    |-----|--------|
+    | `Enter` | Open review dialog |
+    | `Esc` | Close review dialog |
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ### Pane Management
+
+    | Key | Action |
+    |-----|--------|
+    | `c` | Create new pane |
+    | `x` | Close selected pane |
+
+    ### Navigation
+
+    | Key | Action |
+    |-----|--------|
+    | `h` or `Left` | Select pane to the left |
+    | `l` or `Right` | Select pane to the right |
+    | `j` or `Down` | Select pane below |
+    | `k` or `Up` | Select pane above |
+
+    ### Focus Mode
+
+    | Key | Action |
+    |-----|--------|
+    | `Enter` | Enter focus mode (interact with terminal) |
+    | `Esc` | Exit focus mode |
+
+    <Callout>
+      When in focus mode, all keypresses go directly to the terminal. Press `Esc` to return to navigation mode.
+    </Callout>
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ### Navigation
+
+    | Key | Action |
+    |-----|--------|
+    | `j` or `Down` | Move to next item |
+    | `k` or `Up` | Move to previous item |
+
+    ### Item Actions
+
+    | Key | Action |
+    |-----|--------|
+    | `a` | Add new roadmap item |
+    | `e` | Edit selected item |
+    | `d` | Delete selected item |
+    | `t` | Convert item to task |
+    | `p` | Cycle through priority levels |
+    | `g` | Generate roadmap suggestions with AI |
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ### Navigation
+
+    | Key | Action |
+    |-----|--------|
+    | `j` or `Down` | Move to next worktree |
+    | `k` or `Up` | Move to previous worktree |
+
+    ### Worktree Actions
+
+    | Key | Action |
+    |-----|--------|
+    | `o` | Open worktree in IDE and terminal |
+    | `d` | Delete worktree |
+  </Tabs.Tab>
+</Tabs>
+
+## Quick Reference Card
+
+<Callout type="info" emoji="⌨️">
+  Print this out or keep it handy while learning Chloe!
+</Callout>
+
+```
+┌─────────────────────────────────────────────────────┐
+│  GLOBAL: Tab/1234=switch views  q=quit              │
+├─────────────────────────────────────────────────────┤
+│  TASKS:  hjkl=nav  a=add  e=edit  d=del  Enter=fwd  │
+│          Backspace=back  /=toggle view  t=instance  │
+├─────────────────────────────────────────────────────┤
+│  INSTANCES: c=new  x=close  hjkl=nav  Enter=focus   │
+│             Esc=exit focus                          │
+├─────────────────────────────────────────────────────┤
+│  ROADMAP: jk=nav  a=add  e=edit  d=del  t=to-task   │
+│           p=priority  g=generate                    │
+├─────────────────────────────────────────────────────┤
+│  WORKTREE: jk=nav  o=open  d=delete                 │
+└─────────────────────────────────────────────────────┘
+```

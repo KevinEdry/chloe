@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="docs/public/logos/logo-with-name.svg" alt="Chloe" width="340">
+  <a href="https://getchloe.sh">
+    <img src="docs/public/logos/logo-with-name.svg" alt="Chloe" width="340">
+  </a>
 </p>
 
 <p align="center">

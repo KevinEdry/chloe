@@ -21,11 +21,25 @@ export function Footer() {
       </div>
       <div className="flex flex-col gap-1 items-center">
         <ul className="flex gap-5 w-full justify-center text-[var(--color-text-secondary)] font-medium [&_li]:cursor-pointer [&_li:hover]:text-[var(--color-text-muted)]">
-          <li><Link href="/docs">Docs</Link></li>
-          <li><Link href="https://github.com/KevinEdry/chloe" target="_blank">GitHub</Link></li>
+          <li>
+            <Link href="/docs">Docs</Link>
+          </li>
+          <li>
+            <Link href="https://github.com/KevinEdry/chloe" target="_blank">
+              GitHub
+            </Link>
+          </li>
         </ul>
         <div className="text-[var(--color-text-muted)] text-sm mt-4">
-          Made with ❤️ in Seattle by <Link href="https://kevin-edry.com/" className="hover:text-[var(--color-primary)] transition-all font-bold" target="_blank">Kevin Edry</Link>.
+          Made with ❤️ in Seattle by{' '}
+          <Link
+            href="https://kevin-edry.com/"
+            className="hover:text-[var(--color-primary)] transition-all font-bold"
+            target="_blank"
+          >
+            Kevin Edry
+          </Link>
+          .
         </div>
       </div>
     </footer>

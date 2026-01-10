@@ -1,0 +1,176 @@
+import { Callout, Steps } from 'nextra/components'
+
+# Common Workflows
+
+Practical patterns for getting the most out of Chloe.
+
+## Running Multiple Claude Code Instances
+
+<Callout type="info">
+  This is the primary use case for Chloe — orchestrating multiple Claude Code sessions working on different parts of your project.
+</Callout>
+
+<Steps>
+### Create tasks for each piece of work
+
+- Press `1` to go to Tasks
+- Press `a` to add tasks for each feature/bug you want to work on
+
+### Open multiple terminal instances
+
+- Press `2` to go to Instances
+- Press `c` multiple times to create panes (2-4 is typical)
+
+### Start Claude Code in each pane
+
+- Press `Enter` to focus a pane
+- Run `claude` to start Claude Code
+- Press `Esc` to exit focus mode
+- Repeat for each pane
+
+### Link tasks to instances
+
+- Press `1` to go to Tasks
+- Navigate to a task and press `Enter` to move it to "In Progress"
+- Press `t` to jump to the linked instance
+</Steps>
+
+### Managing Progress
+
+| Action | How |
+|--------|-----|
+| Check status | Press `1` to see all tasks organized by status |
+| Switch context | Press `t` on any task to jump to its terminal |
+| Complete work | Move tasks to "Done" with `Enter` when finished |
+| Review | Press `Enter` on completed tasks to review the work |
+
+## Feature Development Workflow
+
+When working on a new feature across multiple sessions:
+
+### Day 1: Planning
+
+**Add roadmap items**
+- Press `3` to go to Roadmap
+- Press `a` to add high-level milestones
+- Use `p` to set priorities
+
+**Break down into tasks**
+- Press `t` on roadmap items to convert them to tasks
+- Tasks appear in your Kanban board
+
+### Day 2+: Execution
+
+**Pick up where you left off**
+- Run `chloe` - your state is preserved
+- Check "In Progress" column for active work
+
+**Work in parallel**
+- Different Claude instances can work on different tasks
+- Use the task board to track what each is doing
+
+<Callout>
+  **Handling blockers**: Move blocked tasks back to "To Do" with `Backspace` and add notes by editing the task with `e`.
+</Callout>
+
+## Git Worktree Workflow
+
+For working on multiple branches simultaneously:
+
+<Steps>
+### View existing worktrees
+
+- Press `4` to go to Worktree view
+- See all active worktrees
+
+### Open worktree in new environment
+
+- Navigate to a worktree
+- Press `o` to open it in your IDE and terminal
+
+### Link to tasks
+
+- Each worktree can have its own Chloe instance
+- Run `chloe init` in the worktree directory
+</Steps>
+
+### Parallel Feature Development
+
+| Branch | Purpose |
+|--------|---------|
+| **Main branch** | Bug fixes and urgent work |
+| **Feature branch A** | New feature development |
+| **Feature branch B** | Refactoring work |
+
+Each worktree gets its own terminal panes and task tracking.
+
+## Quick Task Triage
+
+<Callout type="info" emoji="⚡">
+  When you have many tasks to organize, use Focus view for rapid triage.
+</Callout>
+
+<Steps>
+### Switch to Focus view
+
+Press `/` in Tasks view to toggle Focus mode and see all tasks in a single column.
+
+### Rapid prioritization
+
+- Use `j`/`k` to quickly navigate
+- Press `Enter` to move tasks forward
+- Press `Backspace` to move tasks back
+
+### Return to Kanban
+
+Press `/` again to see the organized board.
+</Steps>
+
+## AI-Assisted Roadmap Generation
+
+<Steps>
+### Go to Roadmap view
+
+Press `3`
+
+### Generate suggestions
+
+- Press `g`
+- Chloe analyzes your project and suggests roadmap items
+
+### Curate the results
+
+- Edit suggestions with `e`
+- Delete unwanted items with `d`
+- Convert good items to tasks with `t`
+</Steps>
+
+## Keyboard Efficiency Tips
+
+<Callout type="info" emoji="⌨️">
+  Master these patterns to navigate Chloe like a pro.
+</Callout>
+
+| Tip | Description |
+|-----|-------------|
+| **Quick View Switching** | Use number keys (`1`, `2`, `3`, `4`) instead of `Tab` for instant access |
+| **Vim Muscle Memory** | `hjkl` navigation works everywhere — left, down, up, right |
+| **Jump to Extremes** | `g` goes to first item, `G` to last item in any list |
+
+### Focus Mode Tips
+
+<Callout>
+  When working in a terminal pane:
+  1. Press `Enter` to focus (sends keystrokes to terminal)
+  2. Do your work in Claude Code
+  3. Press `Esc` to exit focus and navigate elsewhere
+  4. Use `2` to return to Instances view if needed
+</Callout>
+
+### Quick Context Switching
+
+| From | To | How |
+|------|-----|-----|
+| Any task | Its terminal | Press `t` |
+| Any terminal | All tasks | Press `1` |
+| Anywhere | Any view | Press number keys |

@@ -4,10 +4,7 @@ export function Demo() {
   return (
     <section className="relative px-6 pt-0 pb-12 -translate-y-32 mb-[-8rem]">
       <div className="mx-auto max-w-5xl">
-        <Link
-          href="/docs"
-          className="block group"
-        >
+        <Link href="/docs" className="block group">
           <div className="relative rounded-xl overflow-hidden border border-[var(--color-border)] shadow-2xl shadow-black/50 transition-all duration-300 group-hover:border-[var(--color-border-light)] group-hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7),0_0_60px_rgba(168,85,247,0.15)] bg-[var(--color-surface)]">
             {/* Terminal header */}
             <div className="flex items-center gap-2 px-4 py-3 bg-[var(--color-surface-elevated)] border-b border-[var(--color-border)]">
@@ -19,13 +16,7 @@ export function Demo() {
 
             {/* Terminal content - Demo Video */}
             <div className="relative bg-black">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-auto"
-              >
+              <video autoPlay loop muted playsInline className="w-full h-auto">
                 <source src="/demo.webm" type="video/webm" />
                 <source src="/demo.gif" type="image/gif" />
               </video>

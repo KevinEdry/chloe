@@ -5,13 +5,16 @@ export default {
     display: 'hidden',
     theme: {
       layout: 'full',
+      breadcrumb: false,
+      footer: true,
       sidebar: false,
       toc: false,
       pagination: false,
-      breadcrumb: false,
+      timestamp: false,
     },
   },
-  'getting-started': 'Getting Started',
-  features: 'Features',
-  keybindings: 'Keybindings',
+  docs: {
+    title: 'Documentation',
+    type: 'page',
+  }
 }

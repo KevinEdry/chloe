@@ -1,0 +1,90 @@
+import { Callout, Cards, Steps } from 'nextra/components'
+
+# Overview
+
+Chloe is a terminal UI application for orchestrating parallel Claude Code instances with integrated task and terminal management. It brings together task tracking, multiple terminal sessions, and project planning in a single, keyboard-driven interface.
+
+<Callout type="info">
+  Chloe is designed for developers who want to run multiple AI coding assistants in parallel without losing track of what each one is doing.
+</Callout>
+
+## Why Use Chloe?
+
+Managing multiple Claude Code sessions can quickly become chaotic. Chloe solves this by providing:
+
+- **Unified Interface**: See all your tasks, terminals, and roadmap items in one place
+- **Parallel Execution**: Run multiple Claude Code instances side-by-side without tab switching
+- **Task Tracking**: Built-in Kanban board to track what each instance is working on
+- **Keyboard-First**: Navigate everything without touching your mouse
+- **Persistent State**: Your tasks and configurations survive restarts
+
+## What Chloe Does For You
+
+<Cards num={2}>
+  <Cards.Card
+    title="Task Management"
+    href="/docs/common-workflows"
+  >
+    A visual Kanban board with three columns (To Do, In Progress, Done) lets you track work across all your Claude Code instances.
+  </Cards.Card>
+  <Cards.Card
+    title="Multiple Terminals"
+    href="/docs/keybinds#instances-view"
+  >
+    Split your terminal into multiple panes, each running an independent shell session for Claude Code instances.
+  </Cards.Card>
+  <Cards.Card
+    title="Roadmap Planning"
+    href="/docs/common-workflows#ai-assisted-roadmap-generation"
+  >
+    Plan your project with a dedicated roadmap view. Add milestones, set priorities, and convert items to tasks.
+  </Cards.Card>
+  <Cards.Card
+    title="Git Worktrees"
+    href="/docs/common-workflows#git-worktree-workflow"
+  >
+    Manage git worktrees for parallel development on multiple branches with a single keystroke.
+  </Cards.Card>
+</Cards>
+
+## Installation
+
+Install Chloe with a single command:
+
+```bash
+curl -fsSL https://getchloe.sh | bash
+```
+
+<Callout>
+  See the [Quick Start](/docs/quick-start) guide for alternative installation methods including building from source.
+</Callout>
+
+## Next Steps
+
+<Cards num={3}>
+  <Cards.Card
+    title="Quick Start"
+    href="/docs/quick-start"
+    arrow
+  >
+    Get up and running in minutes
+  </Cards.Card>
+  <Cards.Card
+    title="Keybinds"
+    href="/docs/keybinds"
+    arrow
+  >
+    Learn the keyboard shortcuts
+  </Cards.Card>
+  <Cards.Card
+    title="Common Workflows"
+    href="/docs/common-workflows"
+    arrow
+  >
+    See how to use Chloe effectively
+  </Cards.Card>
+</Cards>
+
+## Additional Resources
+
+- [GitHub Repository](https://github.com/KevinEdry/chloe) - Source code and issue tracker

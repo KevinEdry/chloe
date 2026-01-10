@@ -1,0 +1,113 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+
+# Quick Start
+
+Get Chloe running in your project in under 5 minutes.
+
+## Prerequisites
+
+<Callout type="warning">
+  Make sure you have these requirements before using Chloe.
+</Callout>
+
+- [Claude Pro/Max subscription](https://claude.ai/upgrade)
+- Claude Code CLI - `npm install -g @anthropic-ai/claude-code`
+- A project directory where you want to use Chloe
+
+## Installation
+
+<Tabs items={['One-Line Install', 'Build from Source']}>
+  <Tabs.Tab>
+    The fastest way to get started:
+
+    ```bash
+    curl -fsSL https://getchloe.sh | bash
+    ```
+
+    This downloads the latest release and installs it to your path.
+  </Tabs.Tab>
+  <Tabs.Tab>
+    If you prefer to build from source, you'll need [Rust 1.70+](https://rustup.rs) installed:
+
+    ```bash
+    git clone https://github.com/KevinEdry/chloe.git
+    cd chloe
+    cargo build --release --locked
+    ```
+
+    The binary will be at `target/release/chloe`. Move it to a directory in your PATH:
+
+    ```bash
+    cp target/release/chloe ~/.local/bin/
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## Starting Your First Session
+
+<Steps>
+### Initialize Your Project
+
+Navigate to your project directory and initialize Chloe:
+
+```bash
+cd your-project
+chloe init
+```
+
+This creates a `.chloe/` directory to store your tasks and configurations. The directory is automatically added to `.gitignore`.
+
+### Launch Chloe
+
+Start Chloe:
+
+```bash
+chloe
+```
+
+You'll see the main interface with four tabs:
+- **Tasks** - Your Kanban board
+- **Instances** - Terminal panes
+- **Roadmap** - Project planning
+- **Worktree** - Git worktree management
+
+### Create Your First Task
+
+1. Press `a` to add a new task
+2. Type your task description
+3. Press `Enter` to save
+
+The task appears in the "To Do" column.
+
+### Open a Terminal Instance
+
+1. Press `2` to switch to the Instances tab
+2. Press `c` to create a new terminal pane
+3. Start Claude Code or any other command
+
+### Link Task to Instance
+
+1. Press `1` to go back to Tasks
+2. Navigate to your task with `h`/`j`/`k`/`l` or arrow keys
+3. Press `Enter` to move it to "In Progress"
+4. The task is now linked to your active instance
+</Steps>
+
+## Data Storage
+
+<Callout type="info">
+  Chloe stores all state in `.chloe/state.json` in your project directory.
+</Callout>
+
+This includes:
+- Tasks and their statuses
+- Instance configurations
+- Roadmap items
+- View settings
+
+This file is automatically created and managed by Chloe.
+
+## What's Next?
+
+- Learn all the [Keybinds](/docs/keybinds)
+- See [Common Workflows](/docs/common-workflows) for practical examples
