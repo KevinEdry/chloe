@@ -201,9 +201,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::ReviewRequestChanges { .. } => {
                 "Type your change request  Enter:send  Esc:cancel"
             }
-            TasksMode::MergeConfirmation { .. } => {
-                "↑↓/jk:select-branch  Enter:merge  Esc/q:cancel"
-            }
+            TasksMode::MergeConfirmation { .. } => "↑↓/jk:select-branch  Enter:merge  Esc/q:cancel",
         }
     };
 

@@ -490,7 +490,9 @@ pub fn merge_worktree(
 
     if !checkout_output.status.success() {
         let error_message = String::from_utf8_lossy(&checkout_output.stderr);
-        return Err(anyhow!("Git checkout {target_branch} failed: {error_message}"));
+        return Err(anyhow!(
+            "Git checkout {target_branch} failed: {error_message}"
+        ));
     }
 
     let merge_output = std::process::Command::new("git")
