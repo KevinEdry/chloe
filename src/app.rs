@@ -346,7 +346,11 @@ impl App {
             return;
         };
 
-        let commit_prompt = "Please commit the current changes. Review what's been modified and create appropriate atomic commits with clear, descriptive messages. Do not push to remote.";
+        let commit_prompt = "Please commit the current changes. Review what's been modified and create appropriate atomic commits with clear, descriptive messages.
+
+Before committing, check if this repository has commit message standards or conventions defined (e.g., in CONTRIBUTING.md, README.md, or commit config files like commitlint.config.js, .commitlintrc, committed.toml). If standards exist, follow them. If not, use sensible defaults.
+
+Do not push to remote.";
 
         self.instances
             .send_input_to_instance(instance_id, commit_prompt);
