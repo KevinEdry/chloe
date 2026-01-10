@@ -1,7 +1,7 @@
-use crate::types::Config;
 use crate::views::instances::InstanceState;
 use crate::views::pull_requests::PullRequestsState;
 use crate::views::roadmap::RoadmapState;
+use crate::views::settings::SettingsState;
 use crate::views::tasks::{TaskType, TasksState};
 use crate::views::worktree::WorktreeTabState;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ pub enum Tab {
     Roadmap,
     Worktree,
     PullRequests,
+    Settings,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +27,8 @@ pub struct App {
     pub roadmap: RoadmapState,
     pub worktree: WorktreeTabState,
     pub pull_requests: PullRequestsState,
-    pub config: Config,
+    #[serde(skip)]
+    pub settings: SettingsState,
     #[serde(skip)]
     pub showing_exit_confirmation: bool,
 }
@@ -41,13 +43,15 @@ impl App {
             roadmap: RoadmapState::new(),
             worktree: WorktreeTabState::new(),
             pull_requests: PullRequestsState::new(),
-            config: Config::default(),
+            settings: SettingsState::new(),
             showing_exit_confirmation: false,
         }
     }
 
     #[must_use]
     pub fn load_or_default() -> Self {
+        let settings = crate::persistence::storage::load_settings().unwrap_or_default();
+
         match crate::persistence::storage::load_state() {
             Ok(mut app) => {
                 let active_instance_ids: Vec<uuid::Uuid> =
@@ -63,14 +67,23 @@ impl App {
                 }
 
                 app.roadmap.sort_items_by_priority();
+                app.settings = SettingsState::with_settings(settings);
                 app
             }
-            Err(_) => Self::default(),
+            Err(_) => {
+                let mut app = Self::default();
+                app.settings = SettingsState::with_settings(settings);
+                app
+            }
         }
     }
 
     pub fn save(&self) -> crate::types::Result<()> {
         crate::persistence::storage::save_state(self)
+    }
+
+    pub fn save_settings(&self) -> crate::types::Result<()> {
+        crate::persistence::storage::save_settings(&self.settings.settings)
     }
 
     pub fn switch_tab(&mut self, tab: Tab) {
@@ -91,7 +104,8 @@ impl App {
             Tab::Instances => Tab::Roadmap,
             Tab::Roadmap => Tab::Worktree,
             Tab::Worktree => Tab::PullRequests,
-            Tab::PullRequests => Tab::Tasks,
+            Tab::PullRequests => Tab::Settings,
+            Tab::Settings => Tab::Tasks,
         };
 
         if self.active_tab == Tab::Worktree {
@@ -105,11 +119,12 @@ impl App {
 
     pub fn previous_tab(&mut self) {
         self.active_tab = match self.active_tab {
-            Tab::Tasks => Tab::PullRequests,
+            Tab::Tasks => Tab::Settings,
             Tab::Instances => Tab::Tasks,
             Tab::Roadmap => Tab::Instances,
             Tab::Worktree => Tab::Roadmap,
             Tab::PullRequests => Tab::Worktree,
+            Tab::Settings => Tab::PullRequests,
         };
 
         if self.active_tab == Tab::Worktree {
@@ -281,7 +296,7 @@ impl App {
                 return;
             };
 
-            let ide_command = self.config.ide_command.command_name();
+            let ide_command = self.settings.settings.ide_command.command_name();
             let _ = std::process::Command::new(ide_command)
                 .arg(path_to_open)
                 .spawn();
@@ -307,7 +322,11 @@ impl App {
                 return;
             };
 
-            let _ = self.config.terminal_command.open_at_path(path_to_open);
+            let _ = self
+                .settings
+                .settings
+                .terminal_command
+                .open_at_path(path_to_open);
         }
     }
 
@@ -322,7 +341,7 @@ impl App {
 
     pub fn open_worktree_in_ide(&self, worktree_index: usize) {
         if let Some(worktree) = self.worktree.worktrees.get(worktree_index) {
-            let ide_command = self.config.ide_command.command_name();
+            let ide_command = self.settings.settings.ide_command.command_name();
             let _ = std::process::Command::new(ide_command)
                 .arg(&worktree.path)
                 .spawn();
@@ -331,7 +350,11 @@ impl App {
 
     pub fn open_worktree_in_terminal(&self, worktree_index: usize) {
         if let Some(worktree) = self.worktree.worktrees.get(worktree_index) {
-            let _ = self.config.terminal_command.open_at_path(&worktree.path);
+            let _ = self
+                .settings
+                .settings
+                .terminal_command
+                .open_at_path(&worktree.path);
         }
     }
 

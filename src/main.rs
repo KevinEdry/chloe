@@ -176,6 +176,9 @@ where
                         KeyCode::Char('5') if !terminal_is_focused && !tasks_is_typing => {
                             app.switch_tab(Tab::PullRequests);
                         }
+                        KeyCode::Char('6') if !terminal_is_focused && !tasks_is_typing => {
+                            app.switch_tab(Tab::Settings);
+                        }
                         _ => match app.active_tab {
                             Tab::Tasks => {
                                 let is_normal_mode = app.tasks.is_normal_mode();
@@ -206,6 +209,18 @@ where
                                     key,
                                 );
                                 polling::process_pull_requests_action(app, &action);
+                            }
+                            Tab::Settings => {
+                                let action = views::settings::events::handle_key_event(
+                                    &mut app.settings,
+                                    key,
+                                );
+                                if matches!(
+                                    action,
+                                    views::settings::events::SettingsAction::SaveSettings
+                                ) {
+                                    let _ = app.save_settings();
+                                }
                             }
                         },
                     }
