@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 const STATUS_BAR_WIDTH_THRESHOLD: u16 = 80;
-const SETTINGS_COUNT: usize = 5;
+const SETTINGS_COUNT: usize = 4;
 const LABEL_WIDTH: u16 = 25;
 
 pub fn render(frame: &mut Frame, state: &SettingsState, area: Rect) {
@@ -94,7 +94,6 @@ fn create_list_item(index: usize, item: SettingItem, state: &SettingsState) -> L
 
 fn get_setting_value_text(item: SettingItem, state: &SettingsState, is_editing: bool) -> String {
     match item {
-        SettingItem::Theme => state.settings.theme.display_name().to_string(),
         SettingItem::DefaultShell => {
             if is_editing {
                 format!("{}|", state.edit_buffer)
