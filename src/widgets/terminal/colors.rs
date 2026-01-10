@@ -1,15 +1,40 @@
+use alacritty_terminal::vte::ansi::Color as AlacrittyColor;
+use alacritty_terminal::vte::ansi::NamedColor;
 use ratatui::style::Color;
 
-pub const fn convert_vt100_color(color: vt100::Color) -> Color {
+pub fn convert_alacritty_color(color: AlacrittyColor) -> Color {
     match color {
-        vt100::Color::Default => Color::Reset,
-        vt100::Color::Idx(idx) => convert_indexed_color(idx),
-        vt100::Color::Rgb(r, g, b) => Color::Rgb(r, g, b),
+        AlacrittyColor::Named(named) => convert_named_color(named),
+        AlacrittyColor::Spec(rgb) => Color::Rgb(rgb.r, rgb.g, rgb.b),
+        AlacrittyColor::Indexed(index) => convert_indexed_color(index),
     }
 }
 
-const fn convert_indexed_color(idx: u8) -> Color {
-    match idx {
+fn convert_named_color(named: NamedColor) -> Color {
+    match named {
+        NamedColor::Black => Color::Black,
+        NamedColor::Red => Color::Red,
+        NamedColor::Green => Color::Green,
+        NamedColor::Yellow => Color::Yellow,
+        NamedColor::Blue => Color::Blue,
+        NamedColor::Magenta => Color::Magenta,
+        NamedColor::Cyan => Color::Cyan,
+        NamedColor::White => Color::Gray,
+        NamedColor::BrightBlack => Color::DarkGray,
+        NamedColor::BrightRed => Color::LightRed,
+        NamedColor::BrightGreen => Color::LightGreen,
+        NamedColor::BrightYellow => Color::LightYellow,
+        NamedColor::BrightBlue => Color::LightBlue,
+        NamedColor::BrightMagenta => Color::LightMagenta,
+        NamedColor::BrightCyan => Color::LightCyan,
+        NamedColor::BrightWhite => Color::White,
+        NamedColor::Foreground | NamedColor::Background => Color::Reset,
+        _ => Color::Reset,
+    }
+}
+
+fn convert_indexed_color(index: u8) -> Color {
+    match index {
         0 => Color::Black,
         1 => Color::Red,
         2 => Color::Green,
@@ -26,6 +51,6 @@ const fn convert_indexed_color(idx: u8) -> Color {
         13 => Color::LightMagenta,
         14 => Color::LightCyan,
         15 => Color::White,
-        _ => Color::Reset,
+        _ => Color::Indexed(index),
     }
 }
