@@ -9,7 +9,9 @@ use ratatui::{
 const DIALOG_WIDTH_THRESHOLD: u16 = 80;
 const DIALOG_WIDTH_SMALL: u16 = 80;
 const DIALOG_WIDTH_NORMAL: u16 = 60;
-const DIALOG_HEIGHT: u16 = 7;
+const DIALOG_HEIGHT_MINIMUM: u16 = 5;
+const DIALOG_HEIGHT_MAXIMUM: u16 = 15;
+const DIALOG_BORDER_AND_PADDING: u16 = 4;
 
 pub struct InputDialog<'a> {
     title: &'a str,
@@ -36,7 +38,14 @@ impl Widget for InputDialog<'_> {
             DIALOG_WIDTH_NORMAL
         };
 
-        let popup_area = centered_rect(dialog_width, DIALOG_HEIGHT, area);
+        let content_width = dialog_width.saturating_sub(DIALOG_BORDER_AND_PADDING);
+        let lines_needed = calculate_wrapped_line_count(self.input, content_width);
+        let content_height = lines_needed.max(1);
+        let dialog_height = (content_height + DIALOG_BORDER_AND_PADDING)
+            .clamp(DIALOG_HEIGHT_MINIMUM, DIALOG_HEIGHT_MAXIMUM)
+            .min(area.height.saturating_sub(2));
+
+        let popup_area = centered_rect(dialog_width, dialog_height, area);
         let border_color = self.style.color();
 
         Clear.render(popup_area, buf);
@@ -55,7 +64,8 @@ impl Widget for InputDialog<'_> {
         let inner_area = block.inner(popup_area);
         block.render(popup_area, buf);
 
-        let input_text = Paragraph::new(self.input).wrap(Wrap { trim: false });
+        let input_with_cursor = format!("{}▏", self.input);
+        let input_text = Paragraph::new(input_with_cursor).wrap(Wrap { trim: false });
 
         input_text.render(inner_area, buf);
     }
@@ -82,4 +92,40 @@ fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
             Constraint::Min(0),
         ])
         .split(popup_layout[1])[1]
+}
+
+fn calculate_wrapped_line_count(text: &str, max_width: u16) -> u16 {
+    if text.is_empty() || max_width == 0 {
+        return 1;
+    }
+
+    let max_width = max_width as usize;
+    let mut line_count: u16 = 0;
+
+    for line in text.split('\n') {
+        if line.is_empty() {
+            line_count += 1;
+            continue;
+        }
+
+        let mut current_line_length = 0;
+        for word in line.split_whitespace() {
+            let word_length = word.chars().count();
+
+            if current_line_length == 0 {
+                current_line_length = word_length;
+            } else if current_line_length + 1 + word_length <= max_width {
+                current_line_length += 1 + word_length;
+            } else {
+                line_count += 1;
+                current_line_length = word_length;
+            }
+        }
+
+        if current_line_length > 0 {
+            line_count += 1;
+        }
+    }
+
+    line_count.max(1)
 }
