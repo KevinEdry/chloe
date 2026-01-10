@@ -1,10 +1,11 @@
 use super::{InstanceMode, InstanceState};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key_event(state: &mut InstanceState, key: KeyEvent) {
     match state.mode {
         InstanceMode::Normal => handle_navigation_mode(state, key),
         InstanceMode::Focused => handle_focused_mode(state, key),
+        InstanceMode::Scroll => handle_scroll_mode(state, key),
     }
 }
 
@@ -27,12 +28,11 @@ fn handle_navigation_mode(state: &mut InstanceState, key: KeyEvent) {
     }
 }
 
-const SCROLL_LINES: usize = 3;
-const PAGE_SCROLL_LINES: usize = 10;
+const SCROLL_LINES_SINGLE: usize = 1;
+const SCROLL_LINES_HALF_PAGE: usize = 12;
 
 fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
-    let is_shift_escape =
-        key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
+    let is_shift_escape = key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
     if is_shift_escape {
         send_escape_to_instance(state);
         return;
@@ -43,37 +43,10 @@ fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
         return;
     }
 
-    let has_shift = key.modifiers.contains(KeyModifiers::SHIFT);
-    if has_shift {
-        match key.code {
-            KeyCode::PageUp => {
-                if let Some(pane) = state.selected_pane_mut() {
-                    pane.scroll_up(PAGE_SCROLL_LINES);
-                }
-                return;
-            }
-            KeyCode::PageDown => {
-                if let Some(pane) = state.selected_pane_mut() {
-                    pane.scroll_down(PAGE_SCROLL_LINES);
-                }
-                return;
-            }
-            KeyCode::Home => {
-                if let Some(pane) = state.selected_pane_mut()
-                    && let Some(session) = &pane.pty_session
-                {
-                    pane.scroll_offset = session.scrollback_len();
-                }
-                return;
-            }
-            KeyCode::End => {
-                if let Some(pane) = state.selected_pane_mut() {
-                    pane.scroll_to_bottom();
-                }
-                return;
-            }
-            _ => {}
-        }
+    let is_ctrl_s = key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL);
+    if is_ctrl_s {
+        state.mode = InstanceMode::Scroll;
+        return;
     }
 
     if let Some(pane) = state.selected_pane_mut() {
@@ -81,6 +54,54 @@ fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
     }
 
     send_input_to_instance(state, key);
+}
+
+fn handle_scroll_mode(state: &mut InstanceState, key: KeyEvent) {
+    if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
+        if let Some(pane) = state.selected_pane_mut() {
+            pane.scroll_to_bottom();
+        }
+        state.mode = InstanceMode::Focused;
+        return;
+    }
+
+    let has_ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+
+    match key.code {
+        KeyCode::Char('j') | KeyCode::Down => {
+            if let Some(pane) = state.selected_pane_mut() {
+                pane.scroll_down(SCROLL_LINES_SINGLE);
+            }
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            if let Some(pane) = state.selected_pane_mut() {
+                pane.scroll_up(SCROLL_LINES_SINGLE);
+            }
+        }
+        KeyCode::Char('d') if has_ctrl => {
+            if let Some(pane) = state.selected_pane_mut() {
+                pane.scroll_down(SCROLL_LINES_HALF_PAGE);
+            }
+        }
+        KeyCode::Char('u') if has_ctrl => {
+            if let Some(pane) = state.selected_pane_mut() {
+                pane.scroll_up(SCROLL_LINES_HALF_PAGE);
+            }
+        }
+        KeyCode::Char('g') => {
+            if let Some(pane) = state.selected_pane_mut()
+                && let Some(session) = &pane.pty_session
+            {
+                pane.scroll_offset = session.scrollback_len();
+            }
+        }
+        KeyCode::Char('G') => {
+            if let Some(pane) = state.selected_pane_mut() {
+                pane.scroll_to_bottom();
+            }
+        }
+        _ => {}
+    }
 }
 
 fn send_escape_to_instance(state: &mut InstanceState) {
@@ -129,51 +150,4 @@ fn send_input_to_instance(state: &mut InstanceState, key: KeyEvent) {
 
         let _ = session.write_input(&data);
     }
-}
-
-pub fn handle_mouse_event(state: &mut InstanceState, mouse: MouseEvent) {
-    let is_scroll_event = matches!(
-        mouse.kind,
-        MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
-    );
-    if !is_scroll_event {
-        return;
-    }
-
-    let Some(render_area) = state.last_render_area else {
-        return;
-    };
-
-    let pane_areas =
-        super::layout::calculate_pane_areas(render_area, state.layout_mode, state.panes.len());
-
-    let pane_index = find_pane_at_position(&pane_areas, mouse.column, mouse.row);
-    let Some(index) = pane_index else {
-        return;
-    };
-
-    let Some(pane) = state.panes.get_mut(index) else {
-        return;
-    };
-
-    match mouse.kind {
-        MouseEventKind::ScrollUp => pane.scroll_up(SCROLL_LINES),
-        MouseEventKind::ScrollDown => pane.scroll_down(SCROLL_LINES),
-        _ => {}
-    }
-}
-
-fn find_pane_at_position(
-    pane_areas: &[ratatui::layout::Rect],
-    mouse_x: u16,
-    mouse_y: u16,
-) -> Option<usize> {
-    for (index, area) in pane_areas.iter().enumerate() {
-        let is_within_x = mouse_x >= area.x && mouse_x < area.x + area.width;
-        let is_within_y = mouse_y >= area.y && mouse_y < area.y + area.height;
-        if is_within_x && is_within_y {
-            return Some(index);
-        }
-    }
-    None
 }

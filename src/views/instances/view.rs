@@ -164,6 +164,7 @@ pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarCon
     let (mode_text, mode_color) = match state.mode {
         super::InstanceMode::Normal => ("NAVIGATE", Color::Cyan),
         super::InstanceMode::Focused => ("FOCUSED", Color::Green),
+        super::InstanceMode::Scroll => ("SCROLL", Color::Yellow),
     };
 
     let pane_count = state.panes.len();
@@ -186,9 +187,16 @@ pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarCon
         }
         super::InstanceMode::Focused => {
             if width < STATUS_BAR_WIDTH_THRESHOLD {
-                "Esc:unfocus"
+                "Ctrl+s:scroll  Esc:unfocus"
             } else {
-                "All keys sent to instance  Esc:back-to-navigation"
+                "Ctrl+s:scroll-mode  Esc:back-to-navigation"
+            }
+        }
+        super::InstanceMode::Scroll => {
+            if width < STATUS_BAR_WIDTH_THRESHOLD {
+                "j/k:line  Ctrl+d/u:page  g/G:top/bottom  q:exit"
+            } else {
+                "j/k:scroll-line  Ctrl+d/u:half-page  g/G:top/bottom  q/Esc:exit-scroll"
             }
         }
     };
