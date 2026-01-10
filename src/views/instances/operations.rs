@@ -25,19 +25,19 @@ impl InstanceState {
             return;
         }
 
-        self.split_selected_pane_with_new_pane(pane);
+        self.split_biggest_pane_with_new_pane(pane);
     }
 
-    fn split_selected_pane_with_new_pane(&mut self, new_pane: InstancePane) {
-        let Some(selected_id) = self.selected_pane_id else {
+    fn split_biggest_pane_with_new_pane(&mut self, new_pane: InstancePane) {
+        let Some(target_id) = layout::find_biggest_pane_id(&self.pane_areas) else {
             return;
         };
 
-        let Some(selected_area) = self.get_pane_area(selected_id) else {
+        let Some(target_area) = self.get_pane_area(target_id) else {
             return;
         };
 
-        let Some(direction) = layout::choose_split_direction(selected_area) else {
+        let Some(direction) = layout::choose_split_direction(target_area) else {
             return;
         };
 
@@ -46,7 +46,7 @@ impl InstanceState {
         if let Some(root) = self.root.take() {
             self.root = Some(split_node_at_pane(
                 root,
-                selected_id,
+                target_id,
                 new_pane,
                 direction,
                 layout::default_split_ratio(),
@@ -84,7 +84,7 @@ impl InstanceState {
 
         let mut pane = InstancePane::new(working_directory.clone(), actual_rows, actual_columns);
 
-        if let Ok(mut session) =
+        if let Ok(session) =
             pty::PtySession::spawn(&working_directory, actual_rows, actual_columns)
         {
             let claude_command = if task_description.is_empty() {
@@ -110,7 +110,7 @@ impl InstanceState {
             self.root = Some(PaneNode::Leaf(pane));
             self.selected_pane_id = Some(pane_id);
         } else {
-            self.split_selected_pane_with_new_pane(pane);
+            self.split_biggest_pane_with_new_pane(pane);
         }
 
         pane_id
@@ -214,34 +214,9 @@ impl InstanceState {
         }
 
         for pane_id in pane_ids {
-            if let Some(pane) = self.find_pane_mut(pane_id)
-                && pane.pty_session.is_some()
-            {
-                Self::capture_output_buffer(pane);
+            if let Some(pane) = self.find_pane_mut(pane_id) {
                 Self::check_process_exit(pane);
             }
-        }
-    }
-
-    fn capture_output_buffer(pane: &mut InstancePane) {
-        let Some(session) = &pane.pty_session else {
-            return;
-        };
-
-        if let Ok(parser) = session.screen().lock() {
-            let screen = parser.screen();
-            let mut screen_text = String::new();
-
-            for row in 0..screen.size().0 {
-                for col in 0..screen.size().1 {
-                    if let Some(cell) = screen.cell(row, col) {
-                        screen_text.push_str(&cell.contents());
-                    }
-                }
-                screen_text.push('\n');
-            }
-
-            pane.output_buffer = screen_text;
         }
     }
 
