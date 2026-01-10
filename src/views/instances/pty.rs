@@ -1,53 +1,95 @@
-use portable_pty::{Child, CommandBuilder, MasterPty, NativePtySystem, PtySize, PtySystem};
+use alacritty_terminal::event::{Event, EventListener, OnResize, WindowSize};
+use alacritty_terminal::tty::EventedPty;
+use alacritty_terminal::grid::Dimensions;
+use alacritty_terminal::term::{Config, Term};
+use alacritty_terminal::tty::{self, Options, Pty};
+use alacritty_terminal::vte::ansi::Processor;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-pub struct PtySession {
-    parser: Arc<Mutex<vt100::Parser>>,
-    master: Box<dyn MasterPty + Send>,
-    writer: Box<dyn Write + Send>,
-    receiver: Receiver<Vec<u8>>,
-    child: Option<Box<dyn Child + Send>>,
+const DEFAULT_SCROLLBACK_LINES: usize = 10000;
+
+pub struct EventProxy;
+
+struct TerminalSize {
+    columns: usize,
+    screen_lines: usize,
 }
 
-const SCROLLBACK_LINES: usize = 1000;
+impl Dimensions for TerminalSize {
+    fn columns(&self) -> usize {
+        self.columns
+    }
+
+    fn screen_lines(&self) -> usize {
+        self.screen_lines
+    }
+
+    fn total_lines(&self) -> usize {
+        self.screen_lines
+    }
+}
+
+impl EventListener for EventProxy {
+    fn send_event(&self, _event: Event) {}
+}
+
+pub struct PtySession {
+    term: Arc<Mutex<Term<EventProxy>>>,
+    processor: Arc<Mutex<Processor>>,
+    pty: Pty,
+    receiver: Receiver<Vec<u8>>,
+}
 
 impl PtySession {
     pub fn spawn(working_directory: &Path, rows: u16, columns: u16) -> anyhow::Result<Self> {
-        let pty_system = NativePtySystem::default();
-        let pty_size = PtySize {
-            rows,
-            cols: columns,
-            pixel_width: 0,
-            pixel_height: 0,
+        let options = Options {
+            shell: None,
+            working_directory: Some(working_directory.to_path_buf()),
+            env: std::collections::HashMap::new(),
+            drain_on_exit: true,
         };
 
-        let pair = pty_system.openpty(pty_size)?;
-
-        let shell = if cfg!(target_os = "windows") {
-            "cmd.exe".to_string()
-        } else {
-            std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string())
+        let window_size = WindowSize {
+            cell_width: 1,
+            cell_height: 1,
+            num_cols: columns,
+            num_lines: rows,
         };
 
-        let mut command = CommandBuilder::new(shell);
-        command.cwd(working_directory);
+        let pty = tty::new(&options, window_size, 0)?;
 
-        let child = pair.slave.spawn_command(command)?;
-        drop(pair.slave);
+        let config = Config {
+            scrolling_history: DEFAULT_SCROLLBACK_LINES,
+            ..Config::default()
+        };
 
-        let writer = pair.master.take_writer()?;
-        let mut reader = pair.master.try_clone_reader()?;
+        let term_size = TerminalSize {
+            columns: usize::from(columns),
+            screen_lines: usize::from(rows),
+        };
+        let term = Term::new(config, &term_size, EventProxy);
+
+        let term = Arc::new(Mutex::new(term));
+        let processor = Arc::new(Mutex::new(Processor::new()));
+
         let (sender, receiver) = channel();
+        let reader = pty.file().try_clone()?;
 
         thread::spawn(move || {
+            let mut reader = reader;
             let mut buffer = [0u8; 4096];
             loop {
                 match reader.read(&mut buffer) {
-                    Ok(0) | Err(_) => break,
+                    Ok(0) => break,
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        thread::sleep(std::time::Duration::from_millis(10));
+                        continue;
+                    }
+                    Err(_) => break,
                     Ok(bytes_read) => {
                         if sender.send(buffer[..bytes_read].to_vec()).is_err() {
                             break;
@@ -57,85 +99,67 @@ impl PtySession {
             }
         });
 
-        let parser = Arc::new(Mutex::new(vt100::Parser::new(
-            rows,
-            columns,
-            SCROLLBACK_LINES,
-        )));
-
         Ok(Self {
-            parser,
-            master: pair.master,
-            writer,
+            term,
+            processor,
+            pty,
             receiver,
-            child: Some(child),
         })
     }
 
-    pub fn resize(&self, rows: u16, columns: u16) -> anyhow::Result<()> {
-        let pty_size = PtySize {
-            rows,
-            cols: columns,
-            pixel_width: 0,
-            pixel_height: 0,
+    pub fn resize(&mut self, rows: u16, columns: u16) {
+        let window_size = WindowSize {
+            cell_width: 1,
+            cell_height: 1,
+            num_cols: columns,
+            num_lines: rows,
         };
-        self.master.resize(pty_size)?;
+        self.pty.on_resize(window_size);
 
-        if let Ok(mut parser) = self.parser.lock() {
-            parser.set_size(rows, columns);
+        if let Ok(mut term) = self.term.lock() {
+            let term_size = TerminalSize {
+                columns: usize::from(columns),
+                screen_lines: usize::from(rows),
+            };
+            term.resize(term_size);
         }
-
-        Ok(())
     }
 
     pub fn read_output(&self) {
         while let Ok(data) = self.receiver.try_recv() {
-            if let Ok(mut parser) = self.parser.lock() {
-                parser.process(&data);
-            }
+            let Ok(mut term) = self.term.lock() else {
+                continue;
+            };
+            let Ok(mut processor) = self.processor.lock() else {
+                continue;
+            };
+            processor.advance(&mut *term, &data);
         }
     }
 
     #[must_use]
-    pub fn screen(&self) -> Arc<Mutex<vt100::Parser>> {
-        Arc::clone(&self.parser)
+    pub fn term(&self) -> Arc<Mutex<Term<EventProxy>>> {
+        Arc::clone(&self.term)
     }
 
-    #[must_use]
-    pub fn scrollback_len(&self) -> usize {
-        self.parser
-            .lock()
-            .map_or(0, |parser| parser.screen().scrollback())
-    }
-
-    pub fn write_input(&mut self, data: &[u8]) -> anyhow::Result<()> {
-        self.writer.write_all(data)?;
-        self.writer.flush()?;
+    pub fn write_input(&self, data: &[u8]) -> anyhow::Result<()> {
+        let mut writer = self.pty.file().try_clone()?;
+        writer.write_all(data)?;
+        writer.flush()?;
         Ok(())
     }
 
     pub fn check_process_exit(&mut self) -> bool {
-        if let Some(child) = &mut self.child {
-            match child.try_wait() {
-                Ok(Some(_exit_status)) => {
-                    self.child = None;
-                    true
-                }
-                Ok(None) => false,
-                Err(_) => {
-                    self.child = None;
-                    true
-                }
-            }
-        } else {
-            false
-        }
+        matches!(
+            self.pty.next_child_event(),
+            Some(alacritty_terminal::tty::ChildEvent::Exited(_))
+        )
     }
 }
 
 impl std::fmt::Debug for PtySession {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PtySession").finish()
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.debug_struct("PtySession").finish()
     }
 }
 
