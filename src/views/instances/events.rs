@@ -88,7 +88,8 @@ fn handle_scroll_mode(state: &mut InstanceState, key: KeyEvent) {
         }
         KeyCode::Char('k') | KeyCode::Up => {
             if let Some(pane) = state.selected_pane_mut() {
-                pane.scroll_up(SCROLL_LINES_SINGLE);
+                let max_scrollback = pane.scrollback_len();
+                pane.scroll_up(SCROLL_LINES_SINGLE, max_scrollback);
             }
         }
         KeyCode::Char('d') if has_ctrl => {
@@ -98,14 +99,24 @@ fn handle_scroll_mode(state: &mut InstanceState, key: KeyEvent) {
         }
         KeyCode::Char('u') if has_ctrl => {
             if let Some(pane) = state.selected_pane_mut() {
-                pane.scroll_up(SCROLL_LINES_HALF_PAGE);
+                let max_scrollback = pane.scrollback_len();
+                pane.scroll_up(SCROLL_LINES_HALF_PAGE, max_scrollback);
+            }
+        }
+        KeyCode::Char('\x04') => {
+            if let Some(pane) = state.selected_pane_mut() {
+                pane.scroll_down(SCROLL_LINES_HALF_PAGE);
+            }
+        }
+        KeyCode::Char('\x15') => {
+            if let Some(pane) = state.selected_pane_mut() {
+                let max_scrollback = pane.scrollback_len();
+                pane.scroll_up(SCROLL_LINES_HALF_PAGE, max_scrollback);
             }
         }
         KeyCode::Char('g') => {
-            if let Some(pane) = state.selected_pane_mut()
-                && let Some(session) = &pane.pty_session
-            {
-                pane.scroll_offset = session.scrollback_len();
+            if let Some(pane) = state.selected_pane_mut() {
+                pane.scroll_offset = pane.scrollback_len();
             }
         }
         KeyCode::Char('G') => {

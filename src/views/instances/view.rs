@@ -2,7 +2,7 @@ use super::layout;
 use super::state::{InstancePane, InstanceState};
 use crate::views::StatusBarContent;
 use crate::widgets::claude_indicator;
-use crate::widgets::terminal::{Cursor, PseudoTerminal};
+use crate::widgets::terminal::{AlacrittyScreen, Cursor, PseudoTerminal};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -62,7 +62,7 @@ fn render_panes(f: &mut Frame, state: &mut InstanceState, area: Rect) {
     resize_panes_to_match_areas(state, &pane_areas);
 
     let selected_id = state.selected_pane_id;
-    let is_focused_mode = state.mode == super::InstanceMode::Focused;
+    let mode = state.mode;
 
     for (index, (pane_id, pane_area)) in pane_areas.iter().enumerate() {
         let Some(pane) = state.find_pane(*pane_id) else {
@@ -70,9 +70,8 @@ fn render_panes(f: &mut Frame, state: &mut InstanceState, area: Rect) {
         };
 
         let is_selected = selected_id == Some(*pane_id);
-        let is_focused = is_selected && is_focused_mode;
 
-        render_pane(f, pane, *pane_area, is_selected, is_focused, index);
+        render_pane(f, pane, *pane_area, is_selected, mode, index);
     }
 }
 
@@ -87,8 +86,8 @@ fn resize_panes_to_match_areas(state: &mut InstanceState, pane_areas: &[(uuid::U
         };
 
         if pane.rows != desired_rows || pane.columns != desired_columns {
-            if let Some(session) = &pane.pty_session {
-                let _ = session.resize(desired_rows, desired_columns);
+            if let Some(session) = &mut pane.pty_session {
+                session.resize(desired_rows, desired_columns);
             }
             pane.rows = desired_rows;
             pane.columns = desired_columns;
@@ -101,10 +100,15 @@ fn render_pane(
     pane: &InstancePane,
     area: Rect,
     is_selected: bool,
-    is_focused: bool,
+    mode: super::InstanceMode,
     index: usize,
 ) {
-    let border_color = if is_focused {
+    let is_focused = is_selected && mode == super::InstanceMode::Focused;
+    let is_scroll = is_selected && mode == super::InstanceMode::Scroll;
+
+    let border_color = if is_scroll {
+        Color::Yellow
+    } else if is_focused {
         Color::Green
     } else if is_selected {
         Color::Cyan
@@ -127,7 +131,9 @@ fn render_pane(
         .clone()
         .unwrap_or_else(|| format!("Pane {}", index + 1));
 
-    let title_prefix = if is_focused {
+    let title_prefix = if is_scroll {
+        "⏸ "
+    } else if is_focused {
         "● "
     } else if is_selected {
         "→ "
@@ -135,7 +141,7 @@ fn render_pane(
         "  "
     };
 
-    let title_spans = vec![
+    let mut title_spans = vec![
         Span::styled(
             format!("{title_prefix}{pane_name} "),
             Style::default()
@@ -149,6 +155,19 @@ fn render_pane(
                 .add_modifier(Modifier::BOLD),
         ),
     ];
+
+    if is_scroll {
+        let max_scrollback = pane.scrollback_len();
+        let scroll_info = if max_scrollback > 0 {
+            format!(" [↑{}/{}]", pane.scroll_offset, max_scrollback)
+        } else {
+            " [no history]".to_string()
+        };
+        title_spans.push(Span::styled(
+            scroll_info,
+            Style::default().fg(Color::Yellow),
+        ));
+    }
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -165,15 +184,14 @@ fn render_pane(
         return;
     };
 
-    let screen_mutex = session.screen();
-    let Ok(mut parser) = screen_mutex.lock() else {
+    let term_mutex = session.term();
+    let Ok(term) = term_mutex.lock() else {
         return;
     };
 
-    parser.set_scrollback(pane.scroll_offset);
-
+    let screen = AlacrittyScreen::new(&*term);
     let cursor = Cursor::default().visibility(is_focused);
-    let terminal = PseudoTerminal::new(parser.screen())
+    let terminal = PseudoTerminal::new(&screen)
         .cursor(cursor)
         .scroll_offset(pane.scroll_offset);
 

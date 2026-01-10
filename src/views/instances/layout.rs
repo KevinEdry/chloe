@@ -99,3 +99,11 @@ pub fn choose_split_direction(pane_area: Rect) -> Option<SplitDirection> {
 pub const fn default_split_ratio() -> f32 {
     DEFAULT_SPLIT_RATIO
 }
+
+#[must_use]
+pub fn find_biggest_pane_id(pane_areas: &[(Uuid, Rect)]) -> Option<Uuid> {
+    pane_areas
+        .iter()
+        .max_by_key(|(_, area)| u32::from(area.width) * u32::from(area.height))
+        .map(|(id, _)| *id)
+}
