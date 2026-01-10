@@ -63,7 +63,7 @@ impl<S: Screen> Widget for PseudoTerminal<'_, S> {
             inner_area
         };
 
-        render_screen(self.screen, terminal_area, buf);
+        render_screen(self.screen, terminal_area, buf, self.scroll_offset);
 
         let (screen_rows, _) = self.screen.size();
         let should_show_cursor =
@@ -85,14 +85,14 @@ impl<S: Screen> Widget for PseudoTerminal<'_, S> {
     }
 }
 
-fn render_screen<S: Screen>(screen: &S, area: Rect, buf: &mut Buffer) {
+fn render_screen<S: Screen>(screen: &S, area: Rect, buf: &mut Buffer, scroll_offset: usize) {
     let (screen_rows, screen_cols) = screen.size();
     let max_rows = area.height.min(screen_rows);
     let max_cols = area.width.min(screen_cols);
 
     for row in 0..max_rows {
         for col in 0..max_cols {
-            let Some(cell) = screen.cell(row, col) else {
+            let Some(cell) = screen.cell(row, col, scroll_offset) else {
                 continue;
             };
 
