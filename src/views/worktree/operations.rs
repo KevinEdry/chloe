@@ -419,10 +419,7 @@ pub fn create_worktree(
     };
 
     let worktree_dir_name = final_branch_name.replace('/', "-");
-    let worktree_path = repository_path
-        .parent()
-        .unwrap_or(repository_path)
-        .join(format!(".chloe/{worktree_dir_name}"));
+    let worktree_path = repository_path.join(format!(".chloe/worktrees/{worktree_dir_name}"));
 
     let output = std::process::Command::new("git")
         .arg("worktree")
