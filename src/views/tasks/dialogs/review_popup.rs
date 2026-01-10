@@ -85,8 +85,7 @@ fn get_review_info(app: &App, task_id: Uuid) -> ReviewInfo {
         };
     };
 
-    let worktree_status = get_worktree_status(&worktree_info.worktree_path)
-        .unwrap_or_default();
+    let worktree_status = get_worktree_status(&worktree_info.worktree_path).unwrap_or_default();
 
     ReviewInfo {
         branch_name: Some(worktree_info.branch_name.clone()),
@@ -137,7 +136,11 @@ fn render_status_header(frame: &mut Frame, info: &ReviewInfo, area: Rect) {
     } else {
         let count = status.uncommitted_count();
         lines.push(Line::from(Span::styled(
-            format!("Status: {} uncommitted change{}", count, if count == 1 { "" } else { "s" }),
+            format!(
+                "Status: {} uncommitted change{}",
+                count,
+                if count == 1 { "" } else { "s" }
+            ),
             Style::default().fg(Color::Yellow),
         )));
     }

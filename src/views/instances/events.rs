@@ -31,8 +31,7 @@ const SCROLL_LINES: usize = 3;
 const PAGE_SCROLL_LINES: usize = 10;
 
 fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
-    let is_shift_escape =
-        key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
+    let is_shift_escape = key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
     if is_shift_escape {
         send_escape_to_instance(state);
         return;

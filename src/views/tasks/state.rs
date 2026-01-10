@@ -277,9 +277,7 @@ impl ReviewAction {
     #[must_use]
     pub const fn is_enabled(self, is_clean: bool) -> bool {
         match self {
-            Self::ReviewInIDE
-            | Self::ReviewInTerminal
-            | Self::RequestChanges => true,
+            Self::ReviewInIDE | Self::ReviewInTerminal | Self::RequestChanges => true,
             Self::CommitChanges => !is_clean,
             Self::MergeAndComplete => is_clean,
         }
