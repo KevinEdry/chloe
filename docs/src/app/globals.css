@@ -38,6 +38,8 @@
     --nextra-primary-hue: 270deg;
     --nextra-primary-saturation: 91%;
     --nextra-primary-lightness: 65%;
+    --nextra-primary: 168 85 247;
+    --nextra-primary-dark: 147 51 234;
   }
 
   .nextra-navbar {
@@ -155,14 +157,14 @@
     border-color: var(--color-primary) !important;
   }
 
-  /* Sidebar navigation - purple accent */
-  .nextra-sidebar a[data-active="true"],
-  .nextra-sidebar [data-active="true"] > a {
+  /* Sidebar navigation - purple accent for active only */
+  aside a[aria-current="page"] {
     color: var(--color-primary-light) !important;
-    background-color: rgba(168, 85, 247, 0.1) !important;
+    background-color: rgba(168, 85, 247, 0.15) !important;
   }
 
-  .nextra-sidebar a:hover {
+  .nextra-sidebar a:hover,
+  aside nav a:hover {
     color: var(--color-primary-light) !important;
   }
 
@@ -315,5 +317,50 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.75rem;
     color: var(--color-text-secondary);
+  }
+
+  /* Callout styles - purple theme */
+  .nextra-callout,
+  [data-callout] {
+    background-color: rgba(168, 85, 247, 0.1) !important;
+    border-color: var(--color-primary) !important;
+    color: var(--color-text-secondary) !important;
+  }
+
+  .nextra-callout p,
+  [data-callout] p {
+    color: var(--color-text-secondary) !important;
+  }
+
+  .nextra-callout[data-type="info"],
+  [data-callout][data-type="info"] {
+    background-color: rgba(168, 85, 247, 0.1) !important;
+    border-color: var(--color-primary) !important;
+  }
+
+  .nextra-callout[data-type="warning"],
+  [data-callout][data-type="warning"] {
+    background-color: rgba(234, 179, 8, 0.1) !important;
+    border-color: #eab308 !important;
+  }
+
+  .nextra-callout[data-type="error"],
+  [data-callout][data-type="error"] {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    border-color: #ef4444 !important;
+  }
+
+  /* Tabs active state - purple theme */
+  [data-selected="true"],
+  button[data-selected="true"],
+  [role="tab"][aria-selected="true"] {
+    color: var(--color-primary-light) !important;
+    border-color: var(--color-primary) !important;
+  }
+
+  /* Steps indicator - purple theme */
+  .nextra-steps > :first-child::before,
+  [data-step]::before {
+    background-color: var(--color-primary) !important;
   }
 }
