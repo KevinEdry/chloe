@@ -1,98 +1,101 @@
-use super::LayoutMode;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use super::state::{PaneNode, SplitDirection};
+use ratatui::layout::Rect;
+use uuid::Uuid;
+
+const MINIMUM_PANE_WIDTH: u16 = 40;
+const MINIMUM_PANE_HEIGHT: u16 = 10;
+const ASPECT_RATIO_THRESHOLD: f32 = 1.5;
+const DEFAULT_SPLIT_RATIO: f32 = 0.5;
 
 #[must_use]
-pub fn calculate_pane_areas(area: Rect, layout_mode: LayoutMode, pane_count: usize) -> Vec<Rect> {
-    if pane_count == 0 {
-        return Vec::new();
-    }
-
-    match layout_mode {
-        LayoutMode::Single => vec![area],
-        LayoutMode::HorizontalSplit => horizontal_split(area, pane_count),
-        LayoutMode::VerticalSplit => vertical_split(area, pane_count),
-        LayoutMode::Grid => grid_layout(area, pane_count),
-    }
-}
-
-fn horizontal_split(area: Rect, pane_count: usize) -> Vec<Rect> {
-    if pane_count == 0 {
-        return Vec::new();
-    }
-
-    let pane_count_u32 = u32::try_from(pane_count).unwrap_or(u32::MAX);
-    let constraints: Vec<Constraint> = (0..pane_count)
-        .map(|_| Constraint::Ratio(1, pane_count_u32))
-        .collect();
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(constraints)
-        .split(area)
-        .to_vec()
-}
-
-fn vertical_split(area: Rect, pane_count: usize) -> Vec<Rect> {
-    if pane_count == 0 {
-        return Vec::new();
-    }
-
-    let pane_count_u32 = u32::try_from(pane_count).unwrap_or(u32::MAX);
-    let constraints: Vec<Constraint> = (0..pane_count)
-        .map(|_| Constraint::Ratio(1, pane_count_u32))
-        .collect();
-
-    Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(constraints)
-        .split(area)
-        .to_vec()
-}
-
-fn grid_layout(area: Rect, pane_count: usize) -> Vec<Rect> {
-    if pane_count == 0 {
-        return Vec::new();
-    }
-
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
-    let grid_size = ((pane_count as f64).sqrt().ceil() as usize).max(1);
-    let rows = pane_count.div_ceil(grid_size);
-
-    let rows_u32 = u32::try_from(rows).unwrap_or(u32::MAX);
-    let row_constraints: Vec<Constraint> =
-        (0..rows).map(|_| Constraint::Ratio(1, rows_u32)).collect();
-
-    let row_areas = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(row_constraints)
-        .split(area);
-
+pub fn calculate_pane_areas(area: Rect, root: &PaneNode) -> Vec<(Uuid, Rect)> {
     let mut result = Vec::new();
-    let mut remaining_panes = pane_count;
+    calculate_areas_recursive(area, root, &mut result);
+    result
+}
 
-    for row_area in row_areas.iter() {
-        let columns_in_row = remaining_panes.min(grid_size);
-        let columns_in_row_u32 = u32::try_from(columns_in_row).unwrap_or(u32::MAX);
-        let column_constraints: Vec<Constraint> = (0..columns_in_row)
-            .map(|_| Constraint::Ratio(1, columns_in_row_u32))
-            .collect();
-
-        let column_areas = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(column_constraints)
-            .split(*row_area);
-
-        result.extend(column_areas.iter().take(columns_in_row));
-        remaining_panes -= columns_in_row;
-
-        if remaining_panes == 0 {
-            break;
+fn calculate_areas_recursive(area: Rect, node: &PaneNode, result: &mut Vec<(Uuid, Rect)>) {
+    match node {
+        PaneNode::Leaf(pane) => {
+            result.push((pane.id, area));
+        }
+        PaneNode::Split {
+            direction,
+            ratio,
+            first,
+            second,
+        } => {
+            let (first_area, second_area) = split_area(area, *direction, *ratio);
+            calculate_areas_recursive(first_area, first, result);
+            calculate_areas_recursive(second_area, second, result);
         }
     }
+}
 
-    result
+fn split_area(area: Rect, direction: SplitDirection, ratio: f32) -> (Rect, Rect) {
+    match direction {
+        SplitDirection::Horizontal => {
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let first_width = ((area.width as f32) * ratio) as u16;
+            let second_width = area.width.saturating_sub(first_width);
+
+            let first = Rect {
+                x: area.x,
+                y: area.y,
+                width: first_width,
+                height: area.height,
+            };
+            let second = Rect {
+                x: area.x.saturating_add(first_width),
+                y: area.y,
+                width: second_width,
+                height: area.height,
+            };
+            (first, second)
+        }
+        SplitDirection::Vertical => {
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let first_height = ((area.height as f32) * ratio) as u16;
+            let second_height = area.height.saturating_sub(first_height);
+
+            let first = Rect {
+                x: area.x,
+                y: area.y,
+                width: area.width,
+                height: first_height,
+            };
+            let second = Rect {
+                x: area.x,
+                y: area.y.saturating_add(first_height),
+                width: area.width,
+                height: second_height,
+            };
+            (first, second)
+        }
+    }
+}
+
+#[must_use]
+pub fn choose_split_direction(pane_area: Rect) -> Option<SplitDirection> {
+    let can_split_horizontal = pane_area.width >= MINIMUM_PANE_WIDTH * 2;
+    let can_split_vertical = pane_area.height >= MINIMUM_PANE_HEIGHT * 2;
+
+    match (can_split_horizontal, can_split_vertical) {
+        (false, false) => None,
+        (true, false) => Some(SplitDirection::Horizontal),
+        (false, true) => Some(SplitDirection::Vertical),
+        (true, true) => {
+            let aspect_ratio = pane_area.width as f32 / pane_area.height as f32;
+            if aspect_ratio >= ASPECT_RATIO_THRESHOLD {
+                Some(SplitDirection::Horizontal)
+            } else {
+                Some(SplitDirection::Vertical)
+            }
+        }
+    }
+}
+
+#[must_use]
+pub const fn default_split_ratio() -> f32 {
+    DEFAULT_SPLIT_RATIO
 }

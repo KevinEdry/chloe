@@ -5,4 +5,4 @@ pub mod pty;
 pub mod state;
 pub mod view;
 
-pub use state::{ClaudeState, InstanceMode, InstancePane, InstanceState, LayoutMode};
+pub use state::{ClaudeState, InstanceMode, InstancePane, InstanceState};

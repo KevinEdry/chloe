@@ -54,8 +54,12 @@ impl App {
 
         match crate::persistence::storage::load_state() {
             Ok(mut app) => {
-                let active_instance_ids: Vec<uuid::Uuid> =
-                    app.instances.panes.iter().map(|pane| pane.id).collect();
+                let active_instance_ids: Vec<uuid::Uuid> = app
+                    .instances
+                    .collect_panes()
+                    .iter()
+                    .map(|pane| pane.id)
+                    .collect();
                 for column in &mut app.tasks.columns {
                     for task in &mut column.tasks {
                         if let Some(instance_id) = task.instance_id
@@ -209,16 +213,14 @@ impl App {
         instance_id: uuid::Uuid,
     ) -> Option<crate::views::instances::ClaudeState> {
         self.instances
-            .panes
-            .iter()
-            .find(|pane| pane.id == instance_id)
+            .find_pane(instance_id)
             .map(|pane| pane.claude_state)
     }
 
     pub fn auto_transition_completed_tasks(&mut self) {
         let completed_instances: Vec<uuid::Uuid> = self
             .instances
-            .panes
+            .collect_panes()
             .iter()
             .filter(|pane| pane.claude_state == crate::views::instances::ClaudeState::Done)
             .map(|pane| pane.id)
@@ -244,12 +246,7 @@ impl App {
             return;
         };
 
-        let Some(pane) = self
-            .instances
-            .panes
-            .iter_mut()
-            .find(|pane| pane.id == instance_id)
-        else {
+        let Some(pane) = self.instances.find_pane_mut(instance_id) else {
             return;
         };
 
@@ -271,63 +268,55 @@ impl App {
     #[must_use]
     pub fn get_instance_output(&self, instance_id: uuid::Uuid) -> Option<&str> {
         self.instances
-            .panes
-            .iter()
-            .find(|pane| pane.id == instance_id)
+            .find_pane(instance_id)
             .map(|pane| pane.output_buffer.as_str())
     }
 
     pub fn open_task_in_ide(&self, task_id: uuid::Uuid) {
-        if let Some(task) = self.tasks.find_task_by_id(task_id) {
-            let path_to_open = if let Some(worktree_info) = &task.worktree_info {
-                &worktree_info.worktree_path
-            } else if let Some(instance_id) = task.instance_id {
-                if let Some(pane) = self
-                    .instances
-                    .panes
-                    .iter()
-                    .find(|pane| pane.id == instance_id)
-                {
-                    &pane.working_directory
-                } else {
-                    return;
-                }
+        let Some(task) = self.tasks.find_task_by_id(task_id) else {
+            return;
+        };
+
+        let path_to_open = if let Some(worktree_info) = &task.worktree_info {
+            worktree_info.worktree_path.clone()
+        } else if let Some(instance_id) = task.instance_id {
+            if let Some(pane) = self.instances.find_pane(instance_id) {
+                pane.working_directory.clone()
             } else {
                 return;
-            };
+            }
+        } else {
+            return;
+        };
 
-            let ide_command = self.settings.settings.ide_command.command_name();
-            let _ = std::process::Command::new(ide_command)
-                .arg(path_to_open)
-                .spawn();
-        }
+        let ide_command = self.settings.settings.ide_command.command_name();
+        let _ = std::process::Command::new(ide_command)
+            .arg(&path_to_open)
+            .spawn();
     }
 
     pub fn open_task_in_terminal(&self, task_id: uuid::Uuid) {
-        if let Some(task) = self.tasks.find_task_by_id(task_id) {
-            let path_to_open = if let Some(worktree_info) = &task.worktree_info {
-                &worktree_info.worktree_path
-            } else if let Some(instance_id) = task.instance_id {
-                if let Some(pane) = self
-                    .instances
-                    .panes
-                    .iter()
-                    .find(|pane| pane.id == instance_id)
-                {
-                    &pane.working_directory
-                } else {
-                    return;
-                }
+        let Some(task) = self.tasks.find_task_by_id(task_id) else {
+            return;
+        };
+
+        let path_to_open = if let Some(worktree_info) = &task.worktree_info {
+            worktree_info.worktree_path.clone()
+        } else if let Some(instance_id) = task.instance_id {
+            if let Some(pane) = self.instances.find_pane(instance_id) {
+                pane.working_directory.clone()
             } else {
                 return;
-            };
+            }
+        } else {
+            return;
+        };
 
-            let _ = self
-                .settings
-                .settings
-                .terminal_command
-                .open_at_path(path_to_open);
-        }
+        let _ = self
+            .settings
+            .settings
+            .terminal_command
+            .open_at_path(&path_to_open);
     }
 
     pub fn convert_roadmap_item_to_task(&mut self, item_index: usize) {
