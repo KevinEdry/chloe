@@ -15,6 +15,9 @@ pub enum TasksAction {
     None,
     JumpToInstance(Uuid),
     SendToTerminal(Uuid, Vec<u8>),
+    ScrollTerminal { instance_id: Uuid, delta: isize },
+    ScrollTerminalToTop(Uuid),
+    ScrollTerminalToBottom(Uuid),
     CreateTask(String),
     UpdateTask { task_id: Uuid, new_title: String },
     DeleteTask(Uuid),
@@ -53,6 +56,9 @@ pub fn handle_key_event(
         },
         TasksMode::TerminalFocused => {
             terminal::handle_terminal_focused_mode(state, key, selected_instance_id)
+        }
+        TasksMode::TerminalScroll => {
+            terminal::handle_terminal_scroll_mode(state, key, selected_instance_id)
         }
         TasksMode::AddingTask { .. } => text_input::handle_adding_task_mode(state, key),
         TasksMode::EditingTask { .. } => text_input::handle_editing_task_mode(state, key),

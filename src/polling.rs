@@ -128,6 +128,27 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
                 app.instances.send_raw_input_to_instance(instance_id, &data);
             }
         }
+        TasksAction::ScrollTerminal { instance_id, delta } => {
+            if let Some(pane) = app.instances.find_pane_mut(instance_id) {
+                let max_scrollback = pane.scrollback_len();
+                if delta > 0 {
+                    pane.scroll_up(delta as usize, max_scrollback);
+                } else {
+                    pane.scroll_down((-delta) as usize);
+                }
+            }
+        }
+        TasksAction::ScrollTerminalToTop(instance_id) => {
+            if let Some(pane) = app.instances.find_pane_mut(instance_id) {
+                let max_scrollback = pane.scrollback_len();
+                pane.scroll_up(max_scrollback, max_scrollback);
+            }
+        }
+        TasksAction::ScrollTerminalToBottom(instance_id) => {
+            if let Some(pane) = app.instances.find_pane_mut(instance_id) {
+                pane.scroll_to_bottom();
+            }
+        }
         TasksAction::CreateTask(title) => {
             app.tasks.start_classification(title);
             let _ = app.save();

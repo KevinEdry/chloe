@@ -3,6 +3,9 @@ use crate::views::tasks::state::TasksState;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use uuid::Uuid;
 
+const SCROLL_LINES: isize = 1;
+const SCROLL_HALF_PAGE: isize = 15;
+
 pub fn handle_terminal_focused_mode(
     state: &mut TasksState,
     key: KeyEvent,
@@ -21,6 +24,12 @@ pub fn handle_terminal_focused_mode(
         return TasksAction::None;
     }
 
+    let is_ctrl_s = key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL);
+    if is_ctrl_s {
+        state.enter_terminal_scroll_mode();
+        return TasksAction::None;
+    }
+
     let Some(instance_id) = selected_instance_id else {
         state.exit_terminal_mode();
         return TasksAction::None;
@@ -32,6 +41,39 @@ pub fn handle_terminal_focused_mode(
     }
 
     TasksAction::SendToTerminal(instance_id, data)
+}
+
+pub fn handle_terminal_scroll_mode(
+    state: &mut TasksState,
+    key: KeyEvent,
+    selected_instance_id: Option<Uuid>,
+) -> TasksAction {
+    let Some(instance_id) = selected_instance_id else {
+        state.exit_terminal_scroll_mode();
+        return TasksAction::None;
+    };
+
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            state.exit_terminal_scroll_mode();
+            TasksAction::ScrollTerminalToBottom(instance_id)
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            TasksAction::ScrollTerminal { instance_id, delta: -SCROLL_LINES }
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            TasksAction::ScrollTerminal { instance_id, delta: SCROLL_LINES }
+        }
+        KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            TasksAction::ScrollTerminal { instance_id, delta: -SCROLL_HALF_PAGE }
+        }
+        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            TasksAction::ScrollTerminal { instance_id, delta: SCROLL_HALF_PAGE }
+        }
+        KeyCode::Char('g') => TasksAction::ScrollTerminalToTop(instance_id),
+        KeyCode::Char('G') => TasksAction::ScrollTerminalToBottom(instance_id),
+        _ => TasksAction::None,
+    }
 }
 
 fn convert_key_to_bytes(key: KeyEvent) -> Vec<u8> {

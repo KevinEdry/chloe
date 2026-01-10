@@ -129,6 +129,14 @@ impl TasksState {
         self.mode = TasksMode::Normal;
     }
 
+    pub fn enter_terminal_scroll_mode(&mut self) {
+        self.mode = TasksMode::TerminalScroll;
+    }
+
+    pub fn exit_terminal_scroll_mode(&mut self) {
+        self.mode = TasksMode::TerminalFocused;
+    }
+
     pub fn clamp_focus_selection(&mut self) {
         let active_count = get_active_task_count(&self.columns);
         let done_count = get_done_task_count(&self.columns);
