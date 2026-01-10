@@ -88,6 +88,147 @@ pub enum MergeResult {
     Conflicts { conflicted_files: Vec<String> },
 }
 
+/// Status of a worktree's working directory
+#[derive(Debug, Clone, Default)]
+pub struct WorktreeStatus {
+    /// Whether the worktree has no uncommitted changes
+    pub is_clean: bool,
+    /// Files that have been modified
+    pub modified_files: Vec<String>,
+    /// Files that are untracked
+    pub untracked_files: Vec<String>,
+    /// Whether there are merge conflicts
+    pub has_conflicts: bool,
+}
+
+impl WorktreeStatus {
+    /// Total count of uncommitted files (modified + untracked)
+    #[must_use]
+    pub const fn uncommitted_count(&self) -> usize {
+        self.modified_files.len() + self.untracked_files.len()
+    }
+}
+
+/// Get the status of a worktree (uncommitted changes, untracked files, conflicts)
+///
+/// # Errors
+///
+/// Returns an error if git status command fails.
+pub fn get_worktree_status(worktree_path: &Path) -> Result<WorktreeStatus> {
+    let output = std::process::Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .current_dir(worktree_path)
+        .output()
+        .context("Failed to get git status")?;
+
+    if !output.status.success() {
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow!("Git status failed: {error_message}"));
+    }
+
+    let status_text = String::from_utf8_lossy(&output.stdout);
+    let mut modified_files = Vec::new();
+    let mut untracked_files = Vec::new();
+    let mut has_conflicts = false;
+
+    for line in status_text.lines() {
+        if line.len() < 3 {
+            continue;
+        }
+
+        let status_code = &line[..2];
+        let file_path = line[3..].to_string();
+
+        match status_code {
+            "UU" | "AA" | "DD" | "AU" | "UA" | "DU" | "UD" => {
+                has_conflicts = true;
+                modified_files.push(file_path);
+            }
+            "??" => {
+                untracked_files.push(file_path);
+            }
+            _ => {
+                if !status_code.trim().is_empty() {
+                    modified_files.push(file_path);
+                }
+            }
+        }
+    }
+
+    let is_clean = modified_files.is_empty() && untracked_files.is_empty();
+
+    Ok(WorktreeStatus {
+        is_clean,
+        modified_files,
+        untracked_files,
+        has_conflicts,
+    })
+}
+
+/// Get the current branch name for a repository
+///
+/// # Errors
+///
+/// Returns an error if git command fails or HEAD is detached.
+pub fn get_current_branch(repository_path: &Path) -> Result<String> {
+    let output = std::process::Command::new("git")
+        .arg("rev-parse")
+        .arg("--abbrev-ref")
+        .arg("HEAD")
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to get current branch")?;
+
+    if !output.status.success() {
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow!("Failed to get current branch: {error_message}"));
+    }
+
+    let branch_name = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    if branch_name == "HEAD" {
+        return Err(anyhow!("HEAD is detached, no branch checked out"));
+    }
+
+    Ok(branch_name)
+}
+
+/// Commit all changes in a worktree
+///
+/// # Errors
+///
+/// Returns an error if git add or commit fails.
+#[allow(dead_code)]
+pub fn commit_worktree_changes(worktree_path: &Path, message: &str) -> Result<()> {
+    let add_output = std::process::Command::new("git")
+        .arg("add")
+        .arg("-A")
+        .current_dir(worktree_path)
+        .output()
+        .context("Failed to stage changes")?;
+
+    if !add_output.status.success() {
+        let error_message = String::from_utf8_lossy(&add_output.stderr);
+        return Err(anyhow!("Git add failed: {error_message}"));
+    }
+
+    let commit_output = std::process::Command::new("git")
+        .arg("commit")
+        .arg("-m")
+        .arg(message)
+        .current_dir(worktree_path)
+        .output()
+        .context("Failed to commit changes")?;
+
+    if !commit_output.status.success() {
+        let error_message = String::from_utf8_lossy(&commit_output.stderr);
+        return Err(anyhow!("Git commit failed: {error_message}"));
+    }
+
+    Ok(())
+}
+
 /// Get the default branch name (main or master) for the repository
 ///
 /// # Errors
@@ -305,7 +446,7 @@ pub fn create_worktree(
     Ok(worktree_info)
 }
 
-/// Merge a worktree branch into main
+/// Merge a worktree branch into main (legacy function, calls `merge_worktree` with "main")
 /// Returns `MergeResult` indicating success or conflicts
 ///
 /// # Errors
@@ -314,6 +455,20 @@ pub fn create_worktree(
 pub fn merge_worktree_to_main(
     repository_path: &Path,
     worktree_info: &WorktreeInfo,
+) -> Result<MergeResult> {
+    merge_worktree(repository_path, worktree_info, "main")
+}
+
+/// Merge a worktree branch into a target branch
+/// Returns `MergeResult` indicating success or conflicts
+///
+/// # Errors
+///
+/// Returns an error if checkout, stash, or merge operations fail.
+pub fn merge_worktree(
+    repository_path: &Path,
+    worktree_info: &WorktreeInfo,
+    target_branch: &str,
 ) -> Result<MergeResult> {
     let branch_name = &worktree_info.branch_name;
 
@@ -331,14 +486,14 @@ pub fn merge_worktree_to_main(
 
     let checkout_output = std::process::Command::new("git")
         .arg("checkout")
-        .arg("main")
+        .arg(target_branch)
         .current_dir(repository_path)
         .output()
-        .context("Failed to checkout main branch")?;
+        .context("Failed to checkout target branch")?;
 
     if !checkout_output.status.success() {
         let error_message = String::from_utf8_lossy(&checkout_output.stderr);
-        return Err(anyhow!("Git checkout main failed: {error_message}"));
+        return Err(anyhow!("Git checkout {target_branch} failed: {error_message}"));
     }
 
     let merge_output = std::process::Command::new("git")

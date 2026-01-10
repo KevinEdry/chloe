@@ -1,5 +1,6 @@
 use super::TasksAction;
-use crate::views::tasks::state::{ReviewAction, TasksMode, TasksState};
+use crate::views::tasks::state::{MergeTarget, ReviewAction, TasksMode, TasksState};
+use crate::views::worktree::{find_repository_root, get_current_branch, get_worktree_status};
 use crossterm::event::{KeyCode, KeyEvent};
 use uuid::Uuid;
 
@@ -89,6 +90,13 @@ fn execute_review_action(
     task_id: Uuid,
     action: ReviewAction,
 ) -> TasksAction {
+    let task = state.find_task_by_id(task_id);
+    let worktree_info = task.and_then(|t| t.worktree_info.as_ref());
+
+    let is_clean = worktree_info
+        .and_then(|info| get_worktree_status(&info.worktree_path).ok())
+        .is_none_or(|status| status.is_clean);
+
     match action {
         ReviewAction::ReviewInIDE => {
             state.mode = TasksMode::Normal;
@@ -105,9 +113,40 @@ fn execute_review_action(
             };
             TasksAction::None
         }
-        ReviewAction::MergeToBranch => {
+        ReviewAction::CommitChanges => {
+            if is_clean {
+                return TasksAction::None;
+            }
             state.mode = TasksMode::Normal;
-            TasksAction::MergeBranch(task_id)
+            TasksAction::CommitChanges(task_id)
+        }
+        ReviewAction::MergeAndComplete => {
+            if !is_clean {
+                return TasksAction::None;
+            }
+
+            let worktree_branch = worktree_info
+                .map(|info| info.branch_name.clone())
+                .unwrap_or_default();
+
+            let current_branch = std::env::current_dir()
+                .ok()
+                .and_then(|dir| find_repository_root(&dir).ok())
+                .and_then(|root| get_current_branch(&root).ok())
+                .unwrap_or_else(|| "main".to_string());
+
+            let selected_target = if current_branch == "main" || current_branch == "master" {
+                MergeTarget::MainBranch
+            } else {
+                MergeTarget::CurrentBranch(current_branch)
+            };
+
+            state.mode = TasksMode::MergeConfirmation {
+                task_id,
+                worktree_branch,
+                selected_target,
+            };
+            TasksAction::None
         }
     }
 }
@@ -145,6 +184,54 @@ pub fn handle_review_request_changes_mode(
         KeyCode::Esc => {
             state.mode = TasksMode::Normal;
             TasksAction::None
+        }
+        _ => TasksAction::None,
+    }
+}
+
+pub fn handle_merge_confirmation_mode(
+    state: &mut TasksState,
+    key: KeyEvent,
+    task_id: Uuid,
+    worktree_branch: String,
+    selected_target: MergeTarget,
+) -> TasksAction {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            state.mode = TasksMode::Normal;
+            TasksAction::None
+        }
+        KeyCode::Up | KeyCode::Down | KeyCode::Char('k' | 'j') => {
+            let current_branch = std::env::current_dir()
+                .ok()
+                .and_then(|dir| find_repository_root(&dir).ok())
+                .and_then(|root| get_current_branch(&root).ok())
+                .unwrap_or_else(|| "main".to_string());
+
+            let new_target = match &selected_target {
+                MergeTarget::CurrentBranch(_) => MergeTarget::MainBranch,
+                MergeTarget::MainBranch => {
+                    if current_branch == "main" || current_branch == "master" {
+                        MergeTarget::MainBranch
+                    } else {
+                        MergeTarget::CurrentBranch(current_branch)
+                    }
+                }
+            };
+
+            state.mode = TasksMode::MergeConfirmation {
+                task_id,
+                worktree_branch,
+                selected_target: new_target,
+            };
+            TasksAction::None
+        }
+        KeyCode::Enter => {
+            state.mode = TasksMode::Normal;
+            TasksAction::MergeBranch {
+                task_id,
+                target: selected_target,
+            }
         }
         _ => TasksAction::None,
     }

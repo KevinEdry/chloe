@@ -1,7 +1,9 @@
 mod exit_confirmation;
+mod merge_confirmation;
 mod review_popup;
 
 pub use exit_confirmation::render_exit_confirmation_dialog;
+pub use merge_confirmation::render_merge_confirmation;
 pub use review_popup::render_review_popup;
 
 use ratatui::{

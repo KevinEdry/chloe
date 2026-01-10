@@ -170,8 +170,11 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
                 app.instances.send_input_to_instance(instance_id, &message);
             }
         }
-        TasksAction::MergeBranch(task_id) => {
-            app.merge_task_branch(task_id);
+        TasksAction::CommitChanges(task_id) => {
+            app.commit_task_changes(task_id);
+        }
+        TasksAction::MergeBranch { task_id, target } => {
+            app.merge_task_branch(task_id, &target);
         }
     }
 

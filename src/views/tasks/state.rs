@@ -47,6 +47,8 @@ pub struct TasksState {
     pub pending_terminal_switch: Option<Uuid>,
     #[serde(skip)]
     pub pending_change_request: Option<(Uuid, String)>,
+    #[serde(skip)]
+    pub error_message: Option<String>,
 }
 
 impl TasksState {
@@ -86,6 +88,7 @@ impl TasksState {
             pending_ide_open: None,
             pending_terminal_switch: None,
             pending_change_request: None,
+            error_message: None,
         }
     }
 
@@ -226,36 +229,57 @@ pub enum ReviewAction {
     ReviewInIDE,
     ReviewInTerminal,
     RequestChanges,
-    MergeToBranch,
+    CommitChanges,
+    MergeAndComplete,
 }
 
 impl ReviewAction {
     #[must_use]
-    pub const fn all() -> [Self; 4] {
+    pub const fn all() -> [Self; 5] {
         [
             Self::ReviewInIDE,
             Self::ReviewInTerminal,
             Self::RequestChanges,
-            Self::MergeToBranch,
+            Self::CommitChanges,
+            Self::MergeAndComplete,
         ]
     }
 
     #[must_use]
-    pub fn label(self, branch_name: Option<&str>, has_conflicts: bool) -> String {
+    pub fn label(self) -> String {
         match self {
             Self::ReviewInIDE => "Review in IDE".to_string(),
             Self::ReviewInTerminal => "Review in Terminal".to_string(),
             Self::RequestChanges => "Request Changes".to_string(),
-            Self::MergeToBranch => {
-                if has_conflicts {
-                    "Resolve Conflicts".to_string()
-                } else {
-                    let Some(name) = branch_name else {
-                        return "Mark Complete".to_string();
-                    };
-                    format!("Merge to {name}")
-                }
-            }
+            Self::CommitChanges => "Commit".to_string(),
+            Self::MergeAndComplete => "Merge & Complete".to_string(),
+        }
+    }
+
+    #[must_use]
+    pub const fn is_enabled(self, is_clean: bool) -> bool {
+        match self {
+            Self::ReviewInIDE
+            | Self::ReviewInTerminal
+            | Self::RequestChanges => true,
+            Self::CommitChanges => !is_clean,
+            Self::MergeAndComplete => is_clean,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MergeTarget {
+    CurrentBranch(String),
+    MainBranch,
+}
+
+impl MergeTarget {
+    #[must_use]
+    pub fn branch_name(&self) -> &str {
+        match self {
+            Self::CurrentBranch(name) => name,
+            Self::MainBranch => "main",
         }
     }
 }
@@ -292,5 +316,10 @@ pub enum TasksMode {
     ReviewRequestChanges {
         task_id: Uuid,
         input: String,
+    },
+    MergeConfirmation {
+        task_id: Uuid,
+        worktree_branch: String,
+        selected_target: MergeTarget,
     },
 }

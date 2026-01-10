@@ -3,7 +3,7 @@ use crate::app::App;
 use crate::views::StatusBarContent;
 use crate::views::tasks::dialogs;
 use crate::views::tasks::state::{TasksMode, TasksViewMode};
-use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, InputDialog, LoadingDialog};
+use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, ErrorDialog, InputDialog, LoadingDialog};
 use ratatui::{Frame, layout::Rect, style::Color};
 
 const STATUS_BAR_WIDTH_THRESHOLD: u16 = 100;
@@ -64,7 +64,18 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         TasksMode::ReviewRequestChanges { input, .. } => {
             frame.render_widget(InputDialog::new("Request Changes", input), area);
         }
+        TasksMode::MergeConfirmation {
+            worktree_branch,
+            selected_target,
+            ..
+        } => {
+            dialogs::render_merge_confirmation(frame, worktree_branch, selected_target, area);
+        }
         TasksMode::Normal | TasksMode::TerminalFocused => {}
+    }
+
+    if let Some(error) = &state.error_message {
+        frame.render_widget(ErrorDialog::new("Error", error), area);
     }
 }
 
@@ -76,7 +87,8 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::Normal | TasksMode::ReviewPopup { .. } => Color::Cyan,
         TasksMode::TerminalFocused
         | TasksMode::AddingTask { .. }
-        | TasksMode::ConfirmStartTask { .. } => Color::Green,
+        | TasksMode::ConfirmStartTask { .. }
+        | TasksMode::MergeConfirmation { .. } => Color::Green,
         TasksMode::EditingTask { .. } | TasksMode::ReviewRequestChanges { .. } => Color::Yellow,
         TasksMode::ConfirmDelete { .. } => Color::Red,
         TasksMode::ConfirmMoveBack { .. } => Color::LightRed,
@@ -94,6 +106,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::ClassifyingTask { .. } => "LOADING",
         TasksMode::ReviewPopup { .. } => "REVIEW OUTPUT",
         TasksMode::ReviewRequestChanges { .. } => "REQUEST CHANGES",
+        TasksMode::MergeConfirmation { .. } => "MERGE",
     };
 
     let view_indicator = match state.view_mode {
@@ -113,6 +126,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             | TasksMode::ConfirmStartTask { .. } => "y:yes  n:no",
             TasksMode::ReviewPopup { .. } => "jk:scroll  hl/Tab:button  Enter:action",
             TasksMode::TerminalFocused => "Esc:back",
+            TasksMode::MergeConfirmation { .. } => "jk:select  Enter:merge  Esc:cancel",
         }
     } else {
         match &state.mode {
@@ -133,6 +147,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
                 "Type your change request  Enter:save  Esc:cancel"
             }
             TasksMode::TerminalFocused => "Esc:back-to-navigation",
+            TasksMode::MergeConfirmation { .. } => {
+                "↑↓/jk:select-branch  Enter:merge  Esc/q:cancel"
+            }
         }
     };
 

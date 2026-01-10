@@ -4,7 +4,7 @@ use crate::views::StatusBarContent;
 use crate::views::tasks::dialogs;
 use crate::views::tasks::operations::{TaskReference, get_active_tasks, get_done_tasks};
 use crate::views::tasks::state::{FocusPanel, TasksMode, TasksViewMode};
-use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, InputDialog, LoadingDialog};
+use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, ErrorDialog, InputDialog, LoadingDialog};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -124,7 +124,18 @@ fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
         TasksMode::ReviewRequestChanges { input, .. } => {
             frame.render_widget(InputDialog::new("Request Changes", input), area);
         }
+        TasksMode::MergeConfirmation {
+            worktree_branch,
+            selected_target,
+            ..
+        } => {
+            dialogs::render_merge_confirmation(frame, worktree_branch, selected_target, area);
+        }
         TasksMode::Normal | TasksMode::TerminalFocused => {}
+    }
+
+    if let Some(error) = &app.tasks.error_message {
+        frame.render_widget(ErrorDialog::new("Error", error), area);
     }
 }
 
@@ -146,6 +157,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::ClassifyingTask { .. } => ("CLASSIFYING", Color::Yellow),
         TasksMode::ReviewPopup { .. } => ("REVIEW", Color::Magenta),
         TasksMode::ReviewRequestChanges { .. } => ("REQUEST CHANGES", Color::Yellow),
+        TasksMode::MergeConfirmation { .. } => ("MERGE", Color::Green),
     };
 
     let active_count: usize = state
@@ -174,6 +186,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::ClassifyingTask { .. } => "Esc:cancel",
             TasksMode::ReviewPopup { .. } => "hl:buttons  jk:scroll  Enter:select  Esc:close",
             TasksMode::ReviewRequestChanges { .. } => "Enter:send  Esc:cancel",
+            TasksMode::MergeConfirmation { .. } => "jk:select  Enter:merge  Esc:cancel",
         }
     } else {
         match &state.mode {
@@ -193,6 +206,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             }
             TasksMode::ReviewRequestChanges { .. } => {
                 "Type your change request  Enter:send  Esc:cancel"
+            }
+            TasksMode::MergeConfirmation { .. } => {
+                "↑↓/jk:select-branch  Enter:merge  Esc/q:cancel"
             }
         }
     };

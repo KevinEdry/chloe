@@ -335,24 +335,47 @@ impl App {
         }
     }
 
-    pub fn merge_task_branch(&mut self, task_id: uuid::Uuid) {
+    pub fn commit_task_changes(&mut self, task_id: uuid::Uuid) {
+        let Some(task) = self.tasks.find_task_by_id(task_id) else {
+            return;
+        };
+
+        let Some(instance_id) = task.instance_id else {
+            self.tasks.error_message =
+                Some("No Claude Code instance associated with this task.".to_string());
+            return;
+        };
+
+        let commit_prompt = "Please commit the current changes. Review what's been modified and create appropriate atomic commits with clear, descriptive messages. Do not push to remote.";
+
+        self.instances
+            .send_input_to_instance(instance_id, commit_prompt);
+    }
+
+    pub fn merge_task_branch(
+        &mut self,
+        task_id: uuid::Uuid,
+        target: &crate::views::tasks::state::MergeTarget,
+    ) {
         let Some(task) = self.tasks.find_task_by_id(task_id) else {
             return;
         };
 
         let Some(worktree_info) = &task.worktree_info else {
-            self.tasks.move_task_to_done_by_id(task_id);
-            let _ = self.save();
+            self.tasks.error_message =
+                Some("No worktree associated with this task. Nothing to merge.".to_string());
             return;
         };
         let worktree_info = worktree_info.clone();
 
         let Ok(current_directory) = std::env::current_dir() else {
+            self.tasks.error_message = Some("Failed to get current directory.".to_string());
             return;
         };
 
         let Ok(repository_root) = crate::views::worktree::find_repository_root(&current_directory)
         else {
+            self.tasks.error_message = Some("Could not find git repository root.".to_string());
             return;
         };
 
@@ -367,8 +390,9 @@ impl App {
             return;
         }
 
+        let target_branch = target.branch_name();
         let merge_result =
-            crate::views::worktree::merge_worktree_to_main(&repository_root, &worktree_info);
+            crate::views::worktree::merge_worktree(&repository_root, &worktree_info, target_branch);
 
         match merge_result {
             Ok(crate::views::worktree::MergeResult::Success) => {
@@ -388,7 +412,9 @@ impl App {
                         .send_input_to_instance(instance_id, &conflict_message);
                 }
             }
-            Err(_) => {}
+            Err(error) => {
+                self.tasks.error_message = Some(format!("Merge failed: {error}"));
+            }
         }
     }
 

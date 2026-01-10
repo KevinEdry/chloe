@@ -9,6 +9,8 @@ use super::state::{TasksMode, TasksState, TasksViewMode};
 use crossterm::event::{KeyCode, KeyEvent};
 use uuid::Uuid;
 
+use super::state::MergeTarget;
+
 pub enum TasksAction {
     None,
     JumpToInstance(Uuid),
@@ -21,7 +23,8 @@ pub enum TasksAction {
     OpenInIDE(Uuid),
     SwitchToTerminal(Uuid),
     RequestChanges { task_id: Uuid, message: String },
-    MergeBranch(Uuid),
+    CommitChanges(Uuid),
+    MergeBranch { task_id: Uuid, target: MergeTarget },
 }
 
 pub fn handle_key_event(
@@ -29,6 +32,11 @@ pub fn handle_key_event(
     key: KeyEvent,
     selected_instance_id: Option<Uuid>,
 ) -> TasksAction {
+    if state.error_message.is_some() {
+        state.error_message = None;
+        return TasksAction::None;
+    }
+
     if state.mode == TasksMode::Normal && key.code == KeyCode::Char('/') {
         state.toggle_view_mode();
         return TasksAction::None;
@@ -69,5 +77,16 @@ pub fn handle_key_event(
         TasksMode::ReviewRequestChanges { task_id, .. } => {
             review::handle_review_request_changes_mode(state, key, *task_id)
         }
+        TasksMode::MergeConfirmation {
+            task_id,
+            worktree_branch,
+            selected_target,
+        } => review::handle_merge_confirmation_mode(
+            state,
+            key,
+            *task_id,
+            worktree_branch.clone(),
+            selected_target.clone(),
+        ),
     }
 }
