@@ -266,10 +266,8 @@ impl App {
     }
 
     #[must_use]
-    pub fn get_instance_output(&self, instance_id: uuid::Uuid) -> Option<&str> {
-        self.instances
-            .find_pane(instance_id)
-            .map(|pane| pane.output_buffer.as_str())
+    pub fn get_instance_output(&self, _instance_id: uuid::Uuid) -> Option<&str> {
+        None
     }
 
     pub fn open_task_in_ide(&self, task_id: uuid::Uuid) {

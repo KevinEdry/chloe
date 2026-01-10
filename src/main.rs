@@ -106,7 +106,11 @@ where
             match event::read()? {
                 Event::Key(key) => {
                     let instances_terminal_focused = app.active_tab == Tab::Instances
-                        && app.instances.mode == views::instances::InstanceMode::Focused;
+                        && matches!(
+                            app.instances.mode,
+                            views::instances::InstanceMode::Focused
+                                | views::instances::InstanceMode::Scroll
+                        );
                     let tasks_terminal_focused =
                         app.active_tab == Tab::Tasks && app.tasks.is_terminal_focused();
                     let terminal_is_focused = instances_terminal_focused || tasks_terminal_focused;
