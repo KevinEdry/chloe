@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { track } from '@vercel/analytics'
 import { Platform, platforms } from './types'
 import { PlatformDropdown } from './PlatformDropdown'
 import { CommandDisplay } from './CommandDisplay'
@@ -14,6 +15,7 @@ export function HeroInstallationCommand() {
   const handleCopy = async () => {
     const command = platforms[selectedPlatform].command
     await navigator.clipboard.writeText(command)
+    track('copy_install_command', { platform: selectedPlatform })
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
