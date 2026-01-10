@@ -557,10 +557,10 @@ Events flow from the main loop to the active tab's event handler, which mutates 
 
 ### 4. Persistence Strategy
 - Use JSON for state serialization (easier for nested structures than TOML)
-- Save to `~/.config/chloe/state.json`
+- Save to `.chloe/state.json` (local project directory)
 - Auto-save on state changes + on graceful shutdown
 - Kanban tasks fully serializable
-- Instance panes: only save working directory and layout
+- Instance panes: save tree-based split layout (directions, ratios), working directory, and pane metadata
 
 ## Navigation Guide
 
@@ -638,7 +638,6 @@ Events flow from the main loop to the active tab's event handler, which mutates 
 - [ ] Task priorities and tags
 - [ ] Task due dates and reminders
 - [ ] Terminal scrollback buffer improvements
-- [ ] Split terminal panes dynamically
 - [ ] Search/filter tasks in kanban
 - [ ] Export kanban board to markdown/CSV
 
