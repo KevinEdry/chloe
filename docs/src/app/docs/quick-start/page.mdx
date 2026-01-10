@@ -1,14 +1,17 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 
+export const metadata = {
+  title: 'Quick Start',
+  description: 'Get Chloe up and running in under 5 minutes. Learn how to install, initialize, and start managing multiple Claude Code instances.',
+  keywords: ['Chloe installation', 'quick start guide', 'Claude Code setup', 'terminal multiplexer install'],
+  alternates: { canonical: '/docs/quick-start' },
+}
+
 # Quick Start
 
 Get Chloe running in your project in under 5 minutes.
 
 ## Prerequisites
-
-<Callout type="warning">
-  Make sure you have these requirements before using Chloe.
-</Callout>
 
 - [Claude Pro/Max subscription](https://claude.ai/upgrade)
 - Claude Code CLI - `npm install -g @anthropic-ai/claude-code`
@@ -21,7 +24,7 @@ Get Chloe running in your project in under 5 minutes.
     The fastest way to get started:
 
     ```bash
-    curl -fsSL https://getchloe.sh | bash
+    curl -fsSL getchloe.sh/install.sh | bash
     ```
 
     This downloads the latest release and installs it to your path.
@@ -95,17 +98,12 @@ The task appears in the "To Do" column.
 
 ## Data Storage
 
-<Callout type="info">
-  Chloe stores all state in `.chloe/state.json` in your project directory.
-</Callout>
+Chloe stores all state in `.chloe/state.json` in your project directory:
 
-This includes:
 - Tasks and their statuses
 - Instance configurations
 - Roadmap items
 - View settings
-
-This file is automatically created and managed by Chloe.
 
 ## What's Next?
 

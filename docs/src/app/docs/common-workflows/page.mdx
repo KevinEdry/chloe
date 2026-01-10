@@ -1,4 +1,11 @@
-import { Callout, Steps } from 'nextra/components'
+import { Steps } from 'nextra/components'
+
+export const metadata = {
+  title: 'Common Workflows',
+  description: 'Practical patterns for using Chloe effectively. Learn how to run multiple Claude Code instances, manage git worktrees, and optimize your AI-assisted development workflow.',
+  keywords: ['Chloe workflows', 'Claude Code patterns', 'parallel development', 'git worktree', 'AI development workflow'],
+  alternates: { canonical: '/docs/common-workflows' },
+}
 
 # Common Workflows
 
@@ -6,9 +13,7 @@ Practical patterns for getting the most out of Chloe.
 
 ## Running Multiple Claude Code Instances
 
-<Callout type="info">
-  This is the primary use case for Chloe — orchestrating multiple Claude Code sessions working on different parts of your project.
-</Callout>
+The primary use case for Chloe is orchestrating multiple Claude Code sessions working on different parts of your project.
 
 <Steps>
 ### Create tasks for each piece of work
@@ -69,9 +74,7 @@ When working on a new feature across multiple sessions:
 - Different Claude instances can work on different tasks
 - Use the task board to track what each is doing
 
-<Callout>
-  **Handling blockers**: Move blocked tasks back to "To Do" with `Backspace` and add notes by editing the task with `e`.
-</Callout>
+**Handling blockers**: Move blocked tasks back to "To Do" with `Backspace` and add notes by editing the task with `e`.
 
 ## Git Worktree Workflow
 
@@ -106,9 +109,7 @@ Each worktree gets its own terminal panes and task tracking.
 
 ## Quick Task Triage
 
-<Callout type="info" emoji="⚡">
-  When you have many tasks to organize, use Focus view for rapid triage.
-</Callout>
+When you have many tasks to organize, use Focus view for rapid triage.
 
 <Steps>
 ### Switch to Focus view
@@ -147,10 +148,6 @@ Press `3`
 
 ## Keyboard Efficiency Tips
 
-<Callout type="info" emoji="⌨️">
-  Master these patterns to navigate Chloe like a pro.
-</Callout>
-
 | Tip | Description |
 |-----|-------------|
 | **Quick View Switching** | Use number keys (`1`, `2`, `3`, `4`) instead of `Tab` for instant access |
@@ -159,13 +156,11 @@ Press `3`
 
 ### Focus Mode Tips
 
-<Callout>
-  When working in a terminal pane:
-  1. Press `Enter` to focus (sends keystrokes to terminal)
-  2. Do your work in Claude Code
-  3. Press `Esc` to exit focus and navigate elsewhere
-  4. Use `2` to return to Instances view if needed
-</Callout>
+When working in a terminal pane:
+1. Press `Enter` to focus (sends keystrokes to terminal)
+2. Do your work in Claude Code
+3. Press `Esc` to exit focus and navigate elsewhere
+4. Use `2` to return to Instances view if needed
 
 ### Quick Context Switching
 
