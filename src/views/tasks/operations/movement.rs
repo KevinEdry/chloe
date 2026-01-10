@@ -14,7 +14,17 @@ impl TasksState {
 
         let is_entering_in_progress =
             self.kanban_selected_column == 0 && self.kanban_selected_column + 1 == 1;
+
         if is_entering_in_progress {
+            let is_task_classifying = self.columns[self.kanban_selected_column]
+                .tasks
+                .get(task_index)
+                .is_some_and(|task| task.is_classifying);
+
+            if is_task_classifying {
+                return;
+            }
+
             self.try_create_worktree_for_task(task_index);
         }
 
@@ -203,6 +213,15 @@ impl TasksState {
             return None;
         }
 
+        let is_task_classifying = self.columns[review_column_index]
+            .tasks
+            .get(task_index)
+            .is_some_and(|task| task.is_classifying);
+
+        if is_task_classifying {
+            return None;
+        }
+
         self.try_create_worktree_for_task_in_column(review_column_index, task_index);
 
         let task = self.columns[review_column_index].tasks.remove(task_index);
@@ -244,6 +263,15 @@ impl TasksState {
                 .find(|t| t.id == task_id)
                 .and_then(|t| t.instance_id);
             return instance_id;
+        }
+
+        let is_task_classifying = self.columns[source_column_index]
+            .tasks
+            .get(task_index)
+            .is_some_and(|task| task.is_classifying);
+
+        if is_task_classifying {
+            return None;
         }
 
         self.try_create_worktree_for_task_in_column(source_column_index, task_index);
