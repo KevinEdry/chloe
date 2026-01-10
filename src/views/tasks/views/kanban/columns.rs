@@ -141,15 +141,6 @@ const CLASSIFYING_INDICATOR: &str = "◎";
 const CLASSIFYING_INDICATOR_WIDTH: usize = 2;
 
 fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_selected: bool) {
-    let badge_color = if task.is_classifying {
-        Color::Yellow
-    } else {
-        task.kind.color()
-    };
-    let created = task.created_at.format("%Y/%m/%d-%H:%M:%S").to_string();
-
-    let title_max_width = area.width.saturating_sub(4) as usize;
-
     let claude_indicator = task
         .instance_id
         .and_then(|instance_id| app.get_instance_claude_state(instance_id));
@@ -168,6 +159,34 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
             .add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(border_color)
+    };
+
+    let title_max_width = area.width.saturating_sub(4) as usize;
+    let title_line = build_task_card_title(task, claude_indicator, title_max_width);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(border_style)
+        .title(title_line);
+
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let max_width = inner.width.saturating_sub(2) as usize;
+    let lines = build_task_card_content(task, max_width);
+
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+fn build_task_card_title(
+    task: &Task,
+    claude_indicator: Option<crate::views::instances::ClaudeState>,
+    title_max_width: usize,
+) -> Line<'_> {
+    let badge_color = if task.is_classifying {
+        Color::Yellow
+    } else {
+        task.kind.color()
     };
 
     let has_indicator = claude_indicator.is_some()
@@ -219,18 +238,10 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
     ));
     title_spans.push(Span::raw(" "));
 
-    let title_line = Line::from(title_spans);
+    Line::from(title_spans)
+}
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(border_style)
-        .title(title_line);
-
-    let inner = block.inner(area);
-    frame.render_widget(block, area);
-
-    let max_width = inner.width.saturating_sub(2) as usize;
-
+fn build_task_card_content(task: &Task, max_width: usize) -> Vec<Line<'static>> {
     let mut lines = vec![];
 
     if task.is_classifying {
@@ -240,14 +251,13 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
         )));
         lines.push(Line::from(""));
     } else if !task.description.is_empty() {
-        let max_description_lines = MAX_DESCRIPTION_LINES;
         let wrapped_lines = wrap_text(&task.description, max_width);
-        let has_more = wrapped_lines.len() > max_description_lines;
+        let has_more = wrapped_lines.len() > MAX_DESCRIPTION_LINES;
 
         for (index, description_line) in
-            wrapped_lines.iter().take(max_description_lines).enumerate()
+            wrapped_lines.iter().take(MAX_DESCRIPTION_LINES).enumerate()
         {
-            let line_text = if has_more && index == max_description_lines - 1 {
+            let line_text = if has_more && index == MAX_DESCRIPTION_LINES - 1 {
                 format!("{description_line}...")
             } else {
                 description_line.clone()
@@ -261,12 +271,11 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
         lines.push(Line::from(""));
     }
 
+    let created = task.created_at.format("%Y/%m/%d-%H:%M:%S").to_string();
     lines.push(Line::from(Span::styled(
         format!("Created: {created}"),
         Style::default().fg(Color::DarkGray),
     )));
 
-    let text = Paragraph::new(lines);
-
-    frame.render_widget(text, inner);
+    lines
 }

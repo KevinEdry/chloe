@@ -121,16 +121,16 @@ impl TaskItem {
                 .add_modifier(title_modifier),
         ));
 
-        if !self.is_classifying {
-            if let Some(state) = self.claude_state {
-                let (indicator, color) = claude_indicator::dot_visible(state);
-                if !indicator.is_empty() {
-                    spans.push(Span::raw(" "));
-                    spans.push(Span::styled(
-                        indicator.to_string(),
-                        Style::default().fg(color),
-                    ));
-                }
+        if !self.is_classifying
+            && let Some(state) = self.claude_state
+        {
+            let (indicator, color) = claude_indicator::dot_visible(state);
+            if !indicator.is_empty() {
+                spans.push(Span::raw(" "));
+                spans.push(Span::styled(
+                    indicator.to_string(),
+                    Style::default().fg(color),
+                ));
             }
         }
 
