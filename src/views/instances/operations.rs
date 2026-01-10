@@ -193,8 +193,8 @@ impl InstanceState {
         };
 
         if let Some(session) = &mut pane.pty_session {
-            let input_with_enter = format!("{input}\r");
-            if session.write_input(input_with_enter.as_bytes()).is_ok() {
+            let input_with_newline = format!("{input}\n");
+            if session.write_input(input_with_newline.as_bytes()).is_ok() {
                 return true;
             }
         }
