@@ -12,3 +12,8 @@ pub fn get_config_dir() -> PathBuf {
 pub fn get_state_path() -> PathBuf {
     get_config_dir().join("state.json")
 }
+
+#[must_use]
+pub fn get_settings_path() -> PathBuf {
+    get_config_dir().join("settings.json")
+}

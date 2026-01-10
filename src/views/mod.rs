@@ -5,6 +5,7 @@ mod tab_bar;
 pub mod instances;
 pub mod pull_requests;
 pub mod roadmap;
+pub mod settings;
 pub mod tasks;
 pub mod worktree;
 

@@ -1,4 +1,4 @@
-use super::{footer, instances, pull_requests, roadmap, tab_bar, tasks, worktree};
+use super::{footer, instances, pull_requests, roadmap, settings, tab_bar, tasks, worktree};
 use crate::app::{App, Tab};
 use crate::views::tasks::TasksViewMode;
 use ratatui::{
@@ -46,6 +46,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         Tab::Roadmap => roadmap::view::render(frame, app, layout.content),
         Tab::Worktree => worktree::view::render(frame, layout.content, &app.worktree),
         Tab::PullRequests => pull_requests::view::render(frame, layout.content, &app.pull_requests),
+        Tab::Settings => settings::view::render(frame, &app.settings, layout.content),
     }
 
     let status_content = match app.active_tab {
@@ -65,6 +66,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         Tab::PullRequests => {
             pull_requests::view::get_status_bar_content(&app.pull_requests, layout.footer.width)
         }
+        Tab::Settings => settings::view::get_status_bar_content(&app.settings, layout.footer.width),
     };
 
     footer::render_footer(frame, layout.footer, status_content);
