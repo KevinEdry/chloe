@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 #[derive(Parser)]
 #[command(name = "chloe")]
+#[command(version)]
 #[command(about = "Auto Claude CLI - Task management with Claude Code integration")]
 pub struct Cli {
     #[command(subcommand)]

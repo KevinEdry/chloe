@@ -6,8 +6,11 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-const VERSION_TEXT: &str = "Chloe v0.1.0";
 const VERSION_TEXT_LENGTH: u16 = 13;
+
+fn version_text() -> String {
+    format!("Chloe v{}", env!("CARGO_PKG_VERSION"))
+}
 const MINIMUM_SPACE_FOR_VERSION: u16 = 15;
 
 pub struct StatusBarContent {
@@ -51,7 +54,7 @@ pub fn render_footer(frame: &mut Frame, area: Rect, content: StatusBarContent) {
     frame.render_widget(status, area);
 
     if should_show_version {
-        let version = Paragraph::new(VERSION_TEXT)
+        let version = Paragraph::new(version_text())
             .style(Style::default().fg(Color::DarkGray))
             .alignment(Alignment::Right);
         frame.render_widget(version, chunks[1]);
