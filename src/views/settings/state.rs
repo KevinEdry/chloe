@@ -1,38 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-const SETTINGS_COUNT: usize = 5;
+const SETTINGS_COUNT: usize = 4;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
-    pub theme: Theme,
     pub default_shell: String,
     pub auto_save_interval_seconds: u64,
     pub ide_command: IdeCommand,
     pub terminal_command: TerminalCommand,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Theme {
-    Dark,
-    Light,
-}
-
-impl Theme {
-    #[must_use]
-    pub const fn display_name(self) -> &'static str {
-        match self {
-            Self::Dark => "Dark",
-            Self::Light => "Light",
-        }
-    }
-
-    #[must_use]
-    pub const fn toggle(self) -> Self {
-        match self {
-            Self::Dark => Self::Light,
-            Self::Light => Self::Dark,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -177,7 +152,6 @@ impl TerminalCommand {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            theme: Theme::Dark,
             default_shell: std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string()),
             auto_save_interval_seconds: 30,
             ide_command: IdeCommand::detect(),
@@ -196,7 +170,6 @@ pub enum SettingsMode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingItem {
-    Theme,
     DefaultShell,
     AutoSaveInterval,
     IdeCommand,
@@ -207,11 +180,10 @@ impl SettingItem {
     #[must_use]
     pub const fn from_index(index: usize) -> Option<Self> {
         match index {
-            0 => Some(Self::Theme),
-            1 => Some(Self::DefaultShell),
-            2 => Some(Self::AutoSaveInterval),
-            3 => Some(Self::IdeCommand),
-            4 => Some(Self::TerminalCommand),
+            0 => Some(Self::DefaultShell),
+            1 => Some(Self::AutoSaveInterval),
+            2 => Some(Self::IdeCommand),
+            3 => Some(Self::TerminalCommand),
             _ => None,
         }
     }
@@ -219,7 +191,6 @@ impl SettingItem {
     #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
-            Self::Theme => "Theme",
             Self::DefaultShell => "Default Shell",
             Self::AutoSaveInterval => "Auto-save Interval",
             Self::IdeCommand => "IDE Command",
@@ -287,9 +258,6 @@ impl SettingsState {
         };
 
         match item {
-            SettingItem::Theme => {
-                self.settings.theme = self.settings.theme.toggle();
-            }
             SettingItem::DefaultShell => {
                 self.edit_buffer = self.settings.default_shell.clone();
                 self.mode = SettingsMode::EditingShell;
