@@ -34,7 +34,7 @@ pub struct TasksState {
     pub focus_details_scroll: u16,
 
     #[serde(skip)]
-    pub classification_request: Option<super::ai_classifier::ClassificationRequest>,
+    pub pending_classifications: Vec<super::ai_classifier::ClassificationRequest>,
     #[serde(skip)]
     pub pending_instance_termination: Option<Uuid>,
     #[serde(skip)]
@@ -81,7 +81,7 @@ impl TasksState {
             focus_done_index: 0,
             focus_panel: FocusPanel::default(),
             focus_details_scroll: 0,
-            classification_request: None,
+            pending_classifications: Vec::new(),
             pending_instance_termination: None,
             pending_worktree_deletion: None,
             pending_instance_creation: None,
@@ -206,6 +206,8 @@ pub struct Task {
     pub is_paused: bool,
     #[serde(default)]
     pub worktree_info: Option<WorktreeInfo>,
+    #[serde(skip)]
+    pub is_classifying: bool,
 }
 
 impl Task {
@@ -220,6 +222,22 @@ impl Task {
             instance_id: None,
             is_paused: false,
             worktree_info: None,
+            is_classifying: false,
+        }
+    }
+
+    #[must_use]
+    pub fn new_classifying(raw_input: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            title: raw_input,
+            description: String::new(),
+            created_at: Utc::now(),
+            kind: TaskType::Task,
+            instance_id: None,
+            is_paused: false,
+            worktree_info: None,
+            is_classifying: true,
         }
     }
 }
@@ -303,10 +321,6 @@ pub enum TasksMode {
     },
     ConfirmMoveBack {
         task_id: Uuid,
-    },
-    ClassifyingTask {
-        raw_input: String,
-        edit_task_id: Option<Uuid>,
     },
     ReviewPopup {
         task_id: Uuid,

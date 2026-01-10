@@ -9,11 +9,13 @@ use ratatui::{
 };
 
 const DEFAULT_TITLE_MAX_LENGTH: usize = 25;
+const CLASSIFYING_INDICATOR: &str = "◎";
 
 pub struct TaskItem {
     title: String,
     task_type: TaskType,
     is_selected: bool,
+    is_classifying: bool,
     claude_state: Option<ClaudeState>,
     title_max_length: usize,
     selection_color: Color,
@@ -27,6 +29,7 @@ impl TaskItem {
             title: title.into(),
             task_type,
             is_selected: false,
+            is_classifying: false,
             claude_state: None,
             title_max_length: DEFAULT_TITLE_MAX_LENGTH,
             selection_color: Color::Cyan,
@@ -37,6 +40,12 @@ impl TaskItem {
     #[must_use]
     pub const fn selected(mut self, is_selected: bool) -> Self {
         self.is_selected = is_selected;
+        self
+    }
+
+    #[must_use]
+    pub const fn classifying(mut self, is_classifying: bool) -> Self {
+        self.is_classifying = is_classifying;
         self
     }
 
@@ -69,9 +78,12 @@ impl TaskItem {
         let truncated_title = text::truncate(&self.title, self.title_max_length);
 
         let badge_text = self.task_type.badge_text();
-        let badge_color = self
-            .badge_color_override
-            .unwrap_or_else(|| self.task_type.color());
+        let badge_color = if self.is_classifying {
+            Color::Yellow
+        } else {
+            self.badge_color_override
+                .unwrap_or_else(|| self.task_type.color())
+        };
 
         let title_color = if self.is_selected {
             Color::White
@@ -85,26 +97,40 @@ impl TaskItem {
             Modifier::empty()
         };
 
-        let mut spans = vec![
-            self.build_selection_indicator(),
-            Span::styled(format!("[{badge_text}]"), Style::default().fg(badge_color)),
-            Span::raw(" "),
-            Span::styled(
-                truncated_title,
-                Style::default()
-                    .fg(title_color)
-                    .add_modifier(title_modifier),
-            ),
-        ];
+        let mut spans = vec![self.build_selection_indicator()];
 
-        if let Some(state) = self.claude_state {
-            let (indicator, color) = claude_indicator::dot_visible(state);
-            if !indicator.is_empty() {
-                spans.push(Span::raw(" "));
-                spans.push(Span::styled(
-                    indicator.to_string(),
-                    Style::default().fg(color),
-                ));
+        if self.is_classifying {
+            spans.push(Span::styled(
+                format!("{CLASSIFYING_INDICATOR} "),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ));
+        } else {
+            spans.push(Span::styled(
+                format!("[{badge_text}]"),
+                Style::default().fg(badge_color),
+            ));
+            spans.push(Span::raw(" "));
+        }
+
+        spans.push(Span::styled(
+            truncated_title,
+            Style::default()
+                .fg(title_color)
+                .add_modifier(title_modifier),
+        ));
+
+        if !self.is_classifying {
+            if let Some(state) = self.claude_state {
+                let (indicator, color) = claude_indicator::dot_visible(state);
+                if !indicator.is_empty() {
+                    spans.push(Span::raw(" "));
+                    spans.push(Span::styled(
+                        indicator.to_string(),
+                        Style::default().fg(color),
+                    ));
+                }
             }
         }
 

@@ -4,7 +4,7 @@ use crate::views::StatusBarContent;
 use crate::views::tasks::dialogs;
 use crate::views::tasks::operations::{TaskReference, get_active_tasks, get_done_tasks};
 use crate::views::tasks::state::{FocusPanel, TasksMode, TasksViewMode};
-use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, ErrorDialog, InputDialog, LoadingDialog};
+use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, ErrorDialog, InputDialog};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -104,9 +104,6 @@ fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
                 area,
             );
         }
-        TasksMode::ClassifyingTask { raw_input, .. } => {
-            frame.render_widget(LoadingDialog::new("Loading", raw_input), area);
-        }
         TasksMode::ReviewPopup {
             task_id,
             scroll_offset,
@@ -154,7 +151,6 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::ConfirmDelete { .. } => ("DELETE", Color::Red),
         TasksMode::ConfirmStartTask { .. } => ("START", Color::Green),
         TasksMode::ConfirmMoveBack { .. } => ("MOVE BACK", Color::Red),
-        TasksMode::ClassifyingTask { .. } => ("CLASSIFYING", Color::Yellow),
         TasksMode::ReviewPopup { .. } => ("REVIEW", Color::Magenta),
         TasksMode::ReviewRequestChanges { .. } => ("REQUEST CHANGES", Color::Yellow),
         TasksMode::MergeConfirmation { .. } => ("MERGE", Color::Green),
@@ -183,7 +179,6 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::ConfirmDelete { .. }
             | TasksMode::ConfirmStartTask { .. }
             | TasksMode::ConfirmMoveBack { .. } => "y:confirm  n:cancel",
-            TasksMode::ClassifyingTask { .. } => "Esc:cancel",
             TasksMode::ReviewPopup { .. } => "hl:buttons  jk:scroll  Enter:select  Esc:close",
             TasksMode::ReviewRequestChanges { .. } => "Enter:send  Esc:cancel",
             TasksMode::MergeConfirmation { .. } => "jk:select  Enter:merge  Esc:cancel",
@@ -200,7 +195,6 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::ConfirmDelete { .. }
             | TasksMode::ConfirmStartTask { .. }
             | TasksMode::ConfirmMoveBack { .. } => "Press y to confirm, n or Esc to cancel",
-            TasksMode::ClassifyingTask { .. } => "AI is classifying your task...  Esc:cancel",
             TasksMode::ReviewPopup { .. } => {
                 "h/l:switch-buttons  j/k:scroll  Enter:select-action  Esc/q:close"
             }

@@ -3,7 +3,7 @@ use crate::app::App;
 use crate::views::StatusBarContent;
 use crate::views::tasks::dialogs;
 use crate::views::tasks::state::{TasksMode, TasksViewMode};
-use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, ErrorDialog, InputDialog, LoadingDialog};
+use crate::widgets::dialogs::{ConfirmDialog, DialogStyle, ErrorDialog, InputDialog};
 use ratatui::{Frame, layout::Rect, style::Color};
 
 const STATUS_BAR_WIDTH_THRESHOLD: u16 = 100;
@@ -43,9 +43,6 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
                     .style(DialogStyle::Success),
                 area,
             );
-        }
-        TasksMode::ClassifyingTask { raw_input, .. } => {
-            frame.render_widget(LoadingDialog::new("Loading", raw_input), area);
         }
         TasksMode::ReviewPopup {
             task_id,
@@ -92,7 +89,6 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::EditingTask { .. } | TasksMode::ReviewRequestChanges { .. } => Color::Yellow,
         TasksMode::ConfirmDelete { .. } => Color::Red,
         TasksMode::ConfirmMoveBack { .. } => Color::LightRed,
-        TasksMode::ClassifyingTask { .. } => Color::Magenta,
     };
 
     let mode_text = match &state.mode {
@@ -103,7 +99,6 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::ConfirmDelete { .. } => "CONFIRM DELETE",
         TasksMode::ConfirmMoveBack { .. } => "CONFIRM MOVE BACK",
         TasksMode::ConfirmStartTask { .. } => "START TASK",
-        TasksMode::ClassifyingTask { .. } => "LOADING",
         TasksMode::ReviewPopup { .. } => "REVIEW OUTPUT",
         TasksMode::ReviewRequestChanges { .. } => "REQUEST CHANGES",
         TasksMode::MergeConfirmation { .. } => "MERGE",
@@ -117,7 +112,6 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
     let help_text = if width < STATUS_BAR_WIDTH_THRESHOLD {
         match &state.mode {
             TasksMode::Normal => "hjkl/arrows:navigate  a:add  e:edit  d:delete  /:view",
-            TasksMode::ClassifyingTask { .. } => "Esc:cancel",
             TasksMode::AddingTask { .. }
             | TasksMode::EditingTask { .. }
             | TasksMode::ReviewRequestChanges { .. } => "Enter:save  Esc:cancel",
@@ -139,7 +133,6 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::ConfirmDelete { .. }
             | TasksMode::ConfirmMoveBack { .. }
             | TasksMode::ConfirmStartTask { .. } => "y:yes  n:no  Esc:cancel",
-            TasksMode::ClassifyingTask { .. } => "Press Esc to cancel",
             TasksMode::ReviewPopup { .. } => {
                 "jk:scroll  ←→/hl/Tab:select-button  Enter:execute-action  q/Esc:close"
             }

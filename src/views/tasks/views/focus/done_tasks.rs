@@ -107,6 +107,7 @@ fn build_done_task_items(
             &task.title,
             task.kind,
             is_selected,
+            task.is_classifying,
             title_max_length,
         ));
     }
@@ -118,10 +119,12 @@ fn create_task_item(
     title: &str,
     task_type: crate::views::tasks::TaskType,
     is_selected: bool,
+    is_classifying: bool,
     title_max_length: usize,
 ) -> ListItem<'static> {
     let mut item = TaskItem::new(title, task_type)
         .selected(is_selected)
+        .classifying(is_classifying)
         .selection_color(Color::Green)
         .title_max_length(title_max_length);
 

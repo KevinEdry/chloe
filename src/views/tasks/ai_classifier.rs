@@ -2,6 +2,7 @@ use crate::types::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::{Receiver, channel};
 use std::thread;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClassifiedTask {
@@ -13,6 +14,7 @@ pub struct ClassifiedTask {
 #[derive(Debug)]
 pub struct ClassificationRequest {
     receiver: Receiver<Result<ClassifiedTask>>,
+    pub task_id: Uuid,
 }
 
 impl Clone for ClassificationRequest {
@@ -23,7 +25,7 @@ impl Clone for ClassificationRequest {
 
 impl ClassificationRequest {
     #[must_use]
-    pub fn spawn(raw_input: String) -> Self {
+    pub fn spawn(raw_input: String, task_id: Uuid) -> Self {
         let (sender, receiver) = channel();
 
         thread::spawn(move || {
@@ -31,7 +33,7 @@ impl ClassificationRequest {
             let _ = sender.send(result);
         });
 
-        Self { receiver }
+        Self { receiver, task_id }
     }
 
     fn classify_with_claude(raw_input: &str) -> Result<ClassifiedTask> {

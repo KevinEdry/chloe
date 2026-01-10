@@ -1,46 +1,48 @@
 use crate::views::tasks::ai_classifier::{ClassificationRequest, ClassifiedTask};
-use crate::views::tasks::state::{TaskType, TasksMode, TasksState};
+use crate::views::tasks::state::{Task, TaskType, TasksState};
 use uuid::Uuid;
 
-impl TasksState {
-    pub fn start_classification(&mut self, raw_input: String) {
-        self.start_classification_internal(raw_input, None);
-    }
+const PLANNING_COLUMN_INDEX: usize = 0;
 
-    fn start_classification_internal(&mut self, raw_input: String, edit_task_id: Option<Uuid>) {
-        let request = ClassificationRequest::spawn(raw_input.clone());
-        self.classification_request = Some(request);
-        self.mode = TasksMode::ClassifyingTask {
-            raw_input,
-            edit_task_id,
-        };
+impl TasksState {
+    pub fn start_classification(&mut self, raw_input: String) -> Uuid {
+        let task = Task::new_classifying(raw_input.clone());
+        let task_id = task.id;
+
+        self.columns[PLANNING_COLUMN_INDEX].tasks.push(task);
+        self.kanban_selected_column = PLANNING_COLUMN_INDEX;
+        self.kanban_selected_task = Some(self.columns[PLANNING_COLUMN_INDEX].tasks.len() - 1);
+
+        let request = ClassificationRequest::spawn(raw_input, task_id);
+        self.pending_classifications.push(request);
+
+        task_id
     }
 
     pub fn poll_classification(&mut self) {
-        if let Some(request) = &self.classification_request
-            && let Some(result) = request.try_recv()
-        {
-            self.classification_request = None;
+        let mut completed_indices = Vec::new();
+
+        for (index, request) in self.pending_classifications.iter().enumerate() {
+            if let Some(result) = request.try_recv() {
+                completed_indices.push((index, request.task_id, result));
+            }
+        }
+
+        for (index, task_id, result) in completed_indices.into_iter().rev() {
+            self.pending_classifications.remove(index);
 
             match result {
                 Ok(classified) => {
-                    self.apply_classification(classified);
+                    self.apply_classification_to_task(task_id, classified);
                 }
                 Err(_) => {
-                    if let TasksMode::ClassifyingTask { raw_input, .. } = &self.mode {
-                        self.fallback_to_manual(raw_input.clone());
-                    }
+                    self.mark_task_classification_failed(task_id);
                 }
             }
         }
     }
 
-    pub fn cancel_classification(&mut self) {
-        self.classification_request = None;
-        self.mode = TasksMode::Normal;
-    }
-
-    pub fn apply_classification(&mut self, classified: ClassifiedTask) {
+    fn apply_classification_to_task(&mut self, task_id: Uuid, classified: ClassifiedTask) {
         let task_type = match classified.task_type.to_lowercase().as_str() {
             "feature" => TaskType::Feature,
             "bug" => TaskType::Bug,
@@ -48,30 +50,32 @@ impl TasksState {
             _ => TaskType::Task,
         };
 
-        if let TasksMode::ClassifyingTask { edit_task_id, .. } = self.mode {
-            if let Some(task_id) = edit_task_id {
-                self.edit_task_by_id(
-                    task_id,
-                    classified.title,
-                    classified.description,
-                    Some(task_type),
-                );
-            } else {
-                self.add_task_to_planning(classified.title, classified.description, task_type);
+        for column in &mut self.columns {
+            for task in &mut column.tasks {
+                if task.id == task_id {
+                    task.title = classified.title;
+                    task.description = classified.description;
+                    task.kind = task_type;
+                    task.is_classifying = false;
+                    return;
+                }
             }
         }
-
-        self.mode = TasksMode::Normal;
     }
 
-    pub fn fallback_to_manual(&mut self, raw_input: String) {
-        if let TasksMode::ClassifyingTask { edit_task_id, .. } = self.mode {
-            if let Some(task_id) = edit_task_id {
-                self.edit_task_by_id(task_id, raw_input, String::new(), None);
-            } else {
-                self.add_task_to_planning(raw_input, String::new(), TaskType::Task);
+    fn mark_task_classification_failed(&mut self, task_id: Uuid) {
+        for column in &mut self.columns {
+            for task in &mut column.tasks {
+                if task.id == task_id {
+                    task.is_classifying = false;
+                    return;
+                }
             }
         }
-        self.mode = TasksMode::Normal;
+    }
+
+    #[must_use]
+    pub fn has_pending_classifications(&self) -> bool {
+        !self.pending_classifications.is_empty()
     }
 }

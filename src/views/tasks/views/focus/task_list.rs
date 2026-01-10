@@ -127,6 +127,7 @@ fn build_task_list_items(
                     &task.title,
                     task.kind,
                     is_selected,
+                    task.is_classifying,
                     claude_state,
                     title_max_length,
                 ));
@@ -159,11 +160,13 @@ fn create_task_item(
     title: &str,
     task_type: crate::views::tasks::TaskType,
     is_selected: bool,
+    is_classifying: bool,
     claude_state: Option<crate::views::instances::ClaudeState>,
     title_max_length: usize,
 ) -> ListItem<'static> {
     TaskItem::new(title, task_type)
         .selected(is_selected)
+        .classifying(is_classifying)
         .claude_state(claude_state)
         .title_max_length(title_max_length)
         .build()

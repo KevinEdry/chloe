@@ -137,8 +137,15 @@ pub fn render_columns(frame: &mut Frame, app: &App, area: Rect) {
     }
 }
 
+const CLASSIFYING_INDICATOR: &str = "◎";
+const CLASSIFYING_INDICATOR_WIDTH: usize = 2;
+
 fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_selected: bool) {
-    let badge_color = task.kind.color();
+    let badge_color = if task.is_classifying {
+        Color::Yellow
+    } else {
+        task.kind.color()
+    };
     let created = task.created_at.format("%Y/%m/%d-%H:%M:%S").to_string();
 
     let title_max_width = area.width.saturating_sub(4) as usize;
@@ -147,13 +154,15 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
         .instance_id
         .and_then(|instance_id| app.get_instance_claude_state(instance_id));
 
-    let border_color = if is_selected {
+    let border_color = if task.is_classifying {
+        Color::Yellow
+    } else if is_selected {
         Color::White
     } else {
         Color::DarkGray
     };
 
-    let border_style = if is_selected {
+    let border_style = if is_selected || task.is_classifying {
         Style::default()
             .fg(border_color)
             .add_modifier(Modifier::BOLD)
@@ -163,29 +172,43 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
 
     let has_indicator = claude_indicator.is_some()
         && claude_indicator != Some(crate::views::instances::ClaudeState::Idle);
-    let indicator_width = if has_indicator { 2 } else { 0 };
+    let indicator_width = if has_indicator {
+        2
+    } else if task.is_classifying {
+        CLASSIFYING_INDICATOR_WIDTH
+    } else {
+        0
+    };
 
     let available_title_width = title_max_width.saturating_sub(8 + indicator_width);
 
-    let mut title_spans = vec![
-        Span::raw(" "),
-        Span::styled(
+    let mut title_spans = vec![Span::raw(" ")];
+
+    if task.is_classifying {
+        title_spans.push(Span::styled(
+            format!("{CLASSIFYING_INDICATOR} "),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    } else {
+        title_spans.push(Span::styled(
             format!("[{}]", task.kind.badge_text()),
             Style::default()
                 .fg(badge_color)
                 .add_modifier(Modifier::BOLD),
-        ),
-        Span::raw(" "),
-    ];
-
-    if let Some(state) = claude_indicator
-        && state != crate::views::instances::ClaudeState::Idle
-    {
-        let (indicator, color) = get_claude_state_indicator_for_card(state);
-        title_spans.push(Span::styled(
-            format!("{indicator} "),
-            Style::default().fg(color).add_modifier(Modifier::BOLD),
         ));
+        title_spans.push(Span::raw(" "));
+
+        if let Some(state) = claude_indicator
+            && state != crate::views::instances::ClaudeState::Idle
+        {
+            let (indicator, color) = get_claude_state_indicator_for_card(state);
+            title_spans.push(Span::styled(
+                format!("{indicator} "),
+                Style::default().fg(color).add_modifier(Modifier::BOLD),
+            ));
+        }
     }
 
     title_spans.push(Span::styled(
@@ -210,7 +233,13 @@ fn render_task_card(frame: &mut Frame, app: &App, task: &Task, area: Rect, is_se
 
     let mut lines = vec![];
 
-    if !task.description.is_empty() {
+    if task.is_classifying {
+        lines.push(Line::from(Span::styled(
+            "Classifying with AI...",
+            Style::default().fg(Color::Yellow),
+        )));
+        lines.push(Line::from(""));
+    } else if !task.description.is_empty() {
         let max_description_lines = MAX_DESCRIPTION_LINES;
         let wrapped_lines = wrap_text(&task.description, max_width);
         let has_more = wrapped_lines.len() > max_description_lines;

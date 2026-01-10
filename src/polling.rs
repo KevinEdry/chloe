@@ -2,18 +2,12 @@ use crate::app::{App, Tab};
 use crate::events::EventListener;
 use crate::views;
 use crate::views::pull_requests::events::PullRequestsAction;
-use crate::views::tasks::{FocusPanel, TasksAction, TasksMode, get_active_tasks, get_done_tasks};
+use crate::views::tasks::{FocusPanel, TasksAction, get_active_tasks, get_done_tasks};
 use crossterm::event::KeyEvent;
 
 pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
     if app.active_tab == Tab::Tasks {
-        let was_classifying = matches!(app.tasks.mode, TasksMode::ClassifyingTask { .. });
         app.tasks.poll_classification();
-        let is_still_classifying = matches!(app.tasks.mode, TasksMode::ClassifyingTask { .. });
-
-        if was_classifying && !is_still_classifying {
-            app.tasks.mode = TasksMode::Normal;
-        }
     }
 
     if app.active_tab == Tab::Roadmap {
@@ -135,11 +129,8 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
             }
         }
         TasksAction::CreateTask(title) => {
-            app.tasks.mode = TasksMode::ClassifyingTask {
-                raw_input: title.clone(),
-                edit_task_id: None,
-            };
             app.tasks.start_classification(title);
+            let _ = app.save();
         }
         TasksAction::UpdateTask { task_id, new_title } => {
             app.tasks.update_task_title_by_id(task_id, new_title);
@@ -155,9 +146,6 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
             app.tasks.move_task_to_in_progress_by_id(task_id);
             app.sync_task_instances();
             let _ = app.save();
-        }
-        TasksAction::CancelClassification => {
-            app.tasks.cancel_classification();
         }
         TasksAction::OpenInIDE(task_id) => {
             app.open_task_in_ide(task_id);

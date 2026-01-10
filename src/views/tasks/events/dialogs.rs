@@ -57,11 +57,3 @@ pub fn handle_confirm_move_back_mode(
         _ => TasksAction::None,
     }
 }
-
-pub fn handle_classifying_task_mode(state: &mut TasksState, key: KeyEvent) -> TasksAction {
-    if key.code == KeyCode::Esc {
-        state.mode = TasksMode::Normal;
-        return TasksAction::CancelClassification;
-    }
-    TasksAction::None
-}

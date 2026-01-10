@@ -19,7 +19,6 @@ pub enum TasksAction {
     UpdateTask { task_id: Uuid, new_title: String },
     DeleteTask(Uuid),
     StartTask(Uuid),
-    CancelClassification,
     OpenInIDE(Uuid),
     SwitchToTerminal(Uuid),
     RequestChanges { task_id: Uuid, message: String },
@@ -66,7 +65,6 @@ pub fn handle_key_event(
         TasksMode::ConfirmMoveBack { task_id } => {
             dialogs::handle_confirm_move_back_mode(state, key, *task_id)
         }
-        TasksMode::ClassifyingTask { .. } => dialogs::handle_classifying_task_mode(state, key),
         TasksMode::ReviewPopup {
             task_id,
             scroll_offset,
