@@ -9,8 +9,11 @@ use std::path::Path;
 use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 const DEFAULT_SCROLLBACK_LINES: usize = 10000;
+const READ_BUFFER_BYTES: usize = 4096;
+const READ_POLL_DELAY_MS: u64 = 10;
 
 pub struct EventProxy;
 
@@ -46,6 +49,7 @@ pub struct PtySession {
 
 impl PtySession {
     pub fn spawn(working_directory: &Path, rows: u16, columns: u16) -> anyhow::Result<Self> {
+        tty::setup_env();
         let options = Options {
             shell: None,
             working_directory: Some(working_directory.to_path_buf()),
@@ -81,15 +85,19 @@ impl PtySession {
 
         thread::spawn(move || {
             let mut reader = reader;
-            let mut buffer = [0u8; 4096];
+            let mut buffer = [0u8; READ_BUFFER_BYTES];
             loop {
                 match reader.read(&mut buffer) {
-                    Ok(0) | Err(_) => break,
+                    Ok(0) => break,
                     Ok(bytes_read) => {
                         if sender.send(buffer[..bytes_read].to_vec()).is_err() {
                             break;
                         }
                     }
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(READ_POLL_DELAY_MS));
+                    }
+                    Err(_) => break,
                 }
             }
         });

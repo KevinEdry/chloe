@@ -154,6 +154,8 @@ pub struct InstancePane {
     pub columns: u16,
     #[serde(skip)]
     pub pty_session: Option<super::pty::PtySession>,
+    #[serde(skip, default)]
+    pub pty_spawn_error: Option<String>,
     #[serde(default)]
     pub claude_state: ClaudeState,
     #[serde(skip, default)]
@@ -170,6 +172,7 @@ impl InstancePane {
             rows,
             columns,
             pty_session: None,
+            pty_spawn_error: None,
             claude_state: ClaudeState::Idle,
             scroll_offset: 0,
         }

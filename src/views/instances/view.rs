@@ -178,7 +178,10 @@ fn render_pane(
     f.render_widget(block, area);
 
     let Some(session) = &pane.pty_session else {
-        let message = "PTY session failed to start";
+        let message = pane
+            .pty_spawn_error
+            .as_deref()
+            .unwrap_or("PTY session failed to start");
         let text = Paragraph::new(message).style(Style::default().fg(Color::Red));
         f.render_widget(text, inner_area);
         return;

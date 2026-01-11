@@ -12,9 +12,13 @@ impl InstanceState {
 
         let mut pane = InstancePane::new(working_directory.clone(), actual_rows, actual_columns);
 
-        if let Ok(session) = pty::PtySession::spawn(&working_directory, actual_rows, actual_columns)
-        {
-            pane.pty_session = Some(session);
+        match pty::PtySession::spawn(&working_directory, actual_rows, actual_columns) {
+            Ok(session) => {
+                pane.pty_session = Some(session);
+            }
+            Err(error) => {
+                pane.pty_spawn_error = Some(error.to_string());
+            }
         }
 
         let pane_id = pane.id;
@@ -84,23 +88,27 @@ impl InstanceState {
 
         let mut pane = InstancePane::new(working_directory.clone(), actual_rows, actual_columns);
 
-        if let Ok(session) = pty::PtySession::spawn(&working_directory, actual_rows, actual_columns)
-        {
-            let claude_command = if task_description.is_empty() {
-                format!("claude \"{}\"\n", task_title.replace('\"', "\\\""))
-            } else {
-                format!(
-                    "claude \"Work on this task:\n\nTitle: {}\n\nDescription: {}\"\n",
-                    task_title.replace('\"', "\\\""),
-                    task_description.replace('\"', "\\\"")
-                )
-            };
+        match pty::PtySession::spawn(&working_directory, actual_rows, actual_columns) {
+            Ok(session) => {
+                let claude_command = if task_description.is_empty() {
+                    format!("claude \"{}\"\n", task_title.replace('\"', "\\\""))
+                } else {
+                    format!(
+                        "claude \"Work on this task:\n\nTitle: {}\n\nDescription: {}\"\n",
+                        task_title.replace('\"', "\\\""),
+                        task_description.replace('\"', "\\\"")
+                    )
+                };
 
-            let _ = session.write_input(claude_command.as_bytes());
-            let _ = session.write_input(b"clear\n");
+                let _ = session.write_input(claude_command.as_bytes());
+                let _ = session.write_input(b"clear\n");
 
-            pane.claude_state = super::ClaudeState::Running;
-            pane.pty_session = Some(session);
+                pane.claude_state = super::ClaudeState::Running;
+                pane.pty_session = Some(session);
+            }
+            Err(error) => {
+                pane.pty_spawn_error = Some(error.to_string());
+            }
         }
 
         let pane_id = pane.id;
@@ -236,14 +244,11 @@ impl InstanceState {
             return false;
         };
 
-        if let Some(session) = &mut pane.pty_session {
-            let input_with_newline = format!("{input}\n");
-            if session.write_input(input_with_newline.as_bytes()).is_ok() {
-                return true;
-            }
-        }
+        let Some(session) = &mut pane.pty_session else {
+            return false;
+        };
 
-        false
+        send_input_with_enter(session, input)
     }
 
     pub fn send_raw_input_to_instance(&mut self, instance_id: Uuid, data: &[u8]) -> bool {
@@ -278,6 +283,18 @@ impl InstanceState {
             self.selected_pane_id = Some(pane_id);
         }
     }
+}
+
+const ENTER_KEY_DELAY_MS: u64 = 50;
+
+fn send_input_with_enter(session: &crate::views::instances::pty::PtySession, input: &str) -> bool {
+    if session.write_input(input.as_bytes()).is_err() {
+        return false;
+    }
+
+    std::thread::sleep(std::time::Duration::from_millis(ENTER_KEY_DELAY_MS));
+
+    session.write_input(b"\r").is_ok()
 }
 
 #[derive(Debug, Clone, Copy)]
