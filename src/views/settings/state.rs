@@ -1,7 +1,7 @@
-use crate::types::{AgentProvider, ProviderRegistry};
+use crate::types::{AgentProvider, DetectedProvider, ProviderRegistry};
 use serde::{Deserialize, Serialize};
 
-const SETTINGS_COUNT: usize = 4;
+const SETTINGS_COUNT: usize = 5;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
@@ -182,6 +182,7 @@ pub enum SettingItem {
     AutoSaveInterval,
     IdeCommand,
     TerminalCommand,
+    DefaultProvider,
 }
 
 impl SettingItem {
@@ -192,6 +193,7 @@ impl SettingItem {
             1 => Some(Self::AutoSaveInterval),
             2 => Some(Self::IdeCommand),
             3 => Some(Self::TerminalCommand),
+            4 => Some(Self::DefaultProvider),
             _ => None,
         }
     }
@@ -203,6 +205,7 @@ impl SettingItem {
             Self::AutoSaveInterval => "Auto-save Interval",
             Self::IdeCommand => "IDE Command",
             Self::TerminalCommand => "Terminal",
+            Self::DefaultProvider => "Default Agent",
         }
     }
 }
@@ -216,6 +219,8 @@ pub struct SettingsState {
     pub mode: SettingsMode,
     #[serde(skip)]
     pub edit_buffer: String,
+    #[serde(skip)]
+    pub detected_providers: Vec<DetectedProvider>,
 }
 
 impl SettingsState {
@@ -226,16 +231,18 @@ impl SettingsState {
             selected_index: 0,
             mode: SettingsMode::Normal,
             edit_buffer: String::new(),
+            detected_providers: AgentProvider::detect_all_available(),
         }
     }
 
     #[must_use]
-    pub const fn with_settings(settings: Settings) -> Self {
+    pub fn with_settings(settings: Settings) -> Self {
         Self {
             settings,
             selected_index: 0,
             mode: SettingsMode::Normal,
             edit_buffer: String::new(),
+            detected_providers: AgentProvider::detect_all_available(),
         }
     }
 
@@ -279,6 +286,9 @@ impl SettingsState {
             }
             SettingItem::TerminalCommand => {
                 self.settings.terminal_command = self.settings.terminal_command.cycle_next();
+            }
+            SettingItem::DefaultProvider => {
+                self.settings.default_provider = self.settings.default_provider.cycle_next();
             }
         }
     }

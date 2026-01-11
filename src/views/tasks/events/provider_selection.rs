@@ -1,21 +1,31 @@
 use super::TasksAction;
 use crate::types::AgentProvider;
-use crate::views::tasks::dialogs::{get_option_count, get_selection_result_with_default};
+use crate::views::tasks::dialogs::{ProviderSelectionResult, get_option_count, get_selection_result};
 use crate::views::tasks::state::{TasksMode, TasksState};
 use crossterm::event::{KeyCode, KeyEvent};
 
-pub fn handle_provider_selection_mode(state: &mut TasksState, key: KeyEvent) -> TasksAction {
-    let (task_id, selected_index, worktree_option) = match &mut state.mode {
+pub fn handle_provider_selection_mode(
+    state: &mut TasksState,
+    key: KeyEvent,
+    default_provider: AgentProvider,
+) -> TasksAction {
+    let (task_id, selected_index, worktree_option, detected_providers) = match &mut state.mode {
         TasksMode::SelectProvider {
             task_id,
             selected_index,
             worktree_option,
+            detected_providers,
             ..
-        } => (*task_id, selected_index, worktree_option.clone()),
+        } => (
+            *task_id,
+            selected_index,
+            worktree_option.clone(),
+            detected_providers.clone(),
+        ),
         _ => return TasksAction::None,
     };
 
-    let option_count = get_option_count();
+    let option_count = get_option_count(&detected_providers);
 
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') => {
@@ -33,11 +43,11 @@ pub fn handle_provider_selection_mode(state: &mut TasksState, key: KeyEvent) -> 
         KeyCode::Enter => {
             let current_index = *selected_index;
             let result =
-                get_selection_result_with_default(current_index, AgentProvider::default());
+                get_selection_result(current_index, &detected_providers, default_provider);
 
             state.mode = TasksMode::Normal;
 
-            result.map_or(TasksAction::None, |selection| {
+            result.map_or(TasksAction::None, |selection: ProviderSelectionResult| {
                 TasksAction::ProviderSelected {
                     task_id,
                     provider: selection.provider(),

@@ -151,12 +151,14 @@ fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
         TasksMode::SelectProvider {
             task_title,
             selected_index,
+            detected_providers,
             ..
         } => {
             let dialog_state = dialogs::ProviderSelectionViewState {
-                task_title,
+                task_title: Some(task_title),
                 selected_index: *selected_index,
                 default_provider: app.settings.settings.default_provider,
+                detected_providers,
             };
             dialogs::render_provider_selection(frame, &dialog_state, area);
         }

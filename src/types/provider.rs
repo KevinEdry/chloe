@@ -13,6 +13,12 @@ pub enum AgentProvider {
     OpenCode,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DetectedProvider {
+    pub provider: AgentProvider,
+    pub path: PathBuf,
+}
+
 impl AgentProvider {
     #[must_use]
     pub const fn display_name(self) -> &'static str {
@@ -27,6 +33,18 @@ impl AgentProvider {
     }
 
     #[must_use]
+    pub const fn command_name(self) -> &'static str {
+        match self {
+            Self::ClaudeCode => "claude",
+            Self::Codex => "codex",
+            Self::Aider => "aider",
+            Self::Gemini => "gemini",
+            Self::Amp => "amp",
+            Self::OpenCode => "opencode",
+        }
+    }
+
+    #[must_use]
     pub const fn all() -> &'static [Self] {
         &[
             Self::ClaudeCode,
@@ -36,6 +54,38 @@ impl AgentProvider {
             Self::Amp,
             Self::OpenCode,
         ]
+    }
+
+    #[must_use]
+    pub fn detect(self) -> Option<DetectedProvider> {
+        let output = std::process::Command::new("which")
+            .arg(self.command_name())
+            .output()
+            .ok()?;
+
+        if !output.status.success() {
+            return None;
+        }
+
+        let path_string = String::from_utf8_lossy(&output.stdout);
+        let path = PathBuf::from(path_string.trim());
+
+        if path.exists() {
+            Some(DetectedProvider {
+                provider: self,
+                path,
+            })
+        } else {
+            None
+        }
+    }
+
+    #[must_use]
+    pub fn detect_all_available() -> Vec<DetectedProvider> {
+        Self::all()
+            .iter()
+            .filter_map(|provider| provider.detect())
+            .collect()
     }
 
     #[must_use]
@@ -83,6 +133,20 @@ impl AgentProvider {
                 working_directory_argument: None,
                 supports_worktree: true,
             },
+        }
+    }
+}
+
+impl AgentProvider {
+    #[must_use]
+    pub const fn cycle_next(self) -> Self {
+        match self {
+            Self::ClaudeCode => Self::Codex,
+            Self::Codex => Self::Aider,
+            Self::Aider => Self::Gemini,
+            Self::Gemini => Self::Amp,
+            Self::Amp => Self::OpenCode,
+            Self::OpenCode => Self::ClaudeCode,
         }
     }
 }

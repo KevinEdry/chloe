@@ -1,4 +1,4 @@
-use crate::types::AgentProvider;
+use crate::types::{AgentProvider, DetectedProvider};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -15,9 +15,10 @@ const TASK_BLOCK_HEIGHT: u16 = 5;
 const VERTICAL_GAP: u16 = 1;
 
 pub struct ProviderSelectionViewState<'a> {
-    pub task_title: &'a str,
+    pub task_title: Option<&'a str>,
     pub selected_index: usize,
     pub default_provider: AgentProvider,
+    pub detected_providers: &'a [DetectedProvider],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,17 +42,17 @@ impl ProviderSelectionResult {
 }
 
 #[must_use]
-pub fn get_selection_result_with_default(
+pub fn get_selection_result(
     selected_index: usize,
+    detected_providers: &[DetectedProvider],
     default_provider: AgentProvider,
 ) -> Option<ProviderSelectionResult> {
-    let providers = AgentProvider::all();
-    let provider_count = providers.len();
+    let provider_count = detected_providers.len();
 
     match selected_index.cmp(&provider_count) {
-        std::cmp::Ordering::Less => {
-            Some(ProviderSelectionResult::Provider(providers[selected_index]))
-        }
+        std::cmp::Ordering::Less => Some(ProviderSelectionResult::Provider(
+            detected_providers[selected_index].provider,
+        )),
         std::cmp::Ordering::Equal => {
             Some(ProviderSelectionResult::ProviderAndRemember(default_provider))
         }
@@ -60,8 +61,8 @@ pub fn get_selection_result_with_default(
 }
 
 #[must_use]
-pub const fn get_option_count() -> usize {
-    AgentProvider::all().len() + 1
+pub fn get_option_count(detected_providers: &[DetectedProvider]) -> usize {
+    detected_providers.len() + 1
 }
 
 pub fn render_provider_selection(
@@ -81,17 +82,21 @@ pub fn render_provider_selection(
     let inner_area = outer_block.inner(popup_area);
     frame.render_widget(outer_block, popup_area);
 
-    let layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(TASK_BLOCK_HEIGHT),
-            Constraint::Length(VERTICAL_GAP),
-            Constraint::Min(0),
-        ])
-        .split(inner_area);
+    if let Some(task_title) = state.task_title {
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(TASK_BLOCK_HEIGHT),
+                Constraint::Length(VERTICAL_GAP),
+                Constraint::Min(0),
+            ])
+            .split(inner_area);
 
-    render_task_block(frame, layout[0], state.task_title);
-    render_selection_block(frame, layout[2], state);
+        render_task_block(frame, layout[0], task_title);
+        render_selection_block(frame, layout[2], state);
+    } else {
+        render_selection_block(frame, inner_area, state);
+    }
 }
 
 fn render_task_block(frame: &mut Frame, area: Rect, task_title: &str) {
@@ -136,17 +141,17 @@ fn render_selection_block(frame: &mut Frame, area: Rect, state: &ProviderSelecti
 }
 
 fn build_provider_list(state: &ProviderSelectionViewState<'_>) -> List<'static> {
-    let providers = AgentProvider::all();
-    let mut items: Vec<ListItem> = providers
+    let mut items: Vec<ListItem> = state
+        .detected_providers
         .iter()
         .enumerate()
-        .map(|(index, provider)| {
-            render_provider_option(index, *provider, state.selected_index, state.default_provider)
+        .map(|(index, detected)| {
+            render_provider_option(index, detected, state.selected_index, state.default_provider)
         })
         .collect();
 
     items.push(render_remember_option(
-        providers.len(),
+        state.detected_providers.len(),
         state.selected_index,
         state.default_provider,
     ));
@@ -162,34 +167,39 @@ fn build_provider_list(state: &ProviderSelectionViewState<'_>) -> List<'static> 
 
 fn render_provider_option(
     index: usize,
-    provider: AgentProvider,
+    detected: &DetectedProvider,
     selected_index: usize,
     default_provider: AgentProvider,
 ) -> ListItem<'static> {
     let is_selected = index == selected_index;
-    let is_default = provider == default_provider;
+    let is_default = detected.provider == default_provider;
 
-    let mut spans = vec![Span::styled(
-        provider.display_name().to_string(),
+    let mut name_spans = vec![Span::styled(
+        detected.provider.display_name().to_string(),
         Style::default()
             .fg(Color::White)
             .add_modifier(Modifier::BOLD),
     )];
 
     if is_default {
-        spans.push(Span::styled(
+        name_spans.push(Span::styled(
             " (default)",
             Style::default().fg(Color::DarkGray),
         ));
     }
 
-    let content = Line::from(spans);
+    let path_line = Line::from(vec![Span::styled(
+        format!("  {}", detected.path.display()),
+        Style::default().fg(Color::DarkGray),
+    )]);
+
+    let content = vec![Line::from(name_spans), path_line];
     let mut item = ListItem::new(content);
 
     if is_selected {
         item = item.style(
             Style::default()
-                .bg(Color::DarkGray)
+                .bg(Color::Rgb(40, 40, 40))
                 .add_modifier(Modifier::BOLD),
         );
     }
@@ -204,21 +214,25 @@ fn render_remember_option(
 ) -> ListItem<'static> {
     let is_selected = index == selected_index;
 
-    let content = Line::from(vec![
-        Span::styled(
+    let content = vec![
+        Line::from(vec![Span::styled(
             format!("Use {} and don't ask again", default_provider.display_name()),
             Style::default()
                 .fg(Color::Green)
                 .add_modifier(Modifier::BOLD),
-        ),
-    ]);
+        )]),
+        Line::from(vec![Span::styled(
+            "  Skip this dialog in the future",
+            Style::default().fg(Color::DarkGray),
+        )]),
+    ];
 
     let mut item = ListItem::new(content);
 
     if is_selected {
         item = item.style(
             Style::default()
-                .bg(Color::DarkGray)
+                .bg(Color::Rgb(40, 40, 40))
                 .add_modifier(Modifier::BOLD),
         );
     }

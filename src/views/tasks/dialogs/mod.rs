@@ -11,7 +11,7 @@ pub use add_task::{AddTaskDialogState, render_add_task_dialog};
 pub use exit_confirmation::render_exit_confirmation_dialog;
 pub use merge_confirmation::render_merge_confirmation;
 pub use provider_selection::{
-    ProviderSelectionViewState, get_option_count, get_selection_result_with_default,
+    ProviderSelectionResult, ProviderSelectionViewState, get_option_count, get_selection_result,
     render_provider_selection,
 };
 pub use review_popup::{ReviewPopupViewState, render_review_popup};

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use uuid::Uuid;
 
-use crate::types::AgentProvider;
+use crate::types::{AgentProvider, DetectedProvider};
 use crate::views::worktree::WorktreeInfo;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -357,6 +357,7 @@ pub enum TasksMode {
         task_title: String,
         selected_index: usize,
         worktree_option: WorktreeSelectionOption,
+        detected_providers: Vec<DetectedProvider>,
     },
     EditingTask {
         task_id: Uuid,

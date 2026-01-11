@@ -44,6 +44,7 @@ pub fn handle_key_event(
     state: &mut TasksState,
     key: KeyEvent,
     selected_instance_id: Option<Uuid>,
+    default_provider: AgentProvider,
 ) -> TasksAction {
     if state.error_message.is_some() {
         state.error_message = None;
@@ -76,7 +77,7 @@ pub fn handle_key_event(
             worktree_selection::handle_worktree_selection_mode(state, key)
         }
         TasksMode::SelectProvider { .. } => {
-            provider_selection::handle_provider_selection_mode(state, key)
+            provider_selection::handle_provider_selection_mode(state, key, default_provider)
         }
         TasksMode::EditingTask { .. } => text_input::handle_editing_task_mode(state, key),
         TasksMode::ConfirmDelete { task_id } => {

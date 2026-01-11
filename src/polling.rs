@@ -114,7 +114,8 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
         }
     };
 
-    let action = views::tasks::handle_key_event(&mut app.tasks, key, selected_instance_id);
+    let default_provider = app.settings.settings.default_provider;
+    let action = views::tasks::handle_key_event(&mut app.tasks, key, selected_instance_id, default_provider);
 
     match action {
         TasksAction::None => {}
@@ -197,6 +198,7 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
                     task_title,
                     selected_index: 0,
                     worktree_option,
+                    detected_providers: app.settings.detected_providers.clone(),
                 };
             }
         }

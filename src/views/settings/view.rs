@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 const STATUS_BAR_WIDTH_THRESHOLD: u16 = 80;
-const SETTINGS_COUNT: usize = 4;
+const SETTINGS_COUNT: usize = 5;
 const LABEL_WIDTH: u16 = 25;
 
 pub fn render(frame: &mut Frame, state: &SettingsState, area: Rect) {
@@ -110,6 +110,7 @@ fn get_setting_value_text(item: SettingItem, state: &SettingsState, is_editing: 
         }
         SettingItem::IdeCommand => state.settings.ide_command.display_name().to_string(),
         SettingItem::TerminalCommand => state.settings.terminal_command.display_name().to_string(),
+        SettingItem::DefaultProvider => state.settings.default_provider.display_name().to_string(),
     }
 }
 
