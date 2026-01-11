@@ -1,0 +1,6 @@
+{
+  "default_shell": "/bin/zsh",
+  "auto_save_interval_seconds": 30,
+  "ide_command": "WebStorm",
+  "terminal_command": "ITerm2"
+}
