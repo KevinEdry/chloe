@@ -1,12 +1,16 @@
+mod add_task;
 mod exit_confirmation;
 mod merge_confirmation;
 mod review_details;
 mod review_popup;
 mod review_status;
+mod worktree_selection;
 
+pub use add_task::{AddTaskDialogState, render_add_task_dialog};
 pub use exit_confirmation::render_exit_confirmation_dialog;
 pub use merge_confirmation::render_merge_confirmation;
 pub use review_popup::{ReviewPopupViewState, render_review_popup};
+pub use worktree_selection::{WorktreeSelectionViewState, render_worktree_selection};
 
 use ratatui::{
     Frame,

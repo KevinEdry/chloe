@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use uuid::Uuid;
 
 use crate::views::worktree::WorktreeInfo;
@@ -240,7 +241,7 @@ impl Task {
             instance_id: None,
             is_paused: false,
             worktree_info: None,
-            is_classifying: true,
+            is_classifying: false,
         }
     }
 }
@@ -312,21 +313,34 @@ impl MergeTarget {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum WorktreeSelectionOption {
+    AutoCreate,
+    Existing {
+        branch_name: String,
+        worktree_path: PathBuf,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TasksMode {
     Normal,
     TerminalFocused,
     TerminalScroll,
     AddingTask {
         input: String,
+        prompt: String,
+    },
+    SelectWorktree {
+        task_id: Uuid,
+        task_title: String,
+        selected_index: usize,
+        options: Vec<WorktreeSelectionOption>,
     },
     EditingTask {
         task_id: Uuid,
         input: String,
     },
     ConfirmDelete {
-        task_id: Uuid,
-    },
-    ConfirmStartTask {
         task_id: Uuid,
     },
     ConfirmMoveBack {

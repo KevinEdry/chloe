@@ -84,8 +84,22 @@ fn get_selected_task(app: &App) -> Option<TaskReference<'_>> {
 
 fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
     match mode {
-        TasksMode::AddingTask { input } => {
-            frame.render_widget(InputDialog::new("Add Task", input), area);
+        TasksMode::AddingTask { input, prompt } => {
+            let dialog_state = dialogs::AddTaskDialogState { input, prompt };
+            dialogs::render_add_task_dialog(frame, &dialog_state, area);
+        }
+        TasksMode::SelectWorktree {
+            task_title,
+            selected_index,
+            options,
+            ..
+        } => {
+            let dialog_state = dialogs::WorktreeSelectionViewState {
+                task_title,
+                selected_index: *selected_index,
+                options,
+            };
+            dialogs::render_worktree_selection(frame, &dialog_state, area);
         }
         TasksMode::EditingTask { input, .. } => {
             frame.render_widget(InputDialog::new("Edit Task", input), area);
@@ -93,13 +107,6 @@ fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
         TasksMode::ConfirmDelete { .. } => {
             frame.render_widget(
                 ConfirmDialog::new("Delete Task", "Are you sure? (y/n)").style(DialogStyle::Danger),
-                area,
-            );
-        }
-        TasksMode::ConfirmStartTask { .. } => {
-            frame.render_widget(
-                ConfirmDialog::new("Start Task", "Move task to In Progress? (y/n)")
-                    .style(DialogStyle::Success),
                 area,
             );
         }
@@ -161,9 +168,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::TerminalFocused => ("TERMINAL", Color::Green),
         TasksMode::TerminalScroll => ("SCROLL", Color::Yellow),
         TasksMode::AddingTask { .. } => ("ADD TASK", Color::Yellow),
+        TasksMode::SelectWorktree { .. } => ("SELECT WORKTREE", Color::Yellow),
         TasksMode::EditingTask { .. } => ("EDIT TASK", Color::Yellow),
         TasksMode::ConfirmDelete { .. } => ("DELETE", Color::Red),
-        TasksMode::ConfirmStartTask { .. } => ("START", Color::Green),
         TasksMode::ConfirmMoveBack { .. } => ("MOVE BACK", Color::Red),
         TasksMode::ReviewPopup { .. } => ("REVIEW", Color::Magenta),
         TasksMode::ReviewRequestChanges { .. } => ("REQUEST CHANGES", Color::Yellow),
@@ -191,9 +198,10 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
                 "Enter:save  Esc:cancel"
             }
-            TasksMode::ConfirmDelete { .. }
-            | TasksMode::ConfirmStartTask { .. }
-            | TasksMode::ConfirmMoveBack { .. } => "y:confirm  n:cancel",
+            TasksMode::SelectWorktree { .. } => "jk:select  Enter:choose  Esc:cancel",
+            TasksMode::ConfirmDelete { .. } | TasksMode::ConfirmMoveBack { .. } => {
+                "y:confirm  n:cancel"
+            }
             TasksMode::ReviewPopup { .. } => {
                 "Tab:panel  jk:move/scroll  hl:buttons  Enter:select  Esc:close"
             }
@@ -212,9 +220,10 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
                 "Type task title  Enter:save  Esc:cancel"
             }
-            TasksMode::ConfirmDelete { .. }
-            | TasksMode::ConfirmStartTask { .. }
-            | TasksMode::ConfirmMoveBack { .. } => "Press y to confirm, n or Esc to cancel",
+            TasksMode::SelectWorktree { .. } => "↑↓/jk:select  Enter:choose  Esc:cancel",
+            TasksMode::ConfirmDelete { .. } | TasksMode::ConfirmMoveBack { .. } => {
+                "Press y to confirm, n or Esc to cancel"
+            }
             TasksMode::ReviewPopup { .. } => {
                 "Tab:panel  h/l:switch-buttons  j/k:move/scroll  Enter:select-action  Esc/q:close"
             }

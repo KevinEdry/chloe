@@ -1,10 +1,11 @@
-use super::TasksAction;
 use crate::views::tasks::state::{TasksMode, TasksState};
 use crossterm::event::{KeyCode, KeyEvent};
 
+use super::TasksAction;
+
 pub fn handle_adding_task_mode(state: &mut TasksState, key: KeyEvent) -> TasksAction {
-    let input = match &state.mode {
-        TasksMode::AddingTask { input } => input.clone(),
+    let (input, prompt) = match &state.mode {
+        TasksMode::AddingTask { input, prompt } => (input.clone(), prompt.clone()),
         _ => return TasksAction::None,
     };
 
@@ -12,22 +13,27 @@ pub fn handle_adding_task_mode(state: &mut TasksState, key: KeyEvent) -> TasksAc
         KeyCode::Char(character) => {
             let mut new_input = input;
             new_input.push(character);
-            state.mode = TasksMode::AddingTask { input: new_input };
+            state.mode = TasksMode::AddingTask {
+                input: new_input,
+                prompt,
+            };
             TasksAction::None
         }
         KeyCode::Backspace => {
             let mut new_input = input;
             new_input.pop();
-            state.mode = TasksMode::AddingTask { input: new_input };
+            state.mode = TasksMode::AddingTask {
+                input: new_input,
+                prompt,
+            };
             TasksAction::None
         }
         KeyCode::Enter => {
             state.mode = TasksMode::Normal;
             if input.trim().is_empty() {
-                TasksAction::None
-            } else {
-                TasksAction::CreateTask(input)
+                return TasksAction::None;
             }
+            TasksAction::CreateTask { title: input }
         }
         KeyCode::Esc => {
             state.mode = TasksMode::Normal;

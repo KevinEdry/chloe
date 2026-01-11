@@ -14,8 +14,22 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     render_columns(frame, app, area);
 
     match &state.mode {
-        TasksMode::AddingTask { input } => {
-            frame.render_widget(InputDialog::new("Add Task to Planning", input), area);
+        TasksMode::AddingTask { input, prompt } => {
+            let dialog_state = dialogs::AddTaskDialogState { input, prompt };
+            dialogs::render_add_task_dialog(frame, &dialog_state, area);
+        }
+        TasksMode::SelectWorktree {
+            task_title,
+            selected_index,
+            options,
+            ..
+        } => {
+            let dialog_state = dialogs::WorktreeSelectionViewState {
+                task_title,
+                selected_index: *selected_index,
+                options,
+            };
+            dialogs::render_worktree_selection(frame, &dialog_state, area);
         }
         TasksMode::EditingTask { input, .. } => {
             frame.render_widget(InputDialog::new("Edit Task", input), area);
@@ -34,13 +48,6 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
                     "Move back to Planning? This will terminate the Claude Code instance. (y/n)",
                 )
                 .style(DialogStyle::Danger),
-                area,
-            );
-        }
-        TasksMode::ConfirmStartTask { .. } => {
-            frame.render_widget(
-                ConfirmDialog::new("Start Task", "Move task to In Progress? (y/n)")
-                    .style(DialogStyle::Success),
                 area,
             );
         }
@@ -88,7 +95,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::Normal | TasksMode::ReviewPopup { .. } => Color::Cyan,
         TasksMode::TerminalFocused
         | TasksMode::AddingTask { .. }
-        | TasksMode::ConfirmStartTask { .. }
+        | TasksMode::SelectWorktree { .. }
         | TasksMode::MergeConfirmation { .. } => Color::Green,
         TasksMode::TerminalScroll
         | TasksMode::EditingTask { .. }
@@ -102,10 +109,10 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::TerminalFocused => "TERMINAL",
         TasksMode::TerminalScroll => "SCROLL",
         TasksMode::AddingTask { .. } => "ADD TO PLANNING",
+        TasksMode::SelectWorktree { .. } => "SELECT WORKTREE",
         TasksMode::EditingTask { .. } => "EDIT TASK",
         TasksMode::ConfirmDelete { .. } => "CONFIRM DELETE",
         TasksMode::ConfirmMoveBack { .. } => "CONFIRM MOVE BACK",
-        TasksMode::ConfirmStartTask { .. } => "START TASK",
         TasksMode::ReviewPopup { .. } => "REVIEW OUTPUT",
         TasksMode::ReviewRequestChanges { .. } => "REQUEST CHANGES",
         TasksMode::MergeConfirmation { .. } => "MERGE",
@@ -122,9 +129,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::AddingTask { .. }
             | TasksMode::EditingTask { .. }
             | TasksMode::ReviewRequestChanges { .. } => "Enter:save  Esc:cancel",
-            TasksMode::ConfirmDelete { .. }
-            | TasksMode::ConfirmMoveBack { .. }
-            | TasksMode::ConfirmStartTask { .. } => "y:yes  n:no",
+            TasksMode::SelectWorktree { .. } => "jk:select  Enter:choose  Esc:cancel",
+
+            TasksMode::ConfirmDelete { .. } | TasksMode::ConfirmMoveBack { .. } => "y:yes  n:no",
             TasksMode::ReviewPopup { .. } => "Tab:panel  jk:move/scroll  hl:button  Enter:action",
             TasksMode::TerminalFocused => "Ctrl+s:scroll  Esc:back",
             TasksMode::TerminalScroll => "jk:line  Ctrl+d/u:page  g/G:top/bottom  q:exit",
@@ -135,12 +142,12 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::Normal => {
                 "↑↓/jk:task  ←→/hl:column  a:add-to-planning  e:edit  d:delete  Enter:move→  Backspace:move←  /:switch-view"
             }
-            TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
-                "Type to enter text  Enter:save  Esc:cancel"
+            TasksMode::AddingTask { .. } => "Type task title  Enter:save  Esc:cancel",
+            TasksMode::SelectWorktree { .. } => "↑↓/jk:select  Enter:choose  Esc:cancel",
+            TasksMode::EditingTask { .. } => "Type to enter text  Enter:save  Esc:cancel",
+            TasksMode::ConfirmDelete { .. } | TasksMode::ConfirmMoveBack { .. } => {
+                "y:yes  n:no  Esc:cancel"
             }
-            TasksMode::ConfirmDelete { .. }
-            | TasksMode::ConfirmMoveBack { .. }
-            | TasksMode::ConfirmStartTask { .. } => "y:yes  n:no  Esc:cancel",
             TasksMode::ReviewPopup { .. } => {
                 "Tab:panel  jk:move/scroll  ←→/hl:select-button  Enter:execute-action  q/Esc:close"
             }

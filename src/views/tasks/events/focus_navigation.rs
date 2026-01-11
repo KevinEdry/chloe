@@ -43,9 +43,7 @@ pub fn handle_focus_normal_mode(
             TasksAction::None
         }
         KeyCode::Char('a') => {
-            state.mode = TasksMode::AddingTask {
-                input: String::new(),
-            };
+            state.begin_add_task();
             TasksAction::None
         }
         KeyCode::Char('e') => {
@@ -72,9 +70,7 @@ pub fn handle_focus_normal_mode(
                 let is_review = task_ref.column_index == 2;
 
                 if is_planning {
-                    state.mode = TasksMode::ConfirmStartTask {
-                        task_id: task_ref.task.id,
-                    };
+                    state.begin_worktree_selection_for_task(task_ref.task.id);
                     TasksAction::None
                 } else if is_in_progress {
                     selected_instance_id.map_or(TasksAction::None, |instance_id| {
@@ -105,9 +101,7 @@ pub fn handle_focus_normal_mode(
             if let Some(task_ref) = selected_task {
                 let is_planning = task_ref.column_index == 0;
                 if is_planning {
-                    state.mode = TasksMode::ConfirmStartTask {
-                        task_id: task_ref.task.id,
-                    };
+                    state.begin_worktree_selection_for_task(task_ref.task.id);
                 }
             }
             TasksAction::None

@@ -4,12 +4,11 @@ mod kanban_navigation;
 mod review;
 mod terminal;
 mod text_input;
+mod worktree_selection;
 
-use super::state::{TasksMode, TasksState, TasksViewMode};
+use super::state::{MergeTarget, TasksMode, TasksState, TasksViewMode};
 use crossterm::event::{KeyCode, KeyEvent};
 use uuid::Uuid;
-
-use super::state::MergeTarget;
 
 pub enum TasksAction {
     None,
@@ -18,10 +17,9 @@ pub enum TasksAction {
     ScrollTerminal { instance_id: Uuid, delta: isize },
     ScrollTerminalToTop(Uuid),
     ScrollTerminalToBottom(Uuid),
-    CreateTask(String),
+    CreateTask { title: String },
     UpdateTask { task_id: Uuid, new_title: String },
     DeleteTask(Uuid),
-    StartTask(Uuid),
     OpenInIDE(Uuid),
     SwitchToTerminal(Uuid),
     RequestChanges { task_id: Uuid, message: String },
@@ -61,13 +59,14 @@ pub fn handle_key_event(
             terminal::handle_terminal_scroll_mode(state, key, selected_instance_id)
         }
         TasksMode::AddingTask { .. } => text_input::handle_adding_task_mode(state, key),
+        TasksMode::SelectWorktree { .. } => {
+            worktree_selection::handle_worktree_selection_mode(state, key)
+        }
         TasksMode::EditingTask { .. } => text_input::handle_editing_task_mode(state, key),
         TasksMode::ConfirmDelete { task_id } => {
             dialogs::handle_confirm_delete_mode(state, key, *task_id)
         }
-        TasksMode::ConfirmStartTask { task_id } => {
-            dialogs::handle_confirm_start_task_mode(state, key, *task_id)
-        }
+
         TasksMode::ConfirmMoveBack { task_id } => {
             dialogs::handle_confirm_move_back_mode(state, key, *task_id)
         }

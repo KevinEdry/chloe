@@ -5,10 +5,17 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Padding, Paragraph},
 };
 
 const STATUS_BAR_WIDTH_THRESHOLD: u16 = 100;
+const HEADER_HEIGHT: u16 = 5;
+
+const BRANCH_ICON: &str = "";
+const BARE_ICON: &str = "󰋊";
+const DETACHED_ICON: &str = "";
+const PATH_ICON: &str = "";
+const SELECTED_INDICATOR: &str = "▶";
 
 pub fn render(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
     render_worktree_list(frame, area, state);
@@ -19,84 +26,195 @@ pub fn render(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
 }
 
 fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
-    if let Some(error) = &state.error_message {
-        let error_text = Paragraph::new(error.as_str())
-            .style(Style::default().fg(Color::Red))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Git Worktrees - Error")
-                    .border_style(Style::default().fg(Color::DarkGray)),
-            );
+    let outer_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .padding(Padding::horizontal(1));
 
-        frame.render_widget(error_text, area);
+    let inner_area = outer_block.inner(area);
+    frame.render_widget(outer_block, area);
+
+    if let Some(error) = &state.error_message {
+        render_error_state(frame, inner_area, error);
         return;
     }
 
     if state.worktrees.is_empty() {
-        let empty_text = Paragraph::new("No worktrees found.")
-            .style(Style::default().fg(Color::Gray))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Git Worktrees")
-                    .border_style(Style::default().fg(Color::DarkGray)),
-            );
-
-        frame.render_widget(empty_text, area);
+        render_empty_state(frame, inner_area);
         return;
     }
 
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(HEADER_HEIGHT),
+            Constraint::Min(0),
+        ])
+        .split(inner_area);
+
+    render_header(frame, layout[0], state.worktrees.len());
+    render_worktree_items(frame, layout[1], state);
+}
+
+fn render_header(frame: &mut Frame, area: Rect, count: usize) {
+    let header_lines = vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("  Git Worktrees", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+            Span::styled(format!("  ({count})"), Style::default().fg(Color::DarkGray)),
+        ]),
+        Line::from(Span::styled(
+            "  Isolated working directories for parallel development",
+            Style::default().fg(Color::Gray),
+        )),
+        Line::from(Span::styled(
+            "  ─────────────────────────────────────────────────────────────",
+            Style::default().fg(Color::DarkGray),
+        )),
+    ];
+
+    frame.render_widget(Paragraph::new(header_lines), area);
+}
+
+fn render_error_state(frame: &mut Frame, area: Rect, error: &str) {
+    let error_lines = vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            "  ⚠ Error Loading Worktrees",
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            format!("  {error}"),
+            Style::default().fg(Color::Red),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  Press 'r' to retry",
+            Style::default().fg(Color::Gray),
+        )),
+    ];
+
+    frame.render_widget(Paragraph::new(error_lines), area);
+}
+
+fn render_empty_state(frame: &mut Frame, area: Rect) {
+    let empty_lines = vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            "  No Worktrees Found",
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  Worktrees will appear here when you start tasks.",
+            Style::default().fg(Color::Gray),
+        )),
+        Line::from(Span::styled(
+            "  Each task can have its own isolated working directory.",
+            Style::default().fg(Color::Gray),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  Tip: Start a task in the Tasks tab to create a worktree.",
+            Style::default().fg(Color::DarkGray),
+        )),
+    ];
+
+    frame.render_widget(Paragraph::new(empty_lines), area);
+}
+
+fn render_worktree_items(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
     let items: Vec<ListItem> = state
         .worktrees
         .iter()
         .enumerate()
-        .map(|(index, worktree)| {
+        .flat_map(|(index, worktree)| {
             let is_selected = state.selected_index == Some(index);
-
-            let branch_style = if worktree.is_detached {
-                Style::default().fg(Color::Yellow)
-            } else {
-                Style::default().fg(Color::Green)
-            };
-
-            let path_display = worktree.path.to_string_lossy().to_string();
-
-            let content = Line::from(vec![
-                Span::styled(
-                    format!("  {} ", worktree.branch_name),
-                    branch_style.add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(
-                    format!("→ {path_display}"),
-                    Style::default().fg(Color::Gray),
-                ),
-            ]);
-
-            let mut item = ListItem::new(content);
-
-            if is_selected {
-                item = item.style(
-                    Style::default()
-                        .bg(Color::DarkGray)
-                        .add_modifier(Modifier::BOLD),
-                );
-            }
-
-            item
+            build_worktree_item(index, worktree, is_selected)
         })
         .collect();
 
-    let list = List::new(items).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(format!("Git Worktrees ({})", state.worktrees.len()))
-            .border_style(Style::default().fg(Color::DarkGray)),
-    );
-
+    let list = List::new(items);
     frame.render_widget(list, area);
+}
+
+fn build_worktree_item(
+    _index: usize,
+    worktree: &super::state::Worktree,
+    is_selected: bool,
+) -> Vec<ListItem<'static>> {
+    let (branch_icon, branch_color) = if worktree.is_bare {
+        (BARE_ICON, Color::Blue)
+    } else if worktree.is_detached {
+        (DETACHED_ICON, Color::Yellow)
+    } else {
+        (BRANCH_ICON, Color::Green)
+    };
+
+    let path_display = worktree.path.to_string_lossy().to_string();
+
+    let selection_indicator = if is_selected { SELECTED_INDICATOR } else { " " };
+
+    let branch_line = Line::from(vec![
+        Span::styled(
+            format!("  {selection_indicator} "),
+            Style::default().fg(Color::Cyan),
+        ),
+        Span::styled(
+            format!("{branch_icon} "),
+            Style::default().fg(branch_color),
+        ),
+        Span::styled(
+            worktree.branch_name.clone(),
+            Style::default()
+                .fg(branch_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        build_status_badge(worktree),
+    ]);
+
+    let path_line = Line::from(vec![
+        Span::styled("      ", Style::default()),
+        Span::styled(
+            format!("{PATH_ICON} "),
+            Style::default().fg(Color::DarkGray),
+        ),
+        Span::styled(path_display, Style::default().fg(Color::Gray)),
+    ]);
+
+    let separator_line = Line::from(Span::styled(
+        "      ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄",
+        Style::default().fg(Color::Rgb(50, 50, 50)),
+    ));
+
+    let base_style = if is_selected {
+        Style::default().bg(Color::Rgb(40, 40, 50))
+    } else {
+        Style::default()
+    };
+
+    vec![
+        ListItem::new(branch_line).style(base_style),
+        ListItem::new(path_line).style(base_style),
+        ListItem::new(separator_line),
+    ]
+}
+
+fn build_status_badge(worktree: &super::state::Worktree) -> Span<'static> {
+    if worktree.is_bare {
+        Span::styled(
+            "  [bare]",
+            Style::default().fg(Color::Blue).add_modifier(Modifier::DIM),
+        )
+    } else if worktree.is_detached {
+        Span::styled(
+            "  [detached]",
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::DIM),
+        )
+    } else {
+        Span::styled("", Style::default())
+    }
 }
 
 #[must_use]

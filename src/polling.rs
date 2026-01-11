@@ -149,7 +149,7 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
                 pane.scroll_to_bottom();
             }
         }
-        TasksAction::CreateTask(title) => {
+        TasksAction::CreateTask { title } => {
             app.tasks.start_classification(title);
             let _ = app.save();
         }
@@ -161,11 +161,6 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
             if let Some(instance_id) = app.tasks.delete_task_by_id(task_id) {
                 app.instances.close_pane_by_id(instance_id);
             }
-            let _ = app.save();
-        }
-        TasksAction::StartTask(task_id) => {
-            app.tasks.move_task_to_in_progress_by_id(task_id);
-            app.sync_task_instances();
             let _ = app.save();
         }
         TasksAction::OpenInIDE(task_id) => {

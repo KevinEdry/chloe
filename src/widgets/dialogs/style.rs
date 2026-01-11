@@ -5,7 +5,6 @@ pub enum DialogStyle {
     #[default]
     Normal,
     Danger,
-    Success,
 }
 
 impl DialogStyle {
@@ -14,7 +13,6 @@ impl DialogStyle {
         match self {
             Self::Normal => Color::Cyan,
             Self::Danger => Color::Red,
-            Self::Success => Color::Green,
         }
     }
 }

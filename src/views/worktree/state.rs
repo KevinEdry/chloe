@@ -21,6 +21,16 @@ impl WorktreeInfo {
             auto_created: true,
         }
     }
+
+    #[allow(clippy::missing_const_for_fn)]
+    #[must_use]
+    pub fn new_existing(branch_name: String, worktree_path: PathBuf) -> Self {
+        Self {
+            branch_name,
+            worktree_path,
+            auto_created: false,
+        }
+    }
 }
 
 /// Represents a git worktree that exists in the repository

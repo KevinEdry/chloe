@@ -8,9 +8,7 @@ pub fn handle_kanban_normal_mode(state: &mut TasksState, key: KeyEvent) {
         KeyCode::Up | KeyCode::Char('k') => state.previous_task(),
         KeyCode::Down | KeyCode::Char('j') => state.next_task(),
         KeyCode::Char('a') => {
-            state.mode = TasksMode::AddingTask {
-                input: String::new(),
-            };
+            state.begin_add_task();
         }
         KeyCode::Char('e') => {
             if let Some(task) = state.get_kanban_selected_task() {

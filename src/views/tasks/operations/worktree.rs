@@ -1,44 +1,103 @@
-use crate::views::tasks::state::{Task, TasksState};
+use crate::views::tasks::state::{Task, TasksMode, TasksState, WorktreeSelectionOption};
+use crate::views::worktree::WorktreeInfo;
+use crate::views::worktree::operations::list_worktrees;
+use uuid::Uuid;
 
 impl TasksState {
-    pub fn try_create_worktree_for_task(&mut self, task_index: usize) {
-        self.try_create_worktree_for_task_in_column(self.kanban_selected_column, task_index);
+    pub fn begin_add_task(&mut self) {
+        let prompt = Self::select_prompt();
+        self.mode = TasksMode::AddingTask {
+            input: String::new(),
+            prompt,
+        };
     }
 
-    pub fn try_create_worktree_for_task_in_column(
-        &mut self,
-        column_index: usize,
-        task_index: usize,
-    ) {
-        let Some(task) = self
-            .columns
-            .get_mut(column_index)
-            .and_then(|column| column.tasks.get_mut(task_index))
-        else {
-            return;
-        };
-
-        let already_has_worktree = task.worktree_info.is_some();
-        if already_has_worktree {
-            return;
-        }
+    fn load_worktree_selection_options() -> Vec<WorktreeSelectionOption> {
+        let mut options = vec![WorktreeSelectionOption::AutoCreate];
 
         let Ok(current_directory) = std::env::current_dir() else {
-            return;
+            return options;
         };
 
         let Ok(repository_root) = crate::views::worktree::find_repository_root(&current_directory)
         else {
+            return options;
+        };
+
+        let Ok(worktrees) = list_worktrees(&repository_root) else {
+            return options;
+        };
+
+        for worktree in worktrees {
+            options.push(WorktreeSelectionOption::Existing {
+                branch_name: worktree.branch_name,
+                worktree_path: worktree.path,
+            });
+        }
+
+        options
+    }
+
+    pub fn begin_worktree_selection_for_task(&mut self, task_id: Uuid) {
+        let Some(task) = self.find_task_by_id(task_id) else {
             return;
         };
 
-        let Ok(worktree_info) =
-            crate::views::worktree::create_worktree(&repository_root, &task.title, &task.id)
+        let options = Self::load_worktree_selection_options();
+        self.mode = TasksMode::SelectWorktree {
+            task_id,
+            task_title: task.title.clone(),
+            selected_index: 0,
+            options,
+        };
+    }
+
+    fn select_prompt() -> String {
+        const PROMPTS: [&str; 20] = [
+            "What should we build today?",
+            "Lets build something awesome, what are you thinking about?",
+            "Whats on your mind to create right now?",
+            "What should we tackle together today?",
+            "Got an idea you want to bring to life?",
+            "Whats the next cool thing we should build?",
+            "What problem do you want to solve today?",
+            "What should we prototype right now?",
+            "Whats the next feature youre excited about?",
+            "What do you want to ship next?",
+            "What should we experiment with today?",
+            "Whats the next big idea to explore?",
+            "What should we design and build together?",
+            "Whats a task you want to knock out?",
+            "What are we crafting today?",
+            "Whats your next project idea?",
+            "What should we build to make things better?",
+            "What are you thinking about building next?",
+            "What challenge do you want to solve today?",
+            "What should we create right now?",
+        ];
+        const PROMPT_COUNT: u128 = PROMPTS.len() as u128;
+
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or_default();
+
+        let prompt_index = (timestamp % PROMPT_COUNT) as usize;
+        PROMPTS[prompt_index].to_string()
+    }
+
+    #[must_use]
+    pub fn create_worktree_for_new_task(task_title: &str, task_id: &Uuid) -> Option<WorktreeInfo> {
+        let Ok(current_directory) = std::env::current_dir() else {
+            return None;
+        };
+
+        let Ok(repository_root) = crate::views::worktree::find_repository_root(&current_directory)
         else {
-            return;
+            return None;
         };
 
-        task.worktree_info = Some(worktree_info);
+        crate::views::worktree::create_worktree(&repository_root, task_title, task_id).ok()
     }
 
     #[must_use]
