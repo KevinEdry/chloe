@@ -79,6 +79,18 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         } => {
             dialogs::render_merge_confirmation(frame, worktree_branch, selected_target, area);
         }
+        TasksMode::SelectProvider {
+            task_title,
+            selected_index,
+            ..
+        } => {
+            let dialog_state = dialogs::ProviderSelectionViewState {
+                task_title,
+                selected_index: *selected_index,
+                default_provider: app.settings.settings.default_provider,
+            };
+            dialogs::render_provider_selection(frame, &dialog_state, area);
+        }
         TasksMode::Normal | TasksMode::TerminalFocused | TasksMode::TerminalScroll => {}
     }
 
@@ -99,7 +111,8 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         | TasksMode::MergeConfirmation { .. } => Color::Green,
         TasksMode::TerminalScroll
         | TasksMode::EditingTask { .. }
-        | TasksMode::ReviewRequestChanges { .. } => Color::Yellow,
+        | TasksMode::ReviewRequestChanges { .. }
+        | TasksMode::SelectProvider { .. } => Color::Yellow,
         TasksMode::ConfirmDelete { .. } => Color::Red,
         TasksMode::ConfirmMoveBack { .. } => Color::LightRed,
     };
@@ -110,6 +123,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::TerminalScroll => "SCROLL",
         TasksMode::AddingTask { .. } => "ADD TO PLANNING",
         TasksMode::SelectWorktree { .. } => "SELECT WORKTREE",
+        TasksMode::SelectProvider { .. } => "SELECT PROVIDER",
         TasksMode::EditingTask { .. } => "EDIT TASK",
         TasksMode::ConfirmDelete { .. } => "CONFIRM DELETE",
         TasksMode::ConfirmMoveBack { .. } => "CONFIRM MOVE BACK",
@@ -129,8 +143,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::AddingTask { .. }
             | TasksMode::EditingTask { .. }
             | TasksMode::ReviewRequestChanges { .. } => "Enter:save  Esc:cancel",
-            TasksMode::SelectWorktree { .. } => "jk:select  Enter:choose  Esc:cancel",
-
+            TasksMode::SelectWorktree { .. } | TasksMode::SelectProvider { .. } => {
+                "jk:select  Enter:choose  Esc:cancel"
+            }
             TasksMode::ConfirmDelete { .. } | TasksMode::ConfirmMoveBack { .. } => "y:yes  n:no",
             TasksMode::ReviewPopup { .. } => "Tab:panel  jk:move/scroll  hl:button  Enter:action",
             TasksMode::TerminalFocused => "Ctrl+s:scroll  Esc:back",
@@ -143,7 +158,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
                 "↑↓/jk:task  ←→/hl:column  a:add-to-planning  e:edit  d:delete  Enter:move→  Backspace:move←  /:switch-view"
             }
             TasksMode::AddingTask { .. } => "Type task title  Enter:save  Esc:cancel",
-            TasksMode::SelectWorktree { .. } => "↑↓/jk:select  Enter:choose  Esc:cancel",
+            TasksMode::SelectWorktree { .. } | TasksMode::SelectProvider { .. } => {
+                "↑↓/jk:select  Enter:choose  Esc:cancel"
+            }
             TasksMode::EditingTask { .. } => "Type to enter text  Enter:save  Esc:cancel",
             TasksMode::ConfirmDelete { .. } | TasksMode::ConfirmMoveBack { .. } => {
                 "y:yes  n:no  Esc:cancel"

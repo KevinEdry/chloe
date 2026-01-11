@@ -180,6 +180,42 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
         TasksAction::MergeBranch { task_id, target } => {
             app.merge_task_branch(task_id, &target);
         }
+        TasksAction::WorktreeSelected {
+            task_id,
+            task_title,
+            worktree_option,
+        } => {
+            if app.settings.settings.skip_provider_selection {
+                let provider = app.settings.settings.default_provider;
+                app.tasks.set_task_provider(task_id, provider);
+                app.tasks
+                    .move_task_to_in_progress_with_worktree(task_id, worktree_option);
+                let _ = app.save();
+            } else {
+                app.tasks.mode = views::tasks::TasksMode::SelectProvider {
+                    task_id,
+                    task_title,
+                    selected_index: 0,
+                    worktree_option,
+                };
+            }
+        }
+        TasksAction::ProviderSelected {
+            task_id,
+            provider,
+            worktree_option,
+            remember,
+        } => {
+            app.tasks.set_task_provider(task_id, provider);
+            if remember {
+                app.settings.settings.default_provider = provider;
+                app.settings.settings.skip_provider_selection = true;
+                let _ = app.save_settings();
+            }
+            app.tasks
+                .move_task_to_in_progress_with_worktree(task_id, worktree_option);
+            let _ = app.save();
+        }
     }
 
     app.tasks.clamp_focus_selection();

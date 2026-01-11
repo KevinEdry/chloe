@@ -1,12 +1,14 @@
 mod dialogs;
 mod focus_navigation;
 mod kanban_navigation;
+mod provider_selection;
 mod review;
 mod terminal;
 mod text_input;
 mod worktree_selection;
 
-use super::state::{MergeTarget, TasksMode, TasksState, TasksViewMode};
+use super::state::{MergeTarget, TasksMode, TasksState, TasksViewMode, WorktreeSelectionOption};
+use crate::types::AgentProvider;
 use crossterm::event::{KeyCode, KeyEvent};
 use uuid::Uuid;
 
@@ -25,6 +27,17 @@ pub enum TasksAction {
     RequestChanges { task_id: Uuid, message: String },
     CommitChanges(Uuid),
     MergeBranch { task_id: Uuid, target: MergeTarget },
+    WorktreeSelected {
+        task_id: Uuid,
+        task_title: String,
+        worktree_option: WorktreeSelectionOption,
+    },
+    ProviderSelected {
+        task_id: Uuid,
+        provider: AgentProvider,
+        worktree_option: WorktreeSelectionOption,
+        remember: bool,
+    },
 }
 
 pub fn handle_key_event(
@@ -61,6 +74,9 @@ pub fn handle_key_event(
         TasksMode::AddingTask { .. } => text_input::handle_adding_task_mode(state, key),
         TasksMode::SelectWorktree { .. } => {
             worktree_selection::handle_worktree_selection_mode(state, key)
+        }
+        TasksMode::SelectProvider { .. } => {
+            provider_selection::handle_provider_selection_mode(state, key)
         }
         TasksMode::EditingTask { .. } => text_input::handle_editing_task_mode(state, key),
         TasksMode::ConfirmDelete { task_id } => {

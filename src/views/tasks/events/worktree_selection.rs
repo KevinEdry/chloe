@@ -48,8 +48,11 @@ pub fn handle_worktree_selection_mode(state: &mut TasksState, key: KeyEvent) -> 
                 .get(selected_index)
                 .cloned()
                 .unwrap_or(WorktreeSelectionOption::AutoCreate);
-            state.move_task_to_in_progress_with_worktree(task_id, selected_option);
-            TasksAction::None
+            TasksAction::WorktreeSelected {
+                task_id,
+                task_title,
+                worktree_option: selected_option,
+            }
         }
         KeyCode::Esc => {
             state.mode = TasksMode::Normal;

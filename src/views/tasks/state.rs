@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use uuid::Uuid;
 
+use crate::types::AgentProvider;
 use crate::views::worktree::WorktreeInfo;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -129,6 +130,17 @@ impl TasksState {
         None
     }
 
+    pub fn set_task_provider(&mut self, task_id: Uuid, provider: AgentProvider) {
+        for column in &mut self.columns {
+            for task in &mut column.tasks {
+                if task.id == task_id {
+                    task.provider = Some(provider);
+                    return;
+                }
+            }
+        }
+    }
+
     #[must_use]
     pub const fn is_normal_mode(&self) -> bool {
         matches!(self.mode, TasksMode::Normal)
@@ -205,6 +217,8 @@ pub struct Task {
     #[serde(default)]
     pub kind: TaskType,
     #[serde(default)]
+    pub provider: Option<AgentProvider>,
+    #[serde(default)]
     pub instance_id: Option<Uuid>,
     #[serde(default)]
     pub is_paused: bool,
@@ -223,6 +237,7 @@ impl Task {
             description,
             created_at: Utc::now(),
             kind,
+            provider: None,
             instance_id: None,
             is_paused: false,
             worktree_info: None,
@@ -238,6 +253,7 @@ impl Task {
             description: String::new(),
             created_at: Utc::now(),
             kind: TaskType::Task,
+            provider: None,
             instance_id: None,
             is_paused: false,
             worktree_info: None,
@@ -335,6 +351,12 @@ pub enum TasksMode {
         task_title: String,
         selected_index: usize,
         options: Vec<WorktreeSelectionOption>,
+    },
+    SelectProvider {
+        task_id: Uuid,
+        task_title: String,
+        selected_index: usize,
+        worktree_option: WorktreeSelectionOption,
     },
     EditingTask {
         task_id: Uuid,

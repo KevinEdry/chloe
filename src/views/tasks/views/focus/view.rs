@@ -148,6 +148,18 @@ fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
         } => {
             dialogs::render_merge_confirmation(frame, worktree_branch, selected_target, area);
         }
+        TasksMode::SelectProvider {
+            task_title,
+            selected_index,
+            ..
+        } => {
+            let dialog_state = dialogs::ProviderSelectionViewState {
+                task_title,
+                selected_index: *selected_index,
+                default_provider: app.settings.settings.default_provider,
+            };
+            dialogs::render_provider_selection(frame, &dialog_state, area);
+        }
         TasksMode::Normal | TasksMode::TerminalFocused | TasksMode::TerminalScroll => {}
     }
 
@@ -175,6 +187,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
         TasksMode::ReviewPopup { .. } => ("REVIEW", Color::Magenta),
         TasksMode::ReviewRequestChanges { .. } => ("REQUEST CHANGES", Color::Yellow),
         TasksMode::MergeConfirmation { .. } => ("MERGE", Color::Green),
+        TasksMode::SelectProvider { .. } => ("SELECT PROVIDER", Color::Yellow),
     };
 
     let active_count: usize = state
@@ -198,7 +211,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
                 "Enter:save  Esc:cancel"
             }
-            TasksMode::SelectWorktree { .. } => "jk:select  Enter:choose  Esc:cancel",
+            TasksMode::SelectWorktree { .. } | TasksMode::SelectProvider { .. } => {
+                "jk:select  Enter:choose  Esc:cancel"
+            }
             TasksMode::ConfirmDelete { .. } | TasksMode::ConfirmMoveBack { .. } => {
                 "y:confirm  n:cancel"
             }
@@ -220,7 +235,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
                 "Type task title  Enter:save  Esc:cancel"
             }
-            TasksMode::SelectWorktree { .. } => "↑↓/jk:select  Enter:choose  Esc:cancel",
+            TasksMode::SelectWorktree { .. } | TasksMode::SelectProvider { .. } => {
+                "↑↓/jk:select  Enter:choose  Esc:cancel"
+            }
             TasksMode::ConfirmDelete { .. } | TasksMode::ConfirmMoveBack { .. } => {
                 "Press y to confirm, n or Esc to cancel"
             }
