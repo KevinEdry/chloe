@@ -16,20 +16,33 @@ pub enum TasksAction {
     None,
     JumpToInstance(Uuid),
     SendToTerminal(Uuid, Vec<u8>),
-    ScrollTerminal { instance_id: Uuid, delta: isize },
+    ScrollTerminal {
+        instance_id: Uuid,
+        delta: isize,
+    },
     ScrollTerminalToTop(Uuid),
     ScrollTerminalToBottom(Uuid),
-    CreateTask { title: String },
-    UpdateTask { task_id: Uuid, new_title: String },
+    CreateTask {
+        title: String,
+    },
+    UpdateTask {
+        task_id: Uuid,
+        new_title: String,
+    },
     DeleteTask(Uuid),
     OpenInIDE(Uuid),
     SwitchToTerminal(Uuid),
-    RequestChanges { task_id: Uuid, message: String },
+    RequestChanges {
+        task_id: Uuid,
+        message: String,
+    },
     CommitChanges(Uuid),
-    MergeBranch { task_id: Uuid, target: MergeTarget },
+    MergeBranch {
+        task_id: Uuid,
+        target: MergeTarget,
+    },
     WorktreeSelected {
         task_id: Uuid,
-        task_title: String,
         worktree_option: WorktreeSelectionOption,
     },
     ProviderSelected {

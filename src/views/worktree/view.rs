@@ -46,10 +46,7 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
 
     let layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(HEADER_HEIGHT),
-            Constraint::Min(0),
-        ])
+        .constraints([Constraint::Length(HEADER_HEIGHT), Constraint::Min(0)])
         .split(inner_area);
 
     render_header(frame, layout[0], state.worktrees.len());
@@ -60,7 +57,12 @@ fn render_header(frame: &mut Frame, area: Rect, count: usize) {
     let header_lines = vec![
         Line::from(""),
         Line::from(vec![
-            Span::styled("  Git Worktrees", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "  Git Worktrees",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(format!("  ({count})"), Style::default().fg(Color::DarkGray)),
         ]),
         Line::from(Span::styled(
@@ -103,7 +105,9 @@ fn render_empty_state(frame: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  No Worktrees Found",
-            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(Span::styled(
@@ -161,10 +165,7 @@ fn build_worktree_item(
             format!("  {selection_indicator} "),
             Style::default().fg(Color::Cyan),
         ),
-        Span::styled(
-            format!("{branch_icon} "),
-            Style::default().fg(branch_color),
-        ),
+        Span::styled(format!("{branch_icon} "), Style::default().fg(branch_color)),
         Span::styled(
             worktree.branch_name.clone(),
             Style::default()
@@ -210,7 +211,9 @@ fn build_status_badge(worktree: &super::state::Worktree) -> Span<'static> {
     } else if worktree.is_detached {
         Span::styled(
             "  [detached]",
-            Style::default().fg(Color::Yellow).add_modifier(Modifier::DIM),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::DIM),
         )
     } else {
         Span::styled("", Style::default())

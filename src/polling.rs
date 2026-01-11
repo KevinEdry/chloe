@@ -115,7 +115,8 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
     };
 
     let default_provider = app.settings.settings.default_provider;
-    let action = views::tasks::handle_key_event(&mut app.tasks, key, selected_instance_id, default_provider);
+    let action =
+        views::tasks::handle_key_event(&mut app.tasks, key, selected_instance_id, default_provider);
 
     match action {
         TasksAction::None => {}
@@ -183,11 +184,19 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
         }
         TasksAction::WorktreeSelected {
             task_id,
-            task_title,
             worktree_option,
+            ..
         } => {
-            if app.settings.settings.skip_provider_selection {
-                let provider = app.settings.settings.default_provider;
+            let detected_providers = &app.settings.detected_providers;
+            let should_skip =
+                app.settings.settings.skip_provider_selection || detected_providers.len() <= 1;
+
+            if should_skip {
+                let provider = if detected_providers.len() == 1 {
+                    detected_providers[0].provider
+                } else {
+                    app.settings.settings.default_provider
+                };
                 app.tasks.set_task_provider(task_id, provider);
                 app.tasks
                     .move_task_to_in_progress_with_worktree(task_id, worktree_option);
@@ -195,10 +204,9 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
             } else {
                 app.tasks.mode = views::tasks::TasksMode::SelectProvider {
                     task_id,
-                    task_title,
                     selected_index: 0,
                     worktree_option,
-                    detected_providers: app.settings.detected_providers.clone(),
+                    detected_providers: detected_providers.clone(),
                 };
             }
         }

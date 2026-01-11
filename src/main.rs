@@ -27,7 +27,7 @@ use app::{App, Tab};
 use clap::Parser;
 use cli::{Cli, Commands};
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, Event, KeyCode},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -62,7 +62,7 @@ fn main() -> Result<(), io::Error> {
 fn run_tui() -> Result<(), io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
@@ -71,11 +71,7 @@ fn run_tui() -> Result<(), io::Error> {
     let res = run_app(&mut terminal, &mut app, &event_listener);
 
     disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
 
     if let Err(save_err) = app.save() {
@@ -230,7 +226,6 @@ where
                         },
                     }
                 }
-                Event::Mouse(_mouse_event) => {}
                 _ => {}
             }
         }

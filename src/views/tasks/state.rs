@@ -354,7 +354,6 @@ pub enum TasksMode {
     },
     SelectProvider {
         task_id: Uuid,
-        task_title: String,
         selected_index: usize,
         worktree_option: WorktreeSelectionOption,
         detected_providers: Vec<DetectedProvider>,

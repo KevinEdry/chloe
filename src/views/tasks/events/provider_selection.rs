@@ -1,6 +1,8 @@
 use super::TasksAction;
 use crate::types::AgentProvider;
-use crate::views::tasks::dialogs::{ProviderSelectionResult, get_option_count, get_selection_result};
+use crate::views::tasks::dialogs::{
+    ProviderSelectionResult, get_option_count, get_selection_result,
+};
 use crate::views::tasks::state::{TasksMode, TasksState};
 use crossterm::event::{KeyCode, KeyEvent};
 
@@ -42,8 +44,7 @@ pub fn handle_provider_selection_mode(
         }
         KeyCode::Enter => {
             let current_index = *selected_index;
-            let result =
-                get_selection_result(current_index, &detected_providers, default_provider);
+            let result = get_selection_result(current_index, &detected_providers, default_provider);
 
             state.mode = TasksMode::Normal;
 

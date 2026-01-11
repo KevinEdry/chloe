@@ -80,13 +80,11 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
             dialogs::render_merge_confirmation(frame, worktree_branch, selected_target, area);
         }
         TasksMode::SelectProvider {
-            task_title,
             selected_index,
             detected_providers,
             ..
         } => {
             let dialog_state = dialogs::ProviderSelectionViewState {
-                task_title: Some(task_title),
                 selected_index: *selected_index,
                 default_provider: app.settings.settings.default_provider,
                 detected_providers,

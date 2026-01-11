@@ -98,7 +98,11 @@ fn render_selection_block(frame: &mut Frame, area: Rect, state: &WorktreeSelecti
 fn render_disclaimer_block(frame: &mut Frame, area: Rect) {
     let block = Block::default()
         .title(" Why Worktrees? ")
-        .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray))
         .padding(Padding::horizontal(1));

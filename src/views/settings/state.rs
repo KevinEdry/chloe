@@ -1,7 +1,87 @@
 use crate::types::{AgentProvider, DetectedProvider, ProviderRegistry};
 use serde::{Deserialize, Serialize};
 
-const SETTINGS_COUNT: usize = 5;
+const SECTION_COUNT: usize = 4;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsSection {
+    ShellAndTerminal,
+    EditorAndIde,
+    Agent,
+    Persistence,
+}
+
+impl SettingsSection {
+    pub const ALL: [Self; SECTION_COUNT] = [
+        Self::ShellAndTerminal,
+        Self::EditorAndIde,
+        Self::Agent,
+        Self::Persistence,
+    ];
+
+    #[must_use]
+    pub const fn from_index(index: usize) -> Option<Self> {
+        match index {
+            0 => Some(Self::ShellAndTerminal),
+            1 => Some(Self::EditorAndIde),
+            2 => Some(Self::Agent),
+            3 => Some(Self::Persistence),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn icon(self) -> &'static str {
+        match self {
+            Self::ShellAndTerminal => ">_",
+            Self::EditorAndIde => "<>",
+            Self::Agent => "@",
+            Self::Persistence => "[]",
+        }
+    }
+
+    #[must_use]
+    pub const fn title(self) -> &'static str {
+        match self {
+            Self::ShellAndTerminal => "Shell & Terminal",
+            Self::EditorAndIde => "Editor & IDE",
+            Self::Agent => "Agent",
+            Self::Persistence => "Persistence",
+        }
+    }
+
+    #[must_use]
+    pub const fn description(self) -> &'static str {
+        match self {
+            Self::ShellAndTerminal => "Configure shell and terminal preferences",
+            Self::EditorAndIde => "Set up your preferred code editor",
+            Self::Agent => "Configure AI agent providers",
+            Self::Persistence => "Auto-save and data settings",
+        }
+    }
+
+    #[must_use]
+    pub const fn items(self) -> &'static [SettingItem] {
+        match self {
+            Self::ShellAndTerminal => &[SettingItem::DefaultShell, SettingItem::TerminalCommand],
+            Self::EditorAndIde => &[SettingItem::IdeCommand],
+            Self::Agent => &[SettingItem::DefaultProvider],
+            Self::Persistence => &[SettingItem::AutoSaveInterval],
+        }
+    }
+
+    #[must_use]
+    pub const fn count() -> usize {
+        SECTION_COUNT
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SettingsFocus {
+    #[default]
+    Sidebar,
+    Content,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
@@ -75,14 +155,6 @@ impl IdeCommand {
         }
     }
 
-    #[must_use]
-    pub const fn cycle_next(&self) -> Self {
-        match self {
-            Self::Cursor => Self::VSCode,
-            Self::VSCode => Self::WebStorm,
-            Self::WebStorm | Self::Custom(_) => Self::Cursor,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -144,14 +216,6 @@ impl TerminalCommand {
             Self::Custom(command) => command,
         }
     }
-
-    #[must_use]
-    pub const fn cycle_next(&self) -> Self {
-        match self {
-            Self::AppleTerminal => Self::ITerm2,
-            Self::ITerm2 | Self::Custom(_) => Self::AppleTerminal,
-        }
-    }
 }
 
 impl Default for Settings {
@@ -168,12 +232,25 @@ impl Default for Settings {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum SettingsMode {
     #[default]
     Normal,
-    EditingShell,
-    EditingAutoSave,
+    EditingShell {
+        initial_value: String,
+    },
+    EditingAutoSave {
+        initial_value: u64,
+    },
+    SelectingProvider {
+        selected_index: usize,
+    },
+    SelectingIde {
+        selected_index: usize,
+    },
+    SelectingTerminal {
+        selected_index: usize,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -186,18 +263,6 @@ pub enum SettingItem {
 }
 
 impl SettingItem {
-    #[must_use]
-    pub const fn from_index(index: usize) -> Option<Self> {
-        match index {
-            0 => Some(Self::DefaultShell),
-            1 => Some(Self::AutoSaveInterval),
-            2 => Some(Self::IdeCommand),
-            3 => Some(Self::TerminalCommand),
-            4 => Some(Self::DefaultProvider),
-            _ => None,
-        }
-    }
-
     #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
@@ -214,7 +279,11 @@ impl SettingItem {
 pub struct SettingsState {
     pub settings: Settings,
     #[serde(skip)]
-    pub selected_index: usize,
+    pub selected_section: usize,
+    #[serde(skip)]
+    pub selected_item_in_section: usize,
+    #[serde(skip)]
+    pub focus: SettingsFocus,
     #[serde(skip)]
     pub mode: SettingsMode,
     #[serde(skip)]
@@ -228,7 +297,9 @@ impl SettingsState {
     pub fn new() -> Self {
         Self {
             settings: Settings::default(),
-            selected_index: 0,
+            selected_section: 0,
+            selected_item_in_section: 0,
+            focus: SettingsFocus::default(),
             mode: SettingsMode::Normal,
             edit_buffer: String::new(),
             detected_providers: AgentProvider::detect_all_available(),
@@ -239,32 +310,65 @@ impl SettingsState {
     pub fn with_settings(settings: Settings) -> Self {
         Self {
             settings,
-            selected_index: 0,
+            selected_section: 0,
+            selected_item_in_section: 0,
+            focus: SettingsFocus::default(),
             mode: SettingsMode::Normal,
             edit_buffer: String::new(),
             detected_providers: AgentProvider::detect_all_available(),
         }
     }
 
-    pub fn select_next(&mut self) {
-        self.selected_index = (self.selected_index + 1).min(SETTINGS_COUNT - 1);
+    pub const fn toggle_focus(&mut self) {
+        self.focus = match self.focus {
+            SettingsFocus::Sidebar => SettingsFocus::Content,
+            SettingsFocus::Content => SettingsFocus::Sidebar,
+        };
     }
 
-    pub const fn select_previous(&mut self) {
-        self.selected_index = self.selected_index.saturating_sub(1);
+    pub const fn navigate_up(&mut self) {
+        match self.focus {
+            SettingsFocus::Sidebar => {
+                self.selected_section = self.selected_section.saturating_sub(1);
+                self.selected_item_in_section = 0;
+            }
+            SettingsFocus::Content => {
+                self.selected_item_in_section = self.selected_item_in_section.saturating_sub(1);
+            }
+        }
     }
 
-    pub const fn select_first(&mut self) {
-        self.selected_index = 0;
+    pub fn navigate_down(&mut self) {
+        match self.focus {
+            SettingsFocus::Sidebar => {
+                self.selected_section = (self.selected_section + 1).min(SettingsSection::count() - 1);
+                self.selected_item_in_section = 0;
+            }
+            SettingsFocus::Content => {
+                if let Some(section) = SettingsSection::from_index(self.selected_section) {
+                    let item_count = section.items().len();
+                    self.selected_item_in_section =
+                        (self.selected_item_in_section + 1).min(item_count - 1);
+                }
+            }
+        }
     }
 
-    pub const fn select_last(&mut self) {
-        self.selected_index = SETTINGS_COUNT - 1;
+    pub fn enter_content(&mut self) {
+        if self.focus == SettingsFocus::Sidebar {
+            self.focus = SettingsFocus::Content;
+        }
     }
 
     #[must_use]
-    pub const fn selected_item(&self) -> Option<SettingItem> {
-        SettingItem::from_index(self.selected_index)
+    pub const fn selected_section(&self) -> Option<SettingsSection> {
+        SettingsSection::from_index(self.selected_section)
+    }
+
+    #[must_use]
+    pub fn selected_item(&self) -> Option<SettingItem> {
+        self.selected_section()
+            .and_then(|section| section.items().get(self.selected_item_in_section).copied())
     }
 
     pub fn start_editing(&mut self) {
@@ -275,35 +379,90 @@ impl SettingsState {
         match item {
             SettingItem::DefaultShell => {
                 self.edit_buffer = self.settings.default_shell.clone();
-                self.mode = SettingsMode::EditingShell;
+                self.mode = SettingsMode::EditingShell {
+                    initial_value: self.settings.default_shell.clone(),
+                };
             }
             SettingItem::AutoSaveInterval => {
                 self.edit_buffer = self.settings.auto_save_interval_seconds.to_string();
-                self.mode = SettingsMode::EditingAutoSave;
+                self.mode = SettingsMode::EditingAutoSave {
+                    initial_value: self.settings.auto_save_interval_seconds,
+                };
             }
             SettingItem::IdeCommand => {
-                self.settings.ide_command = self.settings.ide_command.cycle_next();
+                let current_index = self.get_current_ide_index();
+                self.mode = SettingsMode::SelectingIde {
+                    selected_index: current_index,
+                };
             }
             SettingItem::TerminalCommand => {
-                self.settings.terminal_command = self.settings.terminal_command.cycle_next();
+                let current_index = self.get_current_terminal_index();
+                self.mode = SettingsMode::SelectingTerminal {
+                    selected_index: current_index,
+                };
             }
             SettingItem::DefaultProvider => {
-                self.settings.default_provider = self.settings.default_provider.cycle_next();
+                if self.detected_providers.len() <= 1 {
+                    if let Some(detected) = self.detected_providers.first() {
+                        self.settings.default_provider = detected.provider;
+                    }
+                } else {
+                    self.mode = SettingsMode::SelectingProvider { selected_index: 0 };
+                }
             }
         }
     }
 
+    const fn get_current_ide_index(&self) -> usize {
+        match &self.settings.ide_command {
+            IdeCommand::Cursor => 0,
+            IdeCommand::VSCode => 1,
+            IdeCommand::WebStorm => 2,
+            IdeCommand::Custom(_) => 3,
+        }
+    }
+
+    const fn get_current_terminal_index(&self) -> usize {
+        match &self.settings.terminal_command {
+            TerminalCommand::AppleTerminal => 0,
+            TerminalCommand::ITerm2 => 1,
+            TerminalCommand::Custom(_) => 2,
+        }
+    }
+
+    pub fn select_ide(&mut self, index: usize) {
+        self.settings.ide_command = match index {
+            0 => IdeCommand::Cursor,
+            1 => IdeCommand::VSCode,
+            2 => IdeCommand::WebStorm,
+            _ => return,
+        };
+        self.mode = SettingsMode::Normal;
+    }
+
+    pub fn select_terminal(&mut self, index: usize) {
+        self.settings.terminal_command = match index {
+            0 => TerminalCommand::AppleTerminal,
+            1 => TerminalCommand::ITerm2,
+            _ => return,
+        };
+        self.mode = SettingsMode::Normal;
+    }
+
     pub fn confirm_edit(&mut self) {
         match self.mode {
-            SettingsMode::Normal => {}
-            SettingsMode::EditingShell => {
+            SettingsMode::Normal
+            | SettingsMode::SelectingProvider { .. }
+            | SettingsMode::SelectingIde { .. }
+            | SettingsMode::SelectingTerminal { .. } => {}
+            SettingsMode::EditingShell { .. } => {
                 if !self.edit_buffer.is_empty() {
                     self.settings.default_shell = self.edit_buffer.clone();
                 }
                 self.mode = SettingsMode::Normal;
                 self.edit_buffer.clear();
             }
-            SettingsMode::EditingAutoSave => {
+            SettingsMode::EditingAutoSave { .. } => {
                 if let Ok(value) = self.edit_buffer.parse::<u64>()
                     && value > 0
                 {
@@ -322,11 +481,14 @@ impl SettingsState {
 
     pub fn handle_edit_input(&mut self, character: char) {
         match self.mode {
-            SettingsMode::Normal => {}
-            SettingsMode::EditingShell => {
+            SettingsMode::Normal
+            | SettingsMode::SelectingProvider { .. }
+            | SettingsMode::SelectingIde { .. }
+            | SettingsMode::SelectingTerminal { .. } => {}
+            SettingsMode::EditingShell { .. } => {
                 self.edit_buffer.push(character);
             }
-            SettingsMode::EditingAutoSave => {
+            SettingsMode::EditingAutoSave { .. } => {
                 if character.is_ascii_digit() {
                     self.edit_buffer.push(character);
                 }
@@ -336,11 +498,6 @@ impl SettingsState {
 
     pub fn handle_edit_backspace(&mut self) {
         self.edit_buffer.pop();
-    }
-
-    #[must_use]
-    pub const fn is_editing(&self) -> bool {
-        !matches!(self.mode, SettingsMode::Normal)
     }
 }
 

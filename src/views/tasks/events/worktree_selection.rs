@@ -50,7 +50,6 @@ pub fn handle_worktree_selection_mode(state: &mut TasksState, key: KeyEvent) -> 
                 .unwrap_or(WorktreeSelectionOption::AutoCreate);
             TasksAction::WorktreeSelected {
                 task_id,
-                task_title,
                 worktree_option: selected_option,
             }
         }
