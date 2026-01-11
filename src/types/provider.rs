@@ -46,36 +46,42 @@ impl AgentProvider {
                 arguments: vec![],
                 environment: HashMap::new(),
                 working_directory_argument: None,
+                supports_worktree: true,
             },
             Self::Codex => ProviderConfig {
                 command: "codex".into(),
                 arguments: vec![],
                 environment: HashMap::new(),
                 working_directory_argument: None,
+                supports_worktree: true,
             },
             Self::Aider => ProviderConfig {
                 command: "aider".into(),
                 arguments: vec![],
                 environment: HashMap::new(),
                 working_directory_argument: None,
+                supports_worktree: true,
             },
             Self::Gemini => ProviderConfig {
                 command: "gemini".into(),
                 arguments: vec![],
                 environment: HashMap::new(),
                 working_directory_argument: None,
+                supports_worktree: true,
             },
             Self::Amp => ProviderConfig {
                 command: "amp".into(),
                 arguments: vec![],
                 environment: HashMap::new(),
                 working_directory_argument: None,
+                supports_worktree: true,
             },
             Self::OpenCode => ProviderConfig {
                 command: "opencode".into(),
                 arguments: vec![],
                 environment: HashMap::new(),
                 working_directory_argument: None,
+                supports_worktree: true,
             },
         }
     }
@@ -93,6 +99,7 @@ pub struct ProviderConfig {
     pub arguments: Vec<String>,
     pub environment: HashMap<String, String>,
     pub working_directory_argument: Option<String>,
+    pub supports_worktree: bool,
 }
 
 impl ProviderConfig {

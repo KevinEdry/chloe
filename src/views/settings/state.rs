@@ -1,3 +1,4 @@
+use crate::types::ProviderRegistry;
 use serde::{Deserialize, Serialize};
 
 const SETTINGS_COUNT: usize = 4;
@@ -8,6 +9,8 @@ pub struct Settings {
     pub auto_save_interval_seconds: u64,
     pub ide_command: IdeCommand,
     pub terminal_command: TerminalCommand,
+    #[serde(default)]
+    pub provider_registry: ProviderRegistry,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -154,6 +157,7 @@ impl Default for Settings {
             auto_save_interval_seconds: 30,
             ide_command: IdeCommand::detect(),
             terminal_command: TerminalCommand::detect(),
+            provider_registry: ProviderRegistry::new(),
         }
     }
 }

@@ -1,3 +1,4 @@
+use crate::types::{AgentProvider, ProviderConfig};
 use crate::views::instances::InstanceState;
 use crate::views::pull_requests::PullRequestsState;
 use crate::views::roadmap::RoadmapState;
@@ -473,6 +474,11 @@ Do not push to remote.";
             self.instances
                 .send_input_to_instance(instance_id, &conflict_message);
         }
+    }
+
+    #[must_use]
+    pub fn get_provider_config(&self, provider: AgentProvider) -> ProviderConfig {
+        self.settings.settings.provider_registry.get_config(provider)
     }
 }
 
