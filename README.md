@@ -15,6 +15,9 @@
   <a href="https://github.com/KevinEdry/chloe/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   </a>
+  <a href="https://discord.gg/Pqdb9ZGvVV">
+    <img src="https://img.shields.io/badge/discord-join-5865F2?logo=discord&logoColor=white" alt="Discord">
+  </a>
   <a href="https://github.com/KevinEdry/chloe">
     <img src="https://img.shields.io/badge/unsafe-forbidden-success.svg" alt="Unsafe Forbidden">
   </a>
@@ -48,13 +51,13 @@
 ## Installation
 
 ```bash
-curl -fsSL getchloe.sh/install.sh | bash
+curl -fsSL getchloe.sh/install | bash
 ```
 
 Or specify a version:
 
 ```bash
-curl -fsSL getchloe.sh/install.sh | bash -s v0.1.1
+curl -fsSL getchloe.sh/install | bash -s v0.1.1
 ```
 
 ### Build from Source

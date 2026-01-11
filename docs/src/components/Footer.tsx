@@ -29,6 +29,11 @@ export function Footer() {
               GitHub
             </Link>
           </li>
+          <li>
+            <Link href="https://discord.gg/Pqdb9ZGvVV" target="_blank">
+              Discord
+            </Link>
+          </li>
         </ul>
         <div className="text-[var(--color-text-muted)] text-sm mt-4">
           Made with ❤️ in Seattle by{' '}

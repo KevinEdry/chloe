@@ -87,6 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               }
               projectLink="https://github.com/KevinEdry/chloe"
+              chatLink="https://discord.gg/Pqdb9ZGvVV"
             />
           }
           pageMap={await getPageMap()}
