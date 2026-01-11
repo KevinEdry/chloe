@@ -254,6 +254,14 @@ pub enum ReviewAction {
     MergeAndComplete,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum ReviewPanel {
+    #[default]
+    FileList,
+    DiffContent,
+    Output,
+}
+
 impl ReviewAction {
     #[must_use]
     pub const fn all() -> [Self; 5] {
@@ -326,7 +334,14 @@ pub enum TasksMode {
     },
     ReviewPopup {
         task_id: Uuid,
-        scroll_offset: usize,
+        #[serde(default)]
+        diff_scroll_offset: usize,
+        #[serde(default)]
+        output_scroll_offset: usize,
+        #[serde(default)]
+        selected_file_index: usize,
+        #[serde(default)]
+        focused_panel: ReviewPanel,
         selected_action: ReviewAction,
     },
     ReviewRequestChanges {

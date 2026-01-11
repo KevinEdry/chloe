@@ -1,7 +1,9 @@
-use super::{centered_rect, render_popup_background};
+use super::{centered_rect, render_popup_background, review_details, review_status};
 use crate::app::App;
-use crate::views::tasks::state::ReviewAction;
+use crate::views::instances::InstancePane;
+use crate::views::tasks::state::{ReviewAction, ReviewPanel};
 use crate::views::worktree::{WorktreeStatus, get_worktree_status};
+use crate::widgets::terminal::{AlacrittyScreen, Cursor, PseudoTerminal};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -20,18 +22,43 @@ const BUTTON_WIDTH_PERCENT: u16 = 20;
 const STATUS_HEADER_HEIGHT: u16 = 8;
 const BUTTON_ROW_HEIGHT: u16 = 3;
 
+const DIFF_SECTION_PERCENT: u16 = 70;
+const OUTPUT_SECTION_PERCENT: u16 = 30;
+const FILE_LIST_SECTION_PERCENT: u16 = 30;
+const DIFF_CONTENT_SECTION_PERCENT: u16 = 70;
+
+const DIFF_FILES_TITLE: &str = " Files ";
+const DIFF_CONTENT_TITLE: &str = " Diff Preview ";
+const OUTPUT_SECTION_TITLE: &str = " Instance Output ";
+const OUTPUT_MISSING_MESSAGE: &str = "No instance associated with this task";
+const OUTPUT_SESSION_MISSING_MESSAGE: &str = "PTY session not available";
+const OUTPUT_LOCK_MESSAGE: &str = "Terminal output unavailable";
+const LINES_TITLE_PREFIX: &str = " Lines ";
+const LINES_TITLE_SEPARATOR: &str = "-";
+const LINES_TITLE_SUFFIX: &str = " of ";
+const OUTPUT_SCROLL_PREFIX: &str = " Scroll ";
+const OUTPUT_SCROLL_SEPARATOR: &str = " / ";
+const BORDER_HEIGHT_OFFSET: u16 = 2;
+
 pub struct ReviewInfo {
     pub branch_name: Option<String>,
     pub worktree_status: WorktreeStatus,
     pub task_title: String,
 }
 
+pub struct ReviewPopupViewState {
+    pub task_id: Uuid,
+    pub diff_scroll_offset: usize,
+    pub output_scroll_offset: usize,
+    pub selected_file_index: usize,
+    pub focused_panel: ReviewPanel,
+    pub selected_action: ReviewAction,
+}
+
 pub fn render_review_popup(
     frame: &mut Frame,
     app: &App,
-    task_id: Uuid,
-    scroll_offset: usize,
-    selected_action: ReviewAction,
+    popup_state: &ReviewPopupViewState,
     area: Rect,
 ) {
     let dialog_area = centered_rect(
@@ -41,6 +68,8 @@ pub fn render_review_popup(
     );
 
     render_popup_background(frame, dialog_area);
+
+    let task_id = popup_state.task_id;
 
     let review_info = get_review_info(app, task_id);
     let is_clean = review_info.worktree_status.is_clean;
@@ -55,8 +84,8 @@ pub fn render_review_popup(
         .split(dialog_area);
 
     render_status_header(frame, &review_info, chunks[0]);
-    render_output_section(frame, app, task_id, scroll_offset, chunks[1]);
-    render_action_buttons(frame, selected_action, is_clean, chunks[2]);
+    render_review_sections(frame, app, popup_state, chunks[1]);
+    render_action_buttons(frame, popup_state.selected_action, is_clean, chunks[2]);
 }
 
 fn get_review_info(app: &App, task_id: Uuid) -> ReviewInfo {
@@ -108,132 +137,263 @@ fn render_status_header(frame: &mut Frame, info: &ReviewInfo, area: Rect) {
     let inner_area = block.inner(area);
     frame.render_widget(block, area);
 
-    let mut lines = Vec::new();
-
-    if let Some(branch) = &info.branch_name {
-        lines.push(Line::from(vec![
-            Span::styled("Branch: ", Style::default().fg(Color::DarkGray)),
-            Span::styled(branch, Style::default().fg(Color::White)),
-        ]));
-    } else {
-        lines.push(Line::from(Span::styled(
-            "No worktree associated",
-            Style::default().fg(Color::DarkGray),
-        )));
-    }
-
-    let status = &info.worktree_status;
-    if status.is_clean {
-        lines.push(Line::from(Span::styled(
-            "Status: Ready to merge",
-            Style::default().fg(Color::Green),
-        )));
-    } else if status.has_conflicts {
-        lines.push(Line::from(Span::styled(
-            "Status: Has merge conflicts",
-            Style::default().fg(Color::Red),
-        )));
-    } else {
-        let count = status.uncommitted_count();
-        lines.push(Line::from(Span::styled(
-            format!(
-                "Status: {} uncommitted change{}",
-                count,
-                if count == 1 { "" } else { "s" }
-            ),
-            Style::default().fg(Color::Yellow),
-        )));
-    }
-
-    if !status.is_clean {
-        lines.push(Line::from(""));
-
-        let max_files_to_show = 3;
-        let mut shown = 0;
-
-        for file in &status.modified_files {
-            if shown >= max_files_to_show {
-                break;
-            }
-            lines.push(Line::from(vec![
-                Span::styled("  M ", Style::default().fg(Color::Yellow)),
-                Span::styled(file, Style::default().fg(Color::White)),
-            ]));
-            shown += 1;
-        }
-
-        for file in &status.untracked_files {
-            if shown >= max_files_to_show {
-                break;
-            }
-            lines.push(Line::from(vec![
-                Span::styled("  ? ", Style::default().fg(Color::Green)),
-                Span::styled(file, Style::default().fg(Color::White)),
-            ]));
-            shown += 1;
-        }
-
-        let total = status.uncommitted_count();
-        if total > max_files_to_show {
-            lines.push(Line::from(Span::styled(
-                format!("  ... and {} more", total - max_files_to_show),
-                Style::default().fg(Color::DarkGray),
-            )));
-        }
-    }
-
+    let lines =
+        review_status::build_status_lines(info.branch_name.as_deref(), &info.worktree_status);
     let text = Paragraph::new(lines);
     frame.render_widget(text, inner_area);
+}
+
+fn render_review_sections(
+    frame: &mut Frame,
+    app: &App,
+    popup_state: &ReviewPopupViewState,
+    area: Rect,
+) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(DIFF_SECTION_PERCENT),
+            Constraint::Percentage(OUTPUT_SECTION_PERCENT),
+        ])
+        .split(area);
+
+    render_diff_section(
+        frame,
+        app,
+        popup_state.task_id,
+        popup_state.diff_scroll_offset,
+        popup_state.selected_file_index,
+        popup_state.focused_panel,
+        chunks[0],
+    );
+    render_output_section(
+        frame,
+        app,
+        popup_state.task_id,
+        popup_state.output_scroll_offset,
+        popup_state.focused_panel == ReviewPanel::Output,
+        chunks[1],
+    );
+}
+
+fn render_diff_section(
+    frame: &mut Frame,
+    app: &App,
+    task_id: Uuid,
+    diff_scroll_offset: usize,
+    selected_file_index: usize,
+    focused_panel: ReviewPanel,
+    area: Rect,
+) {
+    let diff_panel = review_details::build_diff_panel(app, task_id, selected_file_index);
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(FILE_LIST_SECTION_PERCENT),
+            Constraint::Percentage(DIFF_CONTENT_SECTION_PERCENT),
+        ])
+        .split(area);
+
+    render_file_list_section(
+        frame,
+        &diff_panel,
+        focused_panel == ReviewPanel::FileList,
+        chunks[0],
+    );
+    render_diff_content_section(
+        frame,
+        &diff_panel,
+        diff_scroll_offset,
+        focused_panel == ReviewPanel::DiffContent,
+        chunks[1],
+    );
+}
+
+fn render_file_list_section(
+    frame: &mut Frame,
+    diff_panel: &review_details::DiffPanelState,
+    is_focused: bool,
+    area: Rect,
+) {
+    let block = section_block(DIFF_FILES_TITLE, is_focused);
+    let inner_area = block.inner(area);
+    frame.render_widget(block, area);
+
+    let lines = review_details::build_file_list_lines(
+        &diff_panel.files,
+        diff_panel.selected_index,
+        is_focused,
+        inner_area.height as usize,
+    );
+
+    let text = Paragraph::new(lines)
+        .alignment(Alignment::Left)
+        .wrap(Wrap { trim: false });
+    frame.render_widget(text, inner_area);
+}
+
+fn render_diff_content_section(
+    frame: &mut Frame,
+    diff_panel: &review_details::DiffPanelState,
+    diff_scroll_offset: usize,
+    is_focused: bool,
+    area: Rect,
+) {
+    let total_lines = diff_panel.lines.len().max(1);
+    let visible_height = inner_height(area);
+    let scroll_offset = diff_scroll_offset.min(total_lines.saturating_sub(1));
+    let block = lines_block(
+        DIFF_CONTENT_TITLE,
+        total_lines,
+        scroll_offset,
+        visible_height,
+        is_focused,
+    );
+
+    render_lines_section(frame, diff_panel.lines.clone(), scroll_offset, area, block);
 }
 
 fn render_output_section(
     frame: &mut Frame,
     app: &App,
     task_id: Uuid,
-    scroll_offset: usize,
+    output_scroll_offset: usize,
+    is_focused: bool,
     area: Rect,
 ) {
-    let task = app.tasks.find_task_by_id(task_id);
+    let pane = find_output_pane(app, task_id);
+    let Some(pane) = pane else {
+        render_output_message(frame, OUTPUT_MISSING_MESSAGE, is_focused, area);
+        return;
+    };
 
-    let output_text = task.map_or("Task not found", |task| {
-        task.instance_id
-            .map_or("No instance associated with this task", |instance_id| {
-                app.get_instance_output(instance_id)
-                    .unwrap_or("No output available")
-            })
-    });
-
-    let output_lines: Vec<&str> = output_text.lines().collect();
-    let total_lines = output_lines.len();
-
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(Span::styled(
-            " Output ",
-            Style::default().fg(Color::DarkGray),
-        ))
-        .title_bottom(
-            Line::from(vec![Span::styled(
-                format!(
-                    " Lines {}-{} of {} ",
-                    scroll_offset + 1,
-                    (scroll_offset + area.height as usize).min(total_lines),
-                    total_lines
-                ),
-                Style::default().fg(Color::DarkGray),
-            )])
-            .alignment(Alignment::Right),
-        );
-
+    let max_scrollback = pane.scrollback_len();
+    let scroll_offset = output_scroll_offset.min(max_scrollback);
+    let block = output_block(scroll_offset, max_scrollback, is_focused);
     let inner_area = block.inner(area);
     frame.render_widget(block, area);
 
-    let visible_lines: Vec<Line> = output_lines
-        .iter()
+    render_output_content(frame, pane, scroll_offset, inner_area);
+}
+
+fn render_output_content(frame: &mut Frame, pane: &InstancePane, scroll_offset: usize, area: Rect) {
+    let Some(session) = &pane.pty_session else {
+        render_output_placeholder(frame, OUTPUT_SESSION_MISSING_MESSAGE, area);
+        return;
+    };
+
+    let terminal_handle = session.term();
+    let Ok(term) = terminal_handle.lock() else {
+        render_output_placeholder(frame, OUTPUT_LOCK_MESSAGE, area);
+        return;
+    };
+
+    let screen = AlacrittyScreen::new(&*term);
+    let cursor = Cursor::default().visibility(false);
+    let terminal = PseudoTerminal::new(&screen)
+        .cursor(cursor)
+        .scroll_offset(scroll_offset);
+
+    frame.render_widget(terminal, area);
+}
+
+fn render_output_message(frame: &mut Frame, message: &str, is_focused: bool, area: Rect) {
+    let block = section_block(OUTPUT_SECTION_TITLE, is_focused);
+    render_lines_section(
+        frame,
+        vec![Line::from(Span::styled(
+            message.to_string(),
+            Style::default().fg(Color::DarkGray),
+        ))],
+        0,
+        area,
+        block,
+    );
+}
+
+fn render_output_placeholder(frame: &mut Frame, message: &str, area: Rect) {
+    let text = Paragraph::new(Line::from(Span::styled(
+        message.to_string(),
+        Style::default().fg(Color::DarkGray),
+    )));
+    frame.render_widget(text, area);
+}
+
+fn find_output_pane(app: &App, task_id: Uuid) -> Option<&InstancePane> {
+    let task = app.tasks.find_task_by_id(task_id)?;
+    let instance_id = task.instance_id?;
+    app.instances.find_pane(instance_id)
+}
+
+fn section_block(title: &'static str, is_focused: bool) -> Block<'static> {
+    Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(section_border_color(is_focused)))
+        .title(Span::styled(title, Style::default().fg(Color::DarkGray)))
+}
+
+fn lines_block(
+    title: &'static str,
+    total_lines: usize,
+    scroll_offset: usize,
+    visible_height: usize,
+    is_focused: bool,
+) -> Block<'static> {
+    let end_line = (scroll_offset + visible_height).min(total_lines);
+
+    section_block(title, is_focused).title_bottom(
+        Line::from(vec![Span::styled(
+            format!(
+                "{LINES_TITLE_PREFIX}{}{LINES_TITLE_SEPARATOR}{}{LINES_TITLE_SUFFIX}{} ",
+                scroll_offset + 1,
+                end_line,
+                total_lines
+            ),
+            Style::default().fg(Color::DarkGray),
+        )])
+        .alignment(Alignment::Right),
+    )
+}
+
+fn output_block(scroll_offset: usize, max_scrollback: usize, is_focused: bool) -> Block<'static> {
+    section_block(OUTPUT_SECTION_TITLE, is_focused).title_bottom(
+        Line::from(vec![Span::styled(
+            format!(
+                "{OUTPUT_SCROLL_PREFIX}{scroll_offset}{OUTPUT_SCROLL_SEPARATOR}{max_scrollback} ",
+            ),
+            Style::default().fg(Color::DarkGray),
+        )])
+        .alignment(Alignment::Right),
+    )
+}
+
+const fn section_border_color(is_focused: bool) -> Color {
+    if is_focused {
+        Color::Cyan
+    } else {
+        Color::DarkGray
+    }
+}
+
+fn inner_height(area: Rect) -> usize {
+    let height = usize::from(area.height.saturating_sub(BORDER_HEIGHT_OFFSET));
+    height.max(1)
+}
+
+fn render_lines_section(
+    frame: &mut Frame,
+    lines: Vec<Line<'static>>,
+    scroll_offset: usize,
+    area: Rect,
+    block: Block<'static>,
+) {
+    let inner_area = block.inner(area);
+    frame.render_widget(block, area);
+
+    let visible_lines: Vec<Line> = lines
+        .into_iter()
         .skip(scroll_offset)
         .take(inner_area.height as usize)
-        .map(|line| Line::from(Span::styled(*line, Style::default().fg(Color::White))))
         .collect();
 
     let text = Paragraph::new(visible_lines)
@@ -250,48 +410,77 @@ fn render_action_buttons(
     area: Rect,
 ) {
     let actions = ReviewAction::all();
-    let button_constraints = vec![Constraint::Percentage(BUTTON_WIDTH_PERCENT); BUTTON_COUNT];
-
-    let button_areas = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(button_constraints)
-        .split(area);
+    let button_areas = build_action_button_areas(area);
 
     for (index, action) in actions.iter().enumerate() {
-        let is_selected = *action == selected_action;
-        let is_enabled = action.is_enabled(is_clean);
-
-        let style = if !is_enabled {
-            Style::default().fg(Color::DarkGray).bg(Color::Black)
-        } else if is_selected {
-            Style::default()
-                .fg(Color::Black)
-                .bg(Color::Cyan)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::Cyan).bg(Color::Black)
-        };
-
-        let border_style = if !is_enabled {
-            Style::default().fg(Color::DarkGray)
-        } else if is_selected {
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::DarkGray)
-        };
-
-        let label = action.label();
-        let button = Paragraph::new(label)
-            .alignment(Alignment::Center)
-            .style(style)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_style(border_style),
-            );
-
-        frame.render_widget(button, button_areas[index]);
+        render_action_button(
+            frame,
+            button_areas[index],
+            *action,
+            selected_action,
+            is_clean,
+        );
     }
+}
+
+fn build_action_button_areas(area: Rect) -> Vec<Rect> {
+    let button_constraints = vec![Constraint::Percentage(BUTTON_WIDTH_PERCENT); BUTTON_COUNT];
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(button_constraints)
+        .split(area)
+        .to_vec()
+}
+
+fn render_action_button(
+    frame: &mut Frame,
+    area: Rect,
+    action: ReviewAction,
+    selected_action: ReviewAction,
+    is_clean: bool,
+) {
+    let is_selected = action == selected_action;
+    let is_enabled = action.is_enabled(is_clean);
+    let label = action.label();
+
+    let button = Paragraph::new(label)
+        .alignment(Alignment::Center)
+        .style(action_button_style(is_enabled, is_selected))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(action_border_style(is_enabled, is_selected)),
+        );
+
+    frame.render_widget(button, area);
+}
+
+fn action_button_style(is_enabled: bool, is_selected: bool) -> Style {
+    if !is_enabled {
+        return Style::default().fg(Color::DarkGray).bg(Color::Black);
+    }
+
+    if is_selected {
+        return Style::default()
+            .fg(Color::Black)
+            .bg(Color::Cyan)
+            .add_modifier(Modifier::BOLD);
+    }
+
+    Style::default().fg(Color::Cyan).bg(Color::Black)
+}
+
+fn action_border_style(is_enabled: bool, is_selected: bool) -> Style {
+    if !is_enabled {
+        return Style::default().fg(Color::DarkGray);
+    }
+
+    if is_selected {
+        return Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD);
+    }
+
+    Style::default().fg(Color::DarkGray)
 }

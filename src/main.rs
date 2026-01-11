@@ -18,6 +18,7 @@ pub mod events;
 mod helpers;
 mod persistence;
 mod polling;
+mod review;
 mod types;
 mod views;
 mod widgets;

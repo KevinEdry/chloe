@@ -263,12 +263,6 @@ impl App {
         }
     }
 
-    #[must_use]
-    #[allow(clippy::unused_self)]
-    pub const fn get_instance_output(&self, _instance_id: uuid::Uuid) -> Option<&str> {
-        None
-    }
-
     pub fn open_task_in_ide(&self, task_id: uuid::Uuid) {
         let Some(task) = self.tasks.find_task_by_id(task_id) else {
             return;

@@ -46,17 +46,21 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         }
         TasksMode::ReviewPopup {
             task_id,
-            scroll_offset,
+            diff_scroll_offset,
+            output_scroll_offset,
+            selected_file_index,
+            focused_panel,
             selected_action,
         } => {
-            dialogs::render_review_popup(
-                frame,
-                app,
-                *task_id,
-                *scroll_offset,
-                *selected_action,
-                area,
-            );
+            let popup_state = dialogs::ReviewPopupViewState {
+                task_id: *task_id,
+                diff_scroll_offset: *diff_scroll_offset,
+                output_scroll_offset: *output_scroll_offset,
+                selected_file_index: *selected_file_index,
+                focused_panel: *focused_panel,
+                selected_action: *selected_action,
+            };
+            dialogs::render_review_popup(frame, app, &popup_state, area);
         }
         TasksMode::ReviewRequestChanges { input, .. } => {
             frame.render_widget(InputDialog::new("Request Changes", input), area);
@@ -121,7 +125,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::ConfirmDelete { .. }
             | TasksMode::ConfirmMoveBack { .. }
             | TasksMode::ConfirmStartTask { .. } => "y:yes  n:no",
-            TasksMode::ReviewPopup { .. } => "jk:scroll  hl/Tab:button  Enter:action",
+            TasksMode::ReviewPopup { .. } => "Tab:panel  jk:move/scroll  hl:button  Enter:action",
             TasksMode::TerminalFocused => "Ctrl+s:scroll  Esc:back",
             TasksMode::TerminalScroll => "jk:line  Ctrl+d/u:page  g/G:top/bottom  q:exit",
             TasksMode::MergeConfirmation { .. } => "jk:select  Enter:merge  Esc:cancel",
@@ -138,7 +142,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             | TasksMode::ConfirmMoveBack { .. }
             | TasksMode::ConfirmStartTask { .. } => "y:yes  n:no  Esc:cancel",
             TasksMode::ReviewPopup { .. } => {
-                "jk:scroll  ←→/hl/Tab:select-button  Enter:execute-action  q/Esc:close"
+                "Tab:panel  jk:move/scroll  ←→/hl:select-button  Enter:execute-action  q/Esc:close"
             }
             TasksMode::ReviewRequestChanges { .. } => {
                 "Type your change request  Enter:save  Esc:cancel"

@@ -115,17 +115,21 @@ fn render_dialogs(frame: &mut Frame, app: &App, mode: &TasksMode, area: Rect) {
         }
         TasksMode::ReviewPopup {
             task_id,
-            scroll_offset,
+            diff_scroll_offset,
+            output_scroll_offset,
+            selected_file_index,
+            focused_panel,
             selected_action,
         } => {
-            dialogs::render_review_popup(
-                frame,
-                app,
-                *task_id,
-                *scroll_offset,
-                *selected_action,
-                area,
-            );
+            let popup_state = dialogs::ReviewPopupViewState {
+                task_id: *task_id,
+                diff_scroll_offset: *diff_scroll_offset,
+                output_scroll_offset: *output_scroll_offset,
+                selected_file_index: *selected_file_index,
+                focused_panel: *focused_panel,
+                selected_action: *selected_action,
+            };
+            dialogs::render_review_popup(frame, app, &popup_state, area);
         }
         TasksMode::ReviewRequestChanges { input, .. } => {
             frame.render_widget(InputDialog::new("Request Changes", input), area);
@@ -190,7 +194,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             TasksMode::ConfirmDelete { .. }
             | TasksMode::ConfirmStartTask { .. }
             | TasksMode::ConfirmMoveBack { .. } => "y:confirm  n:cancel",
-            TasksMode::ReviewPopup { .. } => "hl:buttons  jk:scroll  Enter:select  Esc:close",
+            TasksMode::ReviewPopup { .. } => {
+                "Tab:panel  jk:move/scroll  hl:buttons  Enter:select  Esc:close"
+            }
             TasksMode::ReviewRequestChanges { .. } => "Enter:send  Esc:cancel",
             TasksMode::MergeConfirmation { .. } => "jk:select  Enter:merge  Esc:cancel",
         }
@@ -210,7 +216,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
             | TasksMode::ConfirmStartTask { .. }
             | TasksMode::ConfirmMoveBack { .. } => "Press y to confirm, n or Esc to cancel",
             TasksMode::ReviewPopup { .. } => {
-                "h/l:switch-buttons  j/k:scroll  Enter:select-action  Esc/q:close"
+                "Tab:panel  h/l:switch-buttons  j/k:move/scroll  Enter:select-action  Esc/q:close"
             }
             TasksMode::ReviewRequestChanges { .. } => {
                 "Type your change request  Enter:send  Esc:cancel"

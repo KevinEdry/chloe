@@ -2,7 +2,7 @@ use super::TasksAction;
 use crate::views::tasks::operations::{
     get_active_task_count, get_active_tasks, get_done_task_count, get_done_tasks,
 };
-use crate::views::tasks::state::{FocusPanel, ReviewAction, TasksMode, TasksState};
+use crate::views::tasks::state::{FocusPanel, ReviewAction, ReviewPanel, TasksMode, TasksState};
 use crossterm::event::{KeyCode, KeyEvent};
 use uuid::Uuid;
 
@@ -84,7 +84,10 @@ pub fn handle_focus_normal_mode(
                 } else if is_review {
                     state.mode = TasksMode::ReviewPopup {
                         task_id: task_ref.task.id,
-                        scroll_offset: 0,
+                        diff_scroll_offset: 0,
+                        output_scroll_offset: 0,
+                        selected_file_index: 0,
+                        focused_panel: ReviewPanel::FileList,
                         selected_action: ReviewAction::ReviewInIDE,
                     };
                     TasksAction::None

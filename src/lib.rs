@@ -12,6 +12,7 @@ pub mod cli;
 pub mod events;
 pub mod helpers;
 pub mod persistence;
+pub mod review;
 pub mod types;
 pub mod views;
 pub mod widgets;

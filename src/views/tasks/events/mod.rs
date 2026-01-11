@@ -73,10 +73,21 @@ pub fn handle_key_event(
         }
         TasksMode::ReviewPopup {
             task_id,
-            scroll_offset,
+            diff_scroll_offset,
+            output_scroll_offset,
+            selected_file_index,
+            focused_panel,
             selected_action,
         } => {
-            review::handle_review_popup_mode(state, key, *task_id, *scroll_offset, *selected_action)
+            let popup_state = review::ReviewPopupState {
+                task_id: *task_id,
+                diff_scroll_offset: *diff_scroll_offset,
+                output_scroll_offset: *output_scroll_offset,
+                selected_file_index: *selected_file_index,
+                focused_panel: *focused_panel,
+                selected_action: *selected_action,
+            };
+            review::handle_review_popup_mode(state, key, popup_state)
         }
         TasksMode::ReviewRequestChanges { task_id, .. } => {
             review::handle_review_request_changes_mode(state, key, *task_id)

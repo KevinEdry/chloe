@@ -1,4 +1,4 @@
-use crate::views::tasks::state::{ReviewAction, TasksMode, TasksState};
+use crate::views::tasks::state::{ReviewAction, ReviewPanel, TasksMode, TasksState};
 use crossterm::event::{KeyCode, KeyEvent};
 
 pub fn handle_kanban_normal_mode(state: &mut TasksState, key: KeyEvent) {
@@ -35,7 +35,10 @@ pub fn handle_kanban_normal_mode(state: &mut TasksState, key: KeyEvent) {
                 if let Some(task) = state.get_kanban_selected_task() {
                     state.mode = TasksMode::ReviewPopup {
                         task_id: task.id,
-                        scroll_offset: 0,
+                        diff_scroll_offset: 0,
+                        output_scroll_offset: 0,
+                        selected_file_index: 0,
+                        focused_panel: ReviewPanel::FileList,
                         selected_action: ReviewAction::ReviewInIDE,
                     };
                 }
