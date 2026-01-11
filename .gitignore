@@ -18,7 +18,7 @@ config.toml
 **/.claude/settings.local.json
 
 # Event files
-.chloe/events/
+.chloe
 
 # Next.js build output
 docs/.next/
