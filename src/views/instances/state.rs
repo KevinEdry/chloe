@@ -1,3 +1,4 @@
+use crate::types::AgentProvider;
 use alacritty_terminal::grid::Dimensions;
 use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
@@ -150,6 +151,8 @@ pub struct InstancePane {
     pub id: Uuid,
     pub name: Option<String>,
     pub working_directory: PathBuf,
+    #[serde(default)]
+    pub provider: AgentProvider,
     pub rows: u16,
     pub columns: u16,
     #[serde(skip)]
@@ -165,10 +168,21 @@ pub struct InstancePane {
 impl InstancePane {
     #[must_use]
     pub fn new(working_directory: PathBuf, rows: u16, columns: u16) -> Self {
+        Self::with_provider(working_directory, rows, columns, AgentProvider::default())
+    }
+
+    #[must_use]
+    pub fn with_provider(
+        working_directory: PathBuf,
+        rows: u16,
+        columns: u16,
+        provider: AgentProvider,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             name: None,
             working_directory,
+            provider,
             rows,
             columns,
             pty_session: None,
