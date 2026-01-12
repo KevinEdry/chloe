@@ -143,31 +143,37 @@ impl App {
             return;
         }
 
+        let default_provider = self.settings.settings.default_provider;
         let in_progress_column = &self.tasks.columns[1];
-        let tasks_needing_instances: Vec<(uuid::Uuid, String, String, Option<std::path::PathBuf>)> =
-            in_progress_column
-                .tasks
-                .iter()
-                .filter(|task| task.instance_id.is_none())
-                .map(|task| {
-                    let worktree_path = task
-                        .worktree_info
-                        .as_ref()
-                        .map(|info| info.worktree_path.clone());
-                    (
-                        task.id,
-                        task.title.clone(),
-                        task.description.clone(),
-                        worktree_path,
-                    )
-                })
-                .collect();
+        let tasks_needing_instances: Vec<_> = in_progress_column
+            .tasks
+            .iter()
+            .filter(|task| task.instance_id.is_none())
+            .map(|task| {
+                let worktree_path = task
+                    .worktree_info
+                    .as_ref()
+                    .map(|info| info.worktree_path.clone());
+                let provider = task.provider.unwrap_or(default_provider);
+                (
+                    task.id,
+                    task.title.clone(),
+                    task.description.clone(),
+                    worktree_path,
+                    provider,
+                )
+            })
+            .collect();
 
-        for (task_id, task_title, task_description, working_directory) in tasks_needing_instances {
+        for (task_id, task_title, task_description, working_directory, provider) in
+            tasks_needing_instances
+        {
             let instance_id = self.instances.create_pane_for_task(
+                task_id,
                 &task_title,
                 &task_description,
                 working_directory,
+                provider,
                 DEFAULT_PTY_ROWS,
                 DEFAULT_PTY_COLUMNS,
             );
@@ -184,6 +190,9 @@ impl App {
                 .worktree_info
                 .as_ref()
                 .map(|info| info.worktree_path.clone());
+            let provider = task
+                .provider
+                .unwrap_or(self.settings.settings.default_provider);
 
             if let Some(instance_id) = task.instance_id {
                 self.active_tab = Tab::Instances;
@@ -191,9 +200,11 @@ impl App {
             }
 
             let instance_id = self.instances.create_pane_for_task(
+                task_id,
                 &task_title,
                 &task_description,
                 working_directory,
+                provider,
                 DEFAULT_PTY_ROWS,
                 DEFAULT_PTY_COLUMNS,
             );

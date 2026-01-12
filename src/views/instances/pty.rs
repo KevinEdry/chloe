@@ -2,7 +2,7 @@ use alacritty_terminal::event::{Event, EventListener, OnResize, WindowSize};
 use alacritty_terminal::grid::Dimensions;
 use alacritty_terminal::term::{Config, Term};
 use alacritty_terminal::tty::EventedPty;
-use alacritty_terminal::tty::{self, Options, Pty};
+use alacritty_terminal::tty::{self, Options, Pty, Shell};
 use alacritty_terminal::vte::ansi::Processor;
 use std::io::{Read, Write};
 use std::path::Path;
@@ -47,24 +47,68 @@ pub struct PtySession {
     receiver: Receiver<Vec<u8>>,
 }
 
+pub struct SpawnOptions {
+    pub working_directory: std::path::PathBuf,
+    pub rows: u16,
+    pub columns: u16,
+    pub command: Option<String>,
+    pub arguments: Vec<String>,
+    pub environment: std::collections::HashMap<String, String>,
+}
+
+impl SpawnOptions {
+    #[must_use]
+    pub fn new(working_directory: std::path::PathBuf, rows: u16, columns: u16) -> Self {
+        Self {
+            working_directory,
+            rows,
+            columns,
+            command: None,
+            arguments: Vec::new(),
+            environment: std::collections::HashMap::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn with_command(mut self, command: String, arguments: Vec<String>) -> Self {
+        self.command = Some(command);
+        self.arguments = arguments;
+        self
+    }
+
+    #[must_use]
+    pub fn with_environment(mut self, environment: std::collections::HashMap<String, String>) -> Self {
+        self.environment = environment;
+        self
+    }
+}
+
 impl PtySession {
     pub fn spawn(working_directory: &Path, rows: u16, columns: u16) -> anyhow::Result<Self> {
+        let options = SpawnOptions::new(working_directory.to_path_buf(), rows, columns);
+        Self::spawn_with_options(options)
+    }
+
+    pub fn spawn_with_options(options: SpawnOptions) -> anyhow::Result<Self> {
         tty::setup_env();
-        let options = Options {
-            shell: None,
-            working_directory: Some(working_directory.to_path_buf()),
-            env: std::collections::HashMap::new(),
+
+        let shell = options.command.map(|command| Shell::new(command, options.arguments));
+
+        let tty_options = Options {
+            shell,
+            working_directory: Some(options.working_directory),
+            env: options.environment,
             drain_on_exit: true,
         };
 
         let window_size = WindowSize {
             cell_width: 1,
             cell_height: 1,
-            num_cols: columns,
-            num_lines: rows,
+            num_cols: options.columns,
+            num_lines: options.rows,
         };
 
-        let pty = tty::new(&options, window_size, 0)?;
+        let pty = tty::new(&tty_options, window_size, 0)?;
 
         let config = Config {
             scrolling_history: DEFAULT_SCROLLBACK_LINES,
@@ -72,8 +116,8 @@ impl PtySession {
         };
 
         let term_size = TerminalSize {
-            columns: usize::from(columns),
-            screen_lines: usize::from(rows),
+            columns: usize::from(options.columns),
+            screen_lines: usize::from(options.rows),
         };
         let term = Term::new(config, &term_size, EventProxy);
 

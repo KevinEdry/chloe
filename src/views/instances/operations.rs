@@ -1,7 +1,10 @@
 use super::state::{InstancePane, InstanceState, PaneNode, SplitDirection};
 use super::{layout, pty};
+use crate::providers::{self, GeneratedFile};
+use crate::types::AgentProvider;
 use ratatui::layout::Rect;
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 use uuid::Uuid;
 
@@ -76,9 +79,11 @@ impl InstanceState {
 
     pub fn create_pane_for_task(
         &mut self,
+        task_id: Uuid,
         task_title: &str,
         task_description: &str,
         working_directory: Option<PathBuf>,
+        provider: AgentProvider,
         rows: u16,
         columns: u16,
     ) -> Uuid {
@@ -86,23 +91,24 @@ impl InstanceState {
             .unwrap_or_else(|| env::current_dir().unwrap_or_else(|_| PathBuf::from("/")));
         let (actual_rows, actual_columns) = self.calculate_pane_dimensions(rows, columns);
 
-        let mut pane = InstancePane::new(working_directory.clone(), actual_rows, actual_columns);
+        let mut pane =
+            InstancePane::with_provider(working_directory.clone(), actual_rows, actual_columns, provider);
 
-        match pty::PtySession::spawn(&working_directory, actual_rows, actual_columns) {
+        let spec = providers::get_spec(provider);
+
+        let generated_files = spec.build_files(task_id, &working_directory);
+        write_generated_files(&generated_files);
+
+        let prompt = build_task_prompt(task_title, task_description);
+        let command = spec.build_command(&prompt);
+
+        let shell_command = build_shell_wrapped_command(&command);
+        let spawn_options = pty::SpawnOptions::new(working_directory, actual_rows, actual_columns)
+            .with_command(shell_command.0, shell_command.1)
+            .with_environment(command.environment);
+
+        match pty::PtySession::spawn_with_options(spawn_options) {
             Ok(session) => {
-                let claude_command = if task_description.is_empty() {
-                    format!("claude \"{}\"\n", task_title.replace('\"', "\\\""))
-                } else {
-                    format!(
-                        "claude \"Work on this task:\n\nTitle: {}\n\nDescription: {}\"\n",
-                        task_title.replace('\"', "\\\""),
-                        task_description.replace('\"', "\\\"")
-                    )
-                };
-
-                let _ = session.write_input(claude_command.as_bytes());
-                let _ = session.write_input(b"clear\n");
-
                 pane.claude_state = super::ClaudeState::Running;
                 pane.pty_session = Some(session);
             }
@@ -286,6 +292,44 @@ impl InstanceState {
 }
 
 const ENTER_KEY_DELAY_MS: u64 = 50;
+
+fn write_generated_files(files: &[GeneratedFile]) {
+    for file in files {
+        if let Some(parent) = file.path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        let _ = fs::write(&file.path, &file.content);
+    }
+}
+
+fn build_task_prompt(title: &str, description: &str) -> String {
+    if description.is_empty() {
+        title.to_string()
+    } else {
+        format!("Work on this task:\n\nTitle: {title}\n\nDescription: {description}")
+    }
+}
+
+fn build_shell_wrapped_command(command: &crate::providers::ProviderCommand) -> (String, Vec<String>) {
+    let mut full_command = escape_shell_arg(&command.program);
+
+    for arg in &command.arguments {
+        full_command.push(' ');
+        full_command.push_str(&escape_shell_arg(arg));
+    }
+
+    let shell_script = format!("{full_command}; exec $SHELL");
+
+    ("bash".to_string(), vec!["-c".to_string(), shell_script])
+}
+
+fn escape_shell_arg(arg: &str) -> String {
+    if arg.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/') {
+        arg.to_string()
+    } else {
+        format!("'{}'", arg.replace('\'', "'\\''"))
+    }
+}
 
 fn send_input_with_enter(session: &crate::views::instances::pty::PtySession, input: &str) -> bool {
     if session.write_input(input.as_bytes()).is_err() {

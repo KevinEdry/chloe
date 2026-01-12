@@ -6,8 +6,6 @@ use std::path::PathBuf;
 pub enum AgentProvider {
     #[default]
     ClaudeCode,
-    Codex,
-    Aider,
     Gemini,
     Amp,
     OpenCode,
@@ -24,8 +22,6 @@ impl AgentProvider {
     pub const fn display_name(self) -> &'static str {
         match self {
             Self::ClaudeCode => "Claude Code",
-            Self::Codex => "Codex",
-            Self::Aider => "Aider",
             Self::Gemini => "Gemini",
             Self::Amp => "Amp",
             Self::OpenCode => "OpenCode",
@@ -36,8 +32,6 @@ impl AgentProvider {
     pub const fn command_name(self) -> &'static str {
         match self {
             Self::ClaudeCode => "claude",
-            Self::Codex => "codex",
-            Self::Aider => "aider",
             Self::Gemini => "gemini",
             Self::Amp => "amp",
             Self::OpenCode => "opencode",
@@ -46,14 +40,7 @@ impl AgentProvider {
 
     #[must_use]
     pub const fn all() -> &'static [Self] {
-        &[
-            Self::ClaudeCode,
-            Self::Codex,
-            Self::Aider,
-            Self::Gemini,
-            Self::Amp,
-            Self::OpenCode,
-        ]
+        &[Self::ClaudeCode, Self::Gemini, Self::Amp, Self::OpenCode]
     }
 
     #[must_use]
@@ -93,20 +80,6 @@ impl AgentProvider {
         match self {
             Self::ClaudeCode => ProviderConfig {
                 command: "claude".into(),
-                arguments: vec![],
-                environment: HashMap::new(),
-                working_directory_argument: None,
-                supports_worktree: true,
-            },
-            Self::Codex => ProviderConfig {
-                command: "codex".into(),
-                arguments: vec![],
-                environment: HashMap::new(),
-                working_directory_argument: None,
-                supports_worktree: true,
-            },
-            Self::Aider => ProviderConfig {
-                command: "aider".into(),
                 arguments: vec![],
                 environment: HashMap::new(),
                 working_directory_argument: None,

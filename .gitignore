@@ -22,3 +22,6 @@ config.toml
 
 # Next.js build output
 docs/.next/
+.opencode/
+.amp/
+.gemini/
