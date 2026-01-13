@@ -99,7 +99,7 @@ where
 
         polling::poll_background_tasks(app, event_listener);
 
-        if event::poll(std::time::Duration::from_millis(100))?
+        if event::poll(std::time::Duration::from_millis(20))?
             && let Event::Key(key) = event::read()?
         {
             let instances_terminal_focused = app.active_tab == Tab::Instances
