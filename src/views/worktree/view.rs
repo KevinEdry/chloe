@@ -113,17 +113,14 @@ fn render_empty_state(frame: &mut Frame, area: Rect, vcs_command: &VcsCommand) {
     let empty_lines = vec![
         Line::from(""),
         Line::from(Span::styled(
-            format!("  No {} Found", workspace_plural),
+            format!("  No {workspace_plural} Found"),
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(Span::styled(
-            format!(
-                "  {} will appear here when you start tasks.",
-                workspace_plural
-            ),
+            format!("  {workspace_plural} will appear here when you start tasks."),
             Style::default().fg(Color::Gray),
         )),
         Line::from(Span::styled(
@@ -290,7 +287,7 @@ fn render_delete_confirmation(
     let confirmation_text = vec![
         Line::from(""),
         Line::from(Span::styled(
-            format!("Delete {}?", workspace_singular),
+            format!("Delete {workspace_singular}?"),
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
