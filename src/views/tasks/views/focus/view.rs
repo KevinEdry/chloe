@@ -205,7 +205,9 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
 
     let help_text = if width < STATUS_BAR_WIDTH_THRESHOLD {
         match &state.mode {
-            TasksMode::Normal => "jk:nav  Tab:panel  a:add  e:edit  d:del  s:start  /:view",
+            TasksMode::Normal => {
+                "jk:nav  Tab:panel  a:add  e:edit  d:del  s:start  Bksp:back  /:view"
+            }
             TasksMode::TerminalFocused => "Ctrl+s:scroll  Esc:back",
             TasksMode::TerminalScroll => "jk:line  Ctrl+d/u:page  g/G:top/bottom  q:exit",
             TasksMode::AddingTask { .. } | TasksMode::EditingTask { .. } => {
@@ -226,7 +228,7 @@ pub fn get_status_bar_content(app: &App, width: u16) -> StatusBarContent {
     } else {
         match &state.mode {
             TasksMode::Normal => {
-                "↑↓/jk:navigate  Tab:switch-panel  a:add  e:edit  d:delete  s:start  Enter:focus-terminal  /:switch-view"
+                "↑↓/jk:navigate  Tab:switch-panel  a:add  e:edit  d:delete  s:start  Backspace:move-back  /:switch-view"
             }
             TasksMode::TerminalFocused => "Ctrl+s:scroll-mode  Esc:back-to-navigation",
             TasksMode::TerminalScroll => {
