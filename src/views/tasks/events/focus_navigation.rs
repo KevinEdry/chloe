@@ -136,6 +136,21 @@ pub fn handle_focus_normal_mode(
             }
             TasksAction::None
         }
+        KeyCode::Backspace => {
+            if let Some(task_ref) = selected_task {
+                let task_index_in_column = state.columns[task_ref.column_index]
+                    .tasks
+                    .iter()
+                    .position(|task| task.id == task_ref.task.id);
+
+                if let Some(task_index) = task_index_in_column {
+                    state.kanban_selected_column = task_ref.column_index;
+                    state.kanban_selected_task = Some(task_index);
+                    state.move_task_previous();
+                }
+            }
+            TasksAction::None
+        }
         _ => TasksAction::None,
     }
 }
