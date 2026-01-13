@@ -138,8 +138,7 @@ fn render_status_header(frame: &mut Frame, info: &ReviewInfo, area: Rect) {
     let inner_area = block.inner(area);
     frame.render_widget(block, area);
 
-    let lines =
-        status::build_status_lines(info.branch_name.as_deref(), &info.worktree_status);
+    let lines = status::build_status_lines(info.branch_name.as_deref(), &info.worktree_status);
     let text = Paragraph::new(lines);
     frame.render_widget(text, inner_area);
 }
