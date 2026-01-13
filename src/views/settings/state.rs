@@ -154,7 +154,6 @@ impl IdeCommand {
             Self::Custom(command) => command,
         }
     }
-
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -341,7 +340,8 @@ impl SettingsState {
     pub fn navigate_down(&mut self) {
         match self.focus {
             SettingsFocus::Sidebar => {
-                self.selected_section = (self.selected_section + 1).min(SettingsSection::count() - 1);
+                self.selected_section =
+                    (self.selected_section + 1).min(SettingsSection::count() - 1);
                 self.selected_item_in_section = 0;
             }
             SettingsFocus::Content => {

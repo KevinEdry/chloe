@@ -2,8 +2,10 @@ use crate::app::{App, Tab};
 use crate::events::EventListener;
 use crate::views;
 use crate::views::pull_requests::events::PullRequestsAction;
+use crate::views::tasks::state::WorktreeSelectionOption;
 use crate::views::tasks::{FocusPanel, TasksAction, get_active_tasks, get_done_tasks};
 use crossterm::event::KeyEvent;
+use uuid::Uuid;
 
 pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
     if app.active_tab == Tab::Tasks {
@@ -97,7 +99,18 @@ pub fn process_worktree_pending_actions(app: &mut App) {
 }
 
 pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
-    let selected_instance_id = match app.tasks.focus_panel {
+    let selected_instance_id = get_selected_instance_id(app);
+    let default_provider = app.settings.settings.default_provider;
+    let action =
+        views::tasks::handle_key_event(&mut app.tasks, key, selected_instance_id, default_provider);
+
+    handle_tasks_action(app, action);
+    app.tasks.clamp_focus_selection();
+    process_tasks_pending_actions(app);
+}
+
+fn get_selected_instance_id(app: &App) -> Option<Uuid> {
+    match app.tasks.focus_panel {
         FocusPanel::ActiveTasks => {
             let tasks = get_active_tasks(&app.tasks.columns);
             tasks
@@ -112,12 +125,10 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
                 .nth(app.tasks.focus_done_index)
                 .and_then(|task_ref| task_ref.task.instance_id)
         }
-    };
+    }
+}
 
-    let default_provider = app.settings.settings.default_provider;
-    let action =
-        views::tasks::handle_key_event(&mut app.tasks, key, selected_instance_id, default_provider);
-
+fn handle_tasks_action(app: &mut App, action: TasksAction) {
     match action {
         TasksAction::None => {}
         TasksAction::JumpToInstance(instance_id) => {
@@ -131,14 +142,7 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
             }
         }
         TasksAction::ScrollTerminal { instance_id, delta } => {
-            if let Some(pane) = app.instances.find_pane_mut(instance_id) {
-                let max_scrollback = pane.scrollback_len();
-                if delta > 0 {
-                    pane.scroll_up(delta.unsigned_abs(), max_scrollback);
-                } else {
-                    pane.scroll_down(delta.unsigned_abs());
-                }
-            }
+            handle_scroll_terminal(app, instance_id, delta);
         }
         TasksAction::ScrollTerminalToTop(instance_id) => {
             if let Some(pane) = app.instances.find_pane_mut(instance_id) {
@@ -165,72 +169,85 @@ pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
             }
             let _ = app.save();
         }
-        TasksAction::OpenInIDE(task_id) => {
-            app.open_task_in_ide(task_id);
-        }
-        TasksAction::SwitchToTerminal(task_id) => {
-            app.open_task_in_terminal(task_id);
-        }
+        TasksAction::OpenInIDE(task_id) => app.open_task_in_ide(task_id),
+        TasksAction::SwitchToTerminal(task_id) => app.open_task_in_terminal(task_id),
         TasksAction::RequestChanges { task_id, message } => {
             if let Some(instance_id) = app.tasks.move_task_to_in_progress_by_id(task_id) {
                 app.instances.send_input_to_instance(instance_id, &message);
             }
         }
-        TasksAction::CommitChanges(task_id) => {
-            app.commit_task_changes(task_id);
-        }
-        TasksAction::MergeBranch { task_id, target } => {
-            app.merge_task_branch(task_id, &target);
-        }
+        TasksAction::CommitChanges(task_id) => app.commit_task_changes(task_id),
+        TasksAction::MergeBranch { task_id, target } => app.merge_task_branch(task_id, &target),
         TasksAction::WorktreeSelected {
             task_id,
             worktree_option,
             ..
-        } => {
-            let detected_providers = &app.settings.detected_providers;
-            let should_skip =
-                app.settings.settings.skip_provider_selection || detected_providers.len() <= 1;
-
-            if should_skip {
-                let provider = if detected_providers.len() == 1 {
-                    detected_providers[0].provider
-                } else {
-                    app.settings.settings.default_provider
-                };
-                app.tasks.set_task_provider(task_id, provider);
-                app.tasks
-                    .move_task_to_in_progress_with_worktree(task_id, worktree_option);
-                let _ = app.save();
-            } else {
-                app.tasks.mode = views::tasks::TasksMode::SelectProvider {
-                    task_id,
-                    selected_index: 0,
-                    worktree_option,
-                    detected_providers: detected_providers.clone(),
-                };
-            }
-        }
+        } => handle_worktree_selected(app, task_id, worktree_option),
         TasksAction::ProviderSelected {
             task_id,
             provider,
             worktree_option,
             remember,
-        } => {
-            app.tasks.set_task_provider(task_id, provider);
-            if remember {
-                app.settings.settings.default_provider = provider;
-                app.settings.settings.skip_provider_selection = true;
-                let _ = app.save_settings();
-            }
-            app.tasks
-                .move_task_to_in_progress_with_worktree(task_id, worktree_option);
-            let _ = app.save();
+        } => handle_provider_selected(app, task_id, provider, worktree_option, remember),
+    }
+}
+
+fn handle_scroll_terminal(app: &mut App, instance_id: Uuid, delta: isize) {
+    if let Some(pane) = app.instances.find_pane_mut(instance_id) {
+        let max_scrollback = pane.scrollback_len();
+        if delta > 0 {
+            pane.scroll_up(delta.unsigned_abs(), max_scrollback);
+        } else {
+            pane.scroll_down(delta.unsigned_abs());
         }
     }
+}
 
-    app.tasks.clamp_focus_selection();
+fn handle_worktree_selected(
+    app: &mut App,
+    task_id: Uuid,
+    worktree_option: WorktreeSelectionOption,
+) {
+    let detected_providers = &app.settings.detected_providers;
+    let should_skip =
+        app.settings.settings.skip_provider_selection || detected_providers.len() <= 1;
 
-    process_tasks_pending_actions(app);
+    if should_skip {
+        let provider = if detected_providers.len() == 1 {
+            detected_providers[0].provider
+        } else {
+            app.settings.settings.default_provider
+        };
+        app.tasks.set_task_provider(task_id, provider);
+        app.tasks
+            .move_task_to_in_progress_with_worktree(task_id, worktree_option);
+        let _ = app.save();
+    } else {
+        app.tasks.mode = views::tasks::TasksMode::SelectProvider {
+            task_id,
+            selected_index: 0,
+            worktree_option,
+            detected_providers: detected_providers.clone(),
+        };
+    }
+}
+
+fn handle_provider_selected(
+    app: &mut App,
+    task_id: Uuid,
+    provider: crate::types::AgentProvider,
+    worktree_option: WorktreeSelectionOption,
+    remember: bool,
+) {
+    app.tasks.set_task_provider(task_id, provider);
+    if remember {
+        app.settings.settings.default_provider = provider;
+        app.settings.settings.skip_provider_selection = true;
+        let _ = app.save_settings();
+    }
+    app.tasks
+        .move_task_to_in_progress_with_worktree(task_id, worktree_option);
+    let _ = app.save();
 }
 
 pub fn process_pull_requests_action(app: &mut App, action: &PullRequestsAction) {

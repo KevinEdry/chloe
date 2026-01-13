@@ -9,10 +9,9 @@ use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 pub struct ProviderSpec {
-    pub provider: AgentProvider,
     pub command: &'static str,
     pub prompt_style: PromptStyle,
-    pub generate_files: fn(Uuid, &Path) -> Vec<GeneratedFile>,
+    generate_files: fn(Uuid, &Path) -> Vec<GeneratedFile>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -61,6 +60,7 @@ impl ProviderSpec {
     }
 }
 
+#[must_use]
 pub fn get_spec(provider: AgentProvider) -> &'static ProviderSpec {
     match provider {
         AgentProvider::ClaudeCode => &claude_code::SPEC,

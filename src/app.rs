@@ -1,4 +1,5 @@
 use crate::views::instances::InstanceState;
+use crate::views::instances::operations::TaskPaneConfig;
 use crate::views::pull_requests::PullRequestsState;
 use crate::views::roadmap::RoadmapState;
 use crate::views::settings::SettingsState;
@@ -168,15 +169,16 @@ impl App {
         for (task_id, task_title, task_description, working_directory, provider) in
             tasks_needing_instances
         {
-            let instance_id = self.instances.create_pane_for_task(
+            let config = TaskPaneConfig {
                 task_id,
-                &task_title,
-                &task_description,
+                title: task_title,
+                description: task_description,
                 working_directory,
                 provider,
-                DEFAULT_PTY_ROWS,
-                DEFAULT_PTY_COLUMNS,
-            );
+                rows: DEFAULT_PTY_ROWS,
+                columns: DEFAULT_PTY_COLUMNS,
+            };
+            let instance_id = self.instances.create_pane_for_task(config);
             self.tasks.link_task_to_instance(task_id, instance_id);
         }
     }
@@ -199,15 +201,16 @@ impl App {
                 return self.instances.select_pane_by_id(instance_id);
             }
 
-            let instance_id = self.instances.create_pane_for_task(
+            let config = TaskPaneConfig {
                 task_id,
-                &task_title,
-                &task_description,
+                title: task_title,
+                description: task_description,
                 working_directory,
                 provider,
-                DEFAULT_PTY_ROWS,
-                DEFAULT_PTY_COLUMNS,
-            );
+                rows: DEFAULT_PTY_ROWS,
+                columns: DEFAULT_PTY_COLUMNS,
+            };
+            let instance_id = self.instances.create_pane_for_task(config);
             self.tasks.link_task_to_instance(task_id, instance_id);
             self.active_tab = Tab::Instances;
             self.instances.mode = crate::views::instances::InstanceMode::Focused;

@@ -2,10 +2,10 @@ use super::state::{
     IdeCommand, SettingItem, SettingsFocus, SettingsMode, SettingsSection, SettingsState,
     TerminalCommand,
 };
+use crate::views::StatusBarContent;
 use crate::views::tasks::dialogs::{
     ProviderSelectionViewState, centered_rect, render_popup_background, render_provider_selection,
 };
-use crate::views::StatusBarContent;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -36,10 +36,7 @@ fn create_main_layout(area: Rect) -> std::rc::Rc<[Rect]> {
 
     Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Length(sidebar_width),
-            Constraint::Min(0),
-        ])
+        .constraints([Constraint::Length(sidebar_width), Constraint::Min(0)])
         .split(area)
 }
 
@@ -75,13 +72,19 @@ fn render_sidebar(frame: &mut Frame, area: Rect, state: &SettingsState) {
     frame.render_widget(list, inner_area);
 }
 
-fn render_sidebar_item(section: SettingsSection, index: usize, state: &SettingsState) -> ListItem<'static> {
+fn render_sidebar_item(
+    section: SettingsSection,
+    index: usize,
+    state: &SettingsState,
+) -> ListItem<'static> {
     let is_selected = index == state.selected_section;
     let is_sidebar_focused = state.focus == SettingsFocus::Sidebar;
     let is_active = is_selected && is_sidebar_focused;
 
     let icon_style = if is_active {
-        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD)
     } else if is_selected {
         Style::default().fg(Color::Cyan)
     } else {
@@ -89,7 +92,9 @@ fn render_sidebar_item(section: SettingsSection, index: usize, state: &SettingsS
     };
 
     let title_style = if is_active {
-        Style::default().fg(Color::White).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(Color::White)
+            .add_modifier(Modifier::BOLD)
     } else if is_selected {
         Style::default().fg(Color::White)
     } else {
@@ -165,12 +170,12 @@ fn render_section_items(
     let items_start_y = area.y + 3;
 
     for (index, &item) in items.iter().enumerate() {
-        let is_selected = state.focus == SettingsFocus::Content
-            && index == state.selected_item_in_section;
+        let is_selected =
+            state.focus == SettingsFocus::Content && index == state.selected_item_in_section;
 
         let item_area = Rect {
             x: area.x,
-            y: items_start_y + (index as u16 * 3),
+            y: items_start_y.saturating_add(u16::try_from(index).unwrap_or(0).saturating_mul(3)),
             width: area.width,
             height: 3,
         };
@@ -191,7 +196,9 @@ fn render_setting_item(
     let item_type = get_item_type_indicator(item);
 
     let label_style = if is_selected {
-        Style::default().fg(Color::White).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(Color::White)
+            .add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(Color::Gray)
     };
@@ -206,7 +213,9 @@ fn render_setting_item(
 
     let selector = if is_selected { "> " } else { "  " };
     let selector_style = if is_selected {
-        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(Color::DarkGray)
     };
@@ -291,7 +300,11 @@ fn render_ide_selection_dialog(
     state: &SettingsState,
     selected_index: usize,
 ) {
-    let popup_area = centered_rect(SELECTION_POPUP_WIDTH_PERCENT, SELECTION_POPUP_HEIGHT_PERCENT, area);
+    let popup_area = centered_rect(
+        SELECTION_POPUP_WIDTH_PERCENT,
+        SELECTION_POPUP_HEIGHT_PERCENT,
+        area,
+    );
     render_popup_background(frame, popup_area);
 
     let block = Block::default()
@@ -341,7 +354,11 @@ fn render_terminal_selection_dialog(
     state: &SettingsState,
     selected_index: usize,
 ) {
-    let popup_area = centered_rect(SELECTION_POPUP_WIDTH_PERCENT, SELECTION_POPUP_HEIGHT_PERCENT, area);
+    let popup_area = centered_rect(
+        SELECTION_POPUP_WIDTH_PERCENT,
+        SELECTION_POPUP_HEIGHT_PERCENT,
+        area,
+    );
     render_popup_background(frame, popup_area);
 
     let block = Block::default()

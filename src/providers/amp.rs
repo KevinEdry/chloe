@@ -1,13 +1,11 @@
 use super::{GeneratedFile, PromptStyle, ProviderSpec};
-use crate::types::AgentProvider;
 use std::path::Path;
 use uuid::Uuid;
 
 pub static SPEC: ProviderSpec = ProviderSpec {
-    provider: AgentProvider::Amp,
     command: "amp",
     prompt_style: PromptStyle::Direct,
-    generate_files: generate_files,
+    generate_files,
 };
 
 fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile> {
@@ -53,7 +51,6 @@ mod tests {
 
     #[test]
     fn test_spec_values() {
-        assert_eq!(SPEC.provider, AgentProvider::Amp);
         assert_eq!(SPEC.command, "amp");
     }
 

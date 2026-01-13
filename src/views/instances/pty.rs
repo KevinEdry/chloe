@@ -77,7 +77,10 @@ impl SpawnOptions {
     }
 
     #[must_use]
-    pub fn with_environment(mut self, environment: std::collections::HashMap<String, String>) -> Self {
+    pub fn with_environment(
+        mut self,
+        environment: std::collections::HashMap<String, String>,
+    ) -> Self {
         self.environment = environment;
         self
     }
@@ -92,7 +95,9 @@ impl PtySession {
     pub fn spawn_with_options(options: SpawnOptions) -> anyhow::Result<Self> {
         tty::setup_env();
 
-        let shell = options.command.map(|command| Shell::new(command, options.arguments));
+        let shell = options
+            .command
+            .map(|command| Shell::new(command, options.arguments));
 
         let tty_options = Options {
             shell,

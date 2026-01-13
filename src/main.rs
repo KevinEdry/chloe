@@ -100,134 +100,126 @@ where
 
         polling::poll_background_tasks(app, event_listener);
 
-        if event::poll(std::time::Duration::from_millis(100))? {
-            match event::read()? {
-                Event::Key(key) => {
-                    let instances_terminal_focused = app.active_tab == Tab::Instances
-                        && matches!(
-                            app.instances.mode,
-                            views::instances::InstanceMode::Focused
-                                | views::instances::InstanceMode::Scroll
-                        );
-                    let tasks_terminal_focused =
-                        app.active_tab == Tab::Tasks && app.tasks.is_terminal_focused();
-                    let terminal_is_focused = instances_terminal_focused || tasks_terminal_focused;
+        if event::poll(std::time::Duration::from_millis(100))?
+            && let Event::Key(key) = event::read()?
+        {
+            let instances_terminal_focused = app.active_tab == Tab::Instances
+                && matches!(
+                    app.instances.mode,
+                    views::instances::InstanceMode::Focused
+                        | views::instances::InstanceMode::Scroll
+                );
+            let tasks_terminal_focused =
+                app.active_tab == Tab::Tasks && app.tasks.is_terminal_focused();
+            let terminal_is_focused = instances_terminal_focused || tasks_terminal_focused;
 
-                    let tasks_is_typing =
-                        app.active_tab == Tab::Tasks && app.tasks.is_typing_mode();
+            let tasks_is_typing = app.active_tab == Tab::Tasks && app.tasks.is_typing_mode();
 
-                    if app.showing_exit_confirmation {
-                        match key.code {
-                            KeyCode::Char('y' | 'Y') => {
-                                return Ok(());
-                            }
-                            KeyCode::Char('n' | 'N') | KeyCode::Esc => {
-                                app.showing_exit_confirmation = false;
-                            }
-                            _ => {}
-                        }
-                        continue;
+            if app.showing_exit_confirmation {
+                match key.code {
+                    KeyCode::Char('y' | 'Y') => {
+                        return Ok(());
                     }
+                    KeyCode::Char('n' | 'N') | KeyCode::Esc => {
+                        app.showing_exit_confirmation = false;
+                    }
+                    _ => {}
+                }
+                continue;
+            }
 
-                    match key.code {
-                        KeyCode::Char('q' | 'Q') => {
-                            if !terminal_is_focused && !tasks_is_typing {
-                                app.showing_exit_confirmation = true;
-                            } else if instances_terminal_focused {
-                                views::instances::events::handle_key_event(&mut app.instances, key);
-                            } else {
-                                polling::process_tasks_event(app, key);
-                            }
-                        }
-                        KeyCode::Char('c')
-                            if key.modifiers.contains(event::KeyModifiers::CONTROL) =>
-                        {
-                            if !terminal_is_focused {
-                                app.showing_exit_confirmation = true;
-                            } else if instances_terminal_focused {
-                                views::instances::events::handle_key_event(&mut app.instances, key);
-                            } else {
-                                polling::process_tasks_event(app, key);
-                            }
-                        }
-                        KeyCode::Tab | KeyCode::BackTab => {
-                            if !terminal_is_focused {
-                                match key.code {
-                                    KeyCode::Tab => app.next_tab(),
-                                    KeyCode::BackTab => app.previous_tab(),
-                                    _ => {}
-                                }
-                            } else if instances_terminal_focused {
-                                views::instances::events::handle_key_event(&mut app.instances, key);
-                            } else {
-                                polling::process_tasks_event(app, key);
-                            }
-                        }
-                        KeyCode::Char('1') if !terminal_is_focused && !tasks_is_typing => {
-                            app.switch_tab(Tab::Tasks);
-                        }
-                        KeyCode::Char('2') if !terminal_is_focused && !tasks_is_typing => {
-                            app.switch_tab(Tab::Instances);
-                        }
-                        KeyCode::Char('3') if !terminal_is_focused && !tasks_is_typing => {
-                            app.switch_tab(Tab::Roadmap);
-                        }
-                        KeyCode::Char('4') if !terminal_is_focused && !tasks_is_typing => {
-                            app.switch_tab(Tab::Worktree);
-                        }
-                        KeyCode::Char('5') if !terminal_is_focused && !tasks_is_typing => {
-                            app.switch_tab(Tab::PullRequests);
-                        }
-                        KeyCode::Char('6') if !terminal_is_focused && !tasks_is_typing => {
-                            app.switch_tab(Tab::Settings);
-                        }
-                        _ => match app.active_tab {
-                            Tab::Tasks => {
-                                let is_normal_mode = app.tasks.is_normal_mode();
-                                let is_jump_to_instance_key = key.code == KeyCode::Char('t')
-                                    || key.code == KeyCode::Char('T');
-
-                                if is_normal_mode && is_jump_to_instance_key {
-                                    app.jump_to_task_instance();
-                                } else {
-                                    polling::process_tasks_event(app, key);
-                                }
-                            }
-                            Tab::Instances => {
-                                views::instances::events::handle_key_event(&mut app.instances, key);
-                            }
-                            Tab::Roadmap => {
-                                let action =
-                                    views::roadmap::events::handle_key_event(&mut app.roadmap, key);
-                                polling::process_roadmap_action(app, &action);
-                            }
-                            Tab::Worktree => {
-                                app.worktree.handle_key_event(key);
-                                polling::process_worktree_pending_actions(app);
-                            }
-                            Tab::PullRequests => {
-                                let action = views::pull_requests::events::handle_key_event(
-                                    &mut app.pull_requests,
-                                    key,
-                                );
-                                polling::process_pull_requests_action(app, &action);
-                            }
-                            Tab::Settings => {
-                                let action = views::settings::events::handle_key_event(
-                                    &mut app.settings,
-                                    key,
-                                );
-                                if matches!(
-                                    action,
-                                    views::settings::events::SettingsAction::SaveSettings
-                                ) {
-                                    let _ = app.save_settings();
-                                }
-                            }
-                        },
+            match key.code {
+                KeyCode::Char('q' | 'Q') => {
+                    if !terminal_is_focused && !tasks_is_typing {
+                        app.showing_exit_confirmation = true;
+                    } else if instances_terminal_focused {
+                        views::instances::events::handle_key_event(&mut app.instances, key);
+                    } else {
+                        polling::process_tasks_event(app, key);
                     }
                 }
-                _ => {}
+                KeyCode::Char('c') if key.modifiers.contains(event::KeyModifiers::CONTROL) => {
+                    if !terminal_is_focused {
+                        app.showing_exit_confirmation = true;
+                    } else if instances_terminal_focused {
+                        views::instances::events::handle_key_event(&mut app.instances, key);
+                    } else {
+                        polling::process_tasks_event(app, key);
+                    }
+                }
+                KeyCode::Tab | KeyCode::BackTab => {
+                    if !terminal_is_focused {
+                        match key.code {
+                            KeyCode::Tab => app.next_tab(),
+                            KeyCode::BackTab => app.previous_tab(),
+                            _ => {}
+                        }
+                    } else if instances_terminal_focused {
+                        views::instances::events::handle_key_event(&mut app.instances, key);
+                    } else {
+                        polling::process_tasks_event(app, key);
+                    }
+                }
+                KeyCode::Char('1') if !terminal_is_focused && !tasks_is_typing => {
+                    app.switch_tab(Tab::Tasks);
+                }
+                KeyCode::Char('2') if !terminal_is_focused && !tasks_is_typing => {
+                    app.switch_tab(Tab::Instances);
+                }
+                KeyCode::Char('3') if !terminal_is_focused && !tasks_is_typing => {
+                    app.switch_tab(Tab::Roadmap);
+                }
+                KeyCode::Char('4') if !terminal_is_focused && !tasks_is_typing => {
+                    app.switch_tab(Tab::Worktree);
+                }
+                KeyCode::Char('5') if !terminal_is_focused && !tasks_is_typing => {
+                    app.switch_tab(Tab::PullRequests);
+                }
+                KeyCode::Char('6') if !terminal_is_focused && !tasks_is_typing => {
+                    app.switch_tab(Tab::Settings);
+                }
+                _ => match app.active_tab {
+                    Tab::Tasks => {
+                        let is_normal_mode = app.tasks.is_normal_mode();
+                        let is_jump_to_instance_key =
+                            key.code == KeyCode::Char('t') || key.code == KeyCode::Char('T');
+
+                        if is_normal_mode && is_jump_to_instance_key {
+                            app.jump_to_task_instance();
+                        } else {
+                            polling::process_tasks_event(app, key);
+                        }
+                    }
+                    Tab::Instances => {
+                        views::instances::events::handle_key_event(&mut app.instances, key);
+                    }
+                    Tab::Roadmap => {
+                        let action =
+                            views::roadmap::events::handle_key_event(&mut app.roadmap, key);
+                        polling::process_roadmap_action(app, &action);
+                    }
+                    Tab::Worktree => {
+                        app.worktree.handle_key_event(key);
+                        polling::process_worktree_pending_actions(app);
+                    }
+                    Tab::PullRequests => {
+                        let action = views::pull_requests::events::handle_key_event(
+                            &mut app.pull_requests,
+                            key,
+                        );
+                        polling::process_pull_requests_action(app, &action);
+                    }
+                    Tab::Settings => {
+                        let action =
+                            views::settings::events::handle_key_event(&mut app.settings, key);
+                        if matches!(
+                            action,
+                            views::settings::events::SettingsAction::SaveSettings
+                        ) {
+                            let _ = app.save_settings();
+                        }
+                    }
+                },
             }
         }
     }

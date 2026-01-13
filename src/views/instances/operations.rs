@@ -8,6 +8,16 @@ use std::fs;
 use std::path::PathBuf;
 use uuid::Uuid;
 
+pub struct TaskPaneConfig {
+    pub task_id: Uuid,
+    pub title: String,
+    pub description: String,
+    pub working_directory: Option<PathBuf>,
+    pub provider: AgentProvider,
+    pub rows: u16,
+    pub columns: u16,
+}
+
 impl InstanceState {
     pub fn create_pane(&mut self, rows: u16, columns: u16) {
         let working_directory = env::current_dir().unwrap_or_else(|_| PathBuf::from("/"));
@@ -77,29 +87,26 @@ impl InstanceState {
         (rows, columns)
     }
 
-    pub fn create_pane_for_task(
-        &mut self,
-        task_id: Uuid,
-        task_title: &str,
-        task_description: &str,
-        working_directory: Option<PathBuf>,
-        provider: AgentProvider,
-        rows: u16,
-        columns: u16,
-    ) -> Uuid {
-        let working_directory = working_directory
+    pub fn create_pane_for_task(&mut self, config: TaskPaneConfig) -> Uuid {
+        let working_directory = config
+            .working_directory
             .unwrap_or_else(|| env::current_dir().unwrap_or_else(|_| PathBuf::from("/")));
-        let (actual_rows, actual_columns) = self.calculate_pane_dimensions(rows, columns);
+        let (actual_rows, actual_columns) =
+            self.calculate_pane_dimensions(config.rows, config.columns);
 
-        let mut pane =
-            InstancePane::with_provider(working_directory.clone(), actual_rows, actual_columns, provider);
+        let mut pane = InstancePane::with_provider(
+            working_directory.clone(),
+            actual_rows,
+            actual_columns,
+            config.provider,
+        );
 
-        let spec = providers::get_spec(provider);
+        let spec = providers::get_spec(config.provider);
 
-        let generated_files = spec.build_files(task_id, &working_directory);
+        let generated_files = spec.build_files(config.task_id, &working_directory);
         write_generated_files(&generated_files);
 
-        let prompt = build_task_prompt(task_title, task_description);
+        let prompt = build_task_prompt(&config.title, &config.description);
         let command = spec.build_command(&prompt);
 
         let shell_command = build_shell_wrapped_command(&command);
@@ -310,7 +317,9 @@ fn build_task_prompt(title: &str, description: &str) -> String {
     }
 }
 
-fn build_shell_wrapped_command(command: &crate::providers::ProviderCommand) -> (String, Vec<String>) {
+fn build_shell_wrapped_command(
+    command: &crate::providers::ProviderCommand,
+) -> (String, Vec<String>) {
     let mut full_command = escape_shell_arg(&command.program);
 
     for arg in &command.arguments {
@@ -324,7 +333,10 @@ fn build_shell_wrapped_command(command: &crate::providers::ProviderCommand) -> (
 }
 
 fn escape_shell_arg(arg: &str) -> String {
-    if arg.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/') {
+    if arg
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/')
+    {
         arg.to_string()
     } else {
         format!("'{}'", arg.replace('\'', "'\\''"))

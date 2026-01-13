@@ -1,13 +1,11 @@
 use super::{GeneratedFile, PromptStyle, ProviderSpec};
-use crate::types::AgentProvider;
 use std::path::Path;
 use uuid::Uuid;
 
 pub static SPEC: ProviderSpec = ProviderSpec {
-    provider: AgentProvider::ClaudeCode,
     command: "claude",
     prompt_style: PromptStyle::Direct,
-    generate_files: generate_files,
+    generate_files,
 };
 
 fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile> {
@@ -16,6 +14,16 @@ fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile>
     let notify_permission = format!("chloe notify permission --worktree-id {task_id}");
 
     let settings = serde_json::json!({
+        "permissions": {
+            "allow": [
+                "Read",
+                "Edit",
+                "Write",
+                "MultiEdit",
+                "Glob",
+                "Grep"
+            ]
+        },
         "hooks": {
             "PreToolUse": [
                 {
@@ -45,7 +53,9 @@ fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile>
     });
 
     vec![GeneratedFile {
-        path: working_directory.join(".claude").join("settings.local.json"),
+        path: working_directory
+            .join(".claude")
+            .join("settings.local.json"),
         content: serde_json::to_string_pretty(&settings).unwrap_or_default(),
     }]
 }
@@ -56,7 +66,6 @@ mod tests {
 
     #[test]
     fn test_spec_values() {
-        assert_eq!(SPEC.provider, AgentProvider::ClaudeCode);
         assert_eq!(SPEC.command, "claude");
     }
 
