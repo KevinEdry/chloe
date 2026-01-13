@@ -512,6 +512,10 @@ fn create_jj_workspace(
     let workspace_name = generate_workspace_name(task_title, task_id);
     let workspace_path = repository_path.join(format!(".chloe/workspaces/{workspace_name}"));
 
+    let workspaces_parent = repository_path.join(".chloe/workspaces");
+    fs::create_dir_all(&workspaces_parent)
+        .context("Failed to create .chloe/workspaces directory")?;
+
     let output = std::process::Command::new("jj")
         .arg("workspace")
         .arg("add")
@@ -706,6 +710,15 @@ fn delete_git_worktree(repository_path: &Path, worktree_info: &WorktreeInfo) -> 
 }
 
 fn delete_jj_workspace(repository_path: &Path, worktree_info: &WorktreeInfo) -> Result<()> {
+    const DEFAULT_WORKSPACE_NAME: &str = "default";
+
+    let is_default_workspace = worktree_info.branch_name == DEFAULT_WORKSPACE_NAME;
+    if is_default_workspace {
+        return Err(anyhow!(
+            "Cannot delete the default workspace. The default workspace is the main workspace and must be preserved."
+        ));
+    }
+
     let output = std::process::Command::new("jj")
         .arg("workspace")
         .arg("forget")

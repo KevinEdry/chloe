@@ -353,17 +353,18 @@ impl TasksState {
         let task_title = task.map(|task| task.title.clone())?;
         let worktree_info = match worktree_option {
             WorktreeSelectionOption::AutoCreate => {
-                Self::create_worktree_for_new_task(&task_title, &task_id, vcs_command)
+                match Self::create_worktree_for_new_task(&task_title, &task_id, vcs_command) {
+                    Ok(info) => info,
+                    Err(error) => {
+                        self.error_message = Some(format!("Failed to create worktree: {error}"));
+                        return None;
+                    }
+                }
             }
             WorktreeSelectionOption::Existing {
                 branch_name,
                 worktree_path,
-            } => Some(WorktreeInfo::new_existing(branch_name, worktree_path)),
-        };
-
-        let Some(worktree_info) = worktree_info else {
-            self.error_message = Some("Failed to create worktree.".to_string());
-            return None;
+            } => WorktreeInfo::new_existing(branch_name, worktree_path),
         };
 
         let mut task = self.columns[source_column_index].tasks.remove(task_index);

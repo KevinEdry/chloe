@@ -87,23 +87,17 @@ impl TasksState {
         PROMPTS[prompt_index].to_string()
     }
 
-    #[must_use]
     pub fn create_worktree_for_new_task(
         task_title: &str,
         task_id: &Uuid,
         vcs_command: &VcsCommand,
-    ) -> Option<WorktreeInfo> {
-        let Ok(current_directory) = std::env::current_dir() else {
-            return None;
-        };
+    ) -> anyhow::Result<WorktreeInfo> {
+        let current_directory = std::env::current_dir()
+            .map_err(|error| anyhow::anyhow!("Failed to get current directory: {error}"))?;
 
-        let Ok(repository_root) = crate::views::worktree::find_repository_root(&current_directory)
-        else {
-            return None;
-        };
+        let repository_root = crate::views::worktree::find_repository_root(&current_directory)?;
 
         crate::views::worktree::create_worktree(&repository_root, task_title, task_id, vcs_command)
-            .ok()
     }
 
     #[must_use]
@@ -130,7 +124,7 @@ impl TasksState {
         let was_auto_created = worktree_info.auto_created;
         if !was_auto_created {
             return;
-        };
+        }
 
         let Ok(current_directory) = std::env::current_dir() else {
             return;
