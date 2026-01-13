@@ -22,9 +22,17 @@ fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile>
                 "Write",
                 "MultiEdit",
                 "Glob",
-                "Grep"
+                "Grep",
+                "Bash",
+                "Skill"
             ]
         },
+        "sandbox": {
+            "enabled": true,
+            "autoAllowBashIfSandboxed": true
+        },
+        "includeCoAuthoredBy": false,
+        "gitAttribution": false,
         "hooks": {
             "PreToolUse": [
                 {

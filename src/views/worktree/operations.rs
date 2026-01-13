@@ -12,12 +12,16 @@ const MAX_SLUG_LENGTH: usize = 50;
 fn generate_claude_settings(worktree_path: &Path, task_id: &Uuid) -> Result<()> {
     let settings = serde_json::json!({
         "permissions": {
-            "Read": ["./**"],
-            "Write": ["./**"],
-            "Edit": ["./**"],
-            "Glob": ["./**"],
-            "Grep": ["./**"],
-            "Skill": ["./**"]
+            "allow": [
+                "Read",
+                "Edit",
+                "Write",
+                "MultiEdit",
+                "Glob",
+                "Grep",
+                "Bash",
+                "Skill"
+            ]
         },
         "sandbox": {
             "enabled": true,

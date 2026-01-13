@@ -51,13 +51,42 @@ export const ChloeNotifier = async () => {{
 "#
     );
 
-    vec![GeneratedFile {
-        path: working_directory
-            .join(".opencode")
-            .join("plugin")
-            .join("chloe-hooks.js"),
-        content: plugin_content,
-    }]
+    let settings = serde_json::json!({
+        "permissions": {
+            "allow": [
+                "Read",
+                "Edit",
+                "Write",
+                "MultiEdit",
+                "Glob",
+                "Grep",
+                "Bash",
+                "Skill"
+            ]
+        },
+        "sandbox": {
+            "enabled": true,
+            "autoAllowBashIfSandboxed": true
+        },
+        "includeCoAuthoredBy": false,
+        "gitAttribution": false
+    });
+
+    vec![
+        GeneratedFile {
+            path: working_directory
+                .join(".opencode")
+                .join("plugin")
+                .join("chloe-hooks.js"),
+            content: plugin_content,
+        },
+        GeneratedFile {
+            path: working_directory
+                .join(".opencode")
+                .join("settings.local.json"),
+            content: serde_json::to_string_pretty(&settings).unwrap_or_default(),
+        },
+    ]
 }
 
 #[cfg(test)]
@@ -76,7 +105,7 @@ mod tests {
 
         let files = generate_files(task_id, working_dir);
 
-        assert_eq!(files.len(), 1);
+        assert_eq!(files.len(), 2);
         assert_eq!(
             files[0].path,
             working_dir
@@ -86,5 +115,12 @@ mod tests {
         );
         assert!(files[0].content.contains("ChloeNotifier"));
         assert!(files[0].content.contains(&task_id.to_string()));
+
+        assert_eq!(
+            files[1].path,
+            working_dir.join(".opencode").join("settings.local.json")
+        );
+        assert!(files[1].content.contains("permissions"));
+        assert!(files[1].content.contains("Bash"));
     }
 }
