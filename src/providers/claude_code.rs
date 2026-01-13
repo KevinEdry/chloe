@@ -1,10 +1,11 @@
-use super::{GeneratedFile, PromptStyle, ProviderSpec};
+use super::{GeneratedFile, OneShotPromptStyle, PromptStyle, ProviderSpec};
 use std::path::Path;
 use uuid::Uuid;
 
 pub static SPEC: ProviderSpec = ProviderSpec {
     command: "claude",
     prompt_style: PromptStyle::Direct,
+    oneshot_style: OneShotPromptStyle::Flag("-p"),
     generate_files,
 };
 

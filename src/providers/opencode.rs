@@ -1,10 +1,11 @@
-use super::{GeneratedFile, PromptStyle, ProviderSpec};
+use super::{GeneratedFile, OneShotPromptStyle, PromptStyle, ProviderSpec};
 use std::path::Path;
 use uuid::Uuid;
 
 pub static SPEC: ProviderSpec = ProviderSpec {
     command: "opencode",
     prompt_style: PromptStyle::Flag("--prompt"),
+    oneshot_style: OneShotPromptStyle::Subcommand("run"),
     generate_files,
 };
 

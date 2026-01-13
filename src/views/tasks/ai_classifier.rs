@@ -1,4 +1,5 @@
-use crate::types::Result;
+use crate::providers;
+use crate::types::{AgentProvider, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::{Receiver, channel};
 use std::thread;
@@ -25,18 +26,18 @@ impl Clone for ClassificationRequest {
 
 impl ClassificationRequest {
     #[must_use]
-    pub fn spawn(raw_input: String, task_id: Uuid) -> Self {
+    pub fn spawn(raw_input: String, task_id: Uuid, provider: AgentProvider) -> Self {
         let (sender, receiver) = channel();
 
         thread::spawn(move || {
-            let result = Self::classify_with_claude(&raw_input);
+            let result = Self::classify_with_provider(&raw_input, provider);
             let _ = sender.send(result);
         });
 
         Self { receiver, task_id }
     }
 
-    fn classify_with_claude(raw_input: &str) -> Result<ClassifiedTask> {
+    fn classify_with_provider(raw_input: &str, provider: AgentProvider) -> Result<ClassifiedTask> {
         let prompt = format!(
             r#"Classify this task description and respond with ONLY valid JSON (no markdown, no explanation):
 
@@ -58,17 +59,27 @@ Rules:
 Output JSON only:"#
         );
 
-        let output = std::process::Command::new("claude")
-            .arg(&prompt)
-            .output()
-            .map_err(|error| {
-                crate::types::AppError::Config(format!("Failed to run claude CLI: {error}"))
-            })?;
+        let spec = providers::get_spec(provider);
+        let command = spec.build_oneshot_command(&prompt);
+
+        let mut process_command = std::process::Command::new(&command.program);
+        process_command.args(&command.arguments);
+        for (key, value) in &command.environment {
+            process_command.env(key, value);
+        }
+
+        let output = process_command.output().map_err(|error| {
+            crate::types::AppError::Config(format!(
+                "Failed to run {} CLI: {error}",
+                provider.display_name()
+            ))
+        })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(crate::types::AppError::Config(format!(
-                "claude CLI failed: {stderr}"
+                "{} CLI failed: {stderr}",
+                provider.display_name()
             )));
         }
 
@@ -91,7 +102,7 @@ Output JSON only:"#
         }
 
         Err(crate::types::AppError::Config(
-            "No JSON found in claude output".to_string(),
+            "No JSON found in AI output".to_string(),
         ))
     }
 

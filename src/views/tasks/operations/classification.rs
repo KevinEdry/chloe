@@ -1,3 +1,4 @@
+use crate::types::AgentProvider;
 use crate::views::tasks::ai_classifier::{ClassificationRequest, ClassifiedTask};
 use crate::views::tasks::state::{Task, TaskType, TasksState};
 use uuid::Uuid;
@@ -5,7 +6,7 @@ use uuid::Uuid;
 const PLANNING_COLUMN_INDEX: usize = 0;
 
 impl TasksState {
-    pub fn start_classification(&mut self, raw_input: String) -> Uuid {
+    pub fn start_classification(&mut self, raw_input: String, provider: AgentProvider) -> Uuid {
         let task = Task::new_classifying(raw_input.clone());
         let task_id = task.id;
 
@@ -13,7 +14,7 @@ impl TasksState {
         self.kanban_selected_column = PLANNING_COLUMN_INDEX;
         self.kanban_selected_task = Some(self.columns[PLANNING_COLUMN_INDEX].tasks.len() - 1);
 
-        let request = ClassificationRequest::spawn(raw_input, task_id);
+        let request = ClassificationRequest::spawn(raw_input, task_id, provider);
         self.pending_classifications.push(request);
 
         task_id

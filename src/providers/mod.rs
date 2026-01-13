@@ -11,6 +11,7 @@ use uuid::Uuid;
 pub struct ProviderSpec {
     pub command: &'static str,
     pub prompt_style: PromptStyle,
+    pub oneshot_style: OneShotPromptStyle,
     generate_files: fn(Uuid, &Path) -> Vec<GeneratedFile>,
 }
 
@@ -18,6 +19,13 @@ pub struct ProviderSpec {
 pub enum PromptStyle {
     Direct,
     Flag(&'static str),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum OneShotPromptStyle {
+    Direct,
+    Flag(&'static str),
+    Subcommand(&'static str),
 }
 
 #[derive(Debug, Clone)]
@@ -44,6 +52,31 @@ impl ProviderSpec {
                     arguments.push(flag.to_string());
                     arguments.push(prompt.to_string());
                 }
+            }
+        }
+
+        ProviderCommand {
+            program: self.command.to_string(),
+            arguments,
+            environment: HashMap::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn build_oneshot_command(&self, prompt: &str) -> ProviderCommand {
+        let mut arguments = Vec::new();
+
+        match self.oneshot_style {
+            OneShotPromptStyle::Direct => {
+                arguments.push(prompt.to_string());
+            }
+            OneShotPromptStyle::Flag(flag) => {
+                arguments.push(flag.to_string());
+                arguments.push(prompt.to_string());
+            }
+            OneShotPromptStyle::Subcommand(subcommand) => {
+                arguments.push(subcommand.to_string());
+                arguments.push(prompt.to_string());
             }
         }
 

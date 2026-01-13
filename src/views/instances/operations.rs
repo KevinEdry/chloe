@@ -310,11 +310,15 @@ fn write_generated_files(files: &[GeneratedFile]) {
 }
 
 fn build_task_prompt(title: &str, description: &str) -> String {
-    if description.is_empty() {
+    let base_prompt = if description.is_empty() {
         title.to_string()
     } else {
         format!("Work on this task:\n\nTitle: {title}\n\nDescription: {description}")
-    }
+    };
+
+    format!(
+        "{base_prompt}\n\nIMPORTANT: Do not commit these changes until I explicitly ask you to."
+    )
 }
 
 fn build_shell_wrapped_command(
