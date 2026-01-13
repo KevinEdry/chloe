@@ -1,4 +1,5 @@
 use super::state::{PullRequest, PullRequestStatusState, PullRequestsMode, PullRequestsState};
+use crate::helpers::text;
 use crate::views::StatusBarContent;
 use ratatui::{
     Frame,
@@ -70,11 +71,13 @@ fn render_pull_request_list(frame: &mut Frame, area: Rect, state: &PullRequestsS
 }
 
 fn render_list(frame: &mut Frame, area: Rect, state: &PullRequestsState) {
+    let available_width = area.width.saturating_sub(4) as usize;
+
     let items: Vec<ListItem> = state
         .pull_requests
         .iter()
         .enumerate()
-        .map(|(index, pull_request)| create_list_item(index, pull_request, state))
+        .map(|(index, pull_request)| create_list_item(index, pull_request, state, available_width))
         .collect();
 
     let list = List::new(items).block(
@@ -91,6 +94,7 @@ fn create_list_item(
     index: usize,
     pull_request: &PullRequest,
     state: &PullRequestsState,
+    available_width: usize,
 ) -> ListItem<'static> {
     let is_selected = state.selected_index == Some(index);
 
@@ -117,19 +121,39 @@ fn create_list_item(
             .add_modifier(Modifier::BOLD),
     );
 
-    let title_span = Span::styled(
-        truncate_string(&pull_request.title, 40),
-        Style::default().fg(Color::White),
-    );
+    let number_width = format!("#{}", pull_request.number).len();
+    let state_indicator_width = 9;
+    let spacing_width = 2;
+    let title_max_width = available_width
+        .saturating_sub(number_width)
+        .saturating_sub(state_indicator_width)
+        .saturating_sub(spacing_width);
 
-    let content = Line::from(vec![
-        Span::raw("  "),
-        number_span,
-        state_indicator,
-        title_span,
-    ]);
+    let wrapped_title_lines = text::wrap(&pull_request.title, title_max_width);
 
-    let mut item = ListItem::new(content);
+    let mut lines = Vec::new();
+
+    if let Some(first_line) = wrapped_title_lines.first() {
+        let first_content = Line::from(vec![
+            Span::raw("  "),
+            number_span,
+            state_indicator,
+            Span::styled(first_line.clone(), Style::default().fg(Color::White)),
+        ]);
+        lines.push(first_content);
+
+        for line in wrapped_title_lines.iter().skip(1) {
+            let continuation_line = Line::from(vec![
+                Span::raw("  "),
+                Span::raw(" ".repeat(number_width)),
+                Span::raw(" ".repeat(state_indicator_width)),
+                Span::styled(line.clone(), Style::default().fg(Color::White)),
+            ]);
+            lines.push(continuation_line);
+        }
+    }
+
+    let mut item = ListItem::new(lines);
 
     if is_selected {
         item = item.style(
@@ -255,14 +279,6 @@ fn render_details(frame: &mut Frame, area: Rect, state: &PullRequestsState) {
     frame.render_widget(Paragraph::new(state_line), details_layout[4]);
     frame.render_widget(Paragraph::new(changes_line), details_layout[5]);
     frame.render_widget(Paragraph::new(url_line), details_layout[7]);
-}
-
-fn truncate_string(string: &str, max_length: usize) -> String {
-    if string.len() <= max_length {
-        string.to_string()
-    } else {
-        format!("{}...", &string[..max_length.saturating_sub(3)])
-    }
 }
 
 #[must_use]
