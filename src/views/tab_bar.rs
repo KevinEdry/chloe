@@ -25,14 +25,17 @@ const TAB_COLORS_INACTIVE: [Color; 6] = [
     Color::DarkGray,
 ];
 
-const TAB_NAMES: [&str; 6] = [
-    "Tasks",
-    "Instances",
-    "Roadmap",
-    "Worktree",
-    "PRs",
-    "Settings",
-];
+fn get_tab_name(tab_index: usize, vcs_command: &crate::views::settings::VcsCommand) -> String {
+    match tab_index {
+        0 => "Tasks".to_string(),
+        1 => "Instances".to_string(),
+        2 => "Roadmap".to_string(),
+        3 => vcs_command.workspace_term().to_string(),
+        4 => "PRs".to_string(),
+        5 => "Settings".to_string(),
+        _ => "Unknown".to_string(),
+    }
+}
 
 const DIRECTORY_PADDING: u16 = 2;
 
@@ -65,12 +68,12 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         Tab::Settings => 5,
     };
 
-    let tab_spans: Vec<Span> = TAB_NAMES
-        .iter()
-        .enumerate()
-        .flat_map(|(index, name)| {
+    let vcs_command = &app.settings.settings.vcs_command;
+    let tab_spans: Vec<Span> = (0..6)
+        .flat_map(|index| {
             let is_selected = index == selected_index;
             let tab_number = index + 1;
+            let name = get_tab_name(index, vcs_command);
             let color = if is_selected {
                 TAB_COLORS[index]
             } else {

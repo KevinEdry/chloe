@@ -2,6 +2,7 @@ use super::state::{InstancePane, InstanceState, PaneNode, SplitDirection};
 use super::{layout, pty};
 use crate::providers::{self, GeneratedFile};
 use crate::types::AgentProvider;
+use crate::views::settings::VcsCommand;
 use ratatui::layout::Rect;
 use std::env;
 use std::fs;
@@ -14,6 +15,7 @@ pub struct TaskPaneConfig {
     pub description: String,
     pub working_directory: Option<PathBuf>,
     pub provider: AgentProvider,
+    pub vcs_command: VcsCommand,
     pub rows: u16,
     pub columns: u16,
 }
@@ -106,7 +108,7 @@ impl InstanceState {
         let generated_files = spec.build_files(config.task_id, &working_directory);
         write_generated_files(&generated_files);
 
-        let prompt = build_task_prompt(&config.title, &config.description);
+        let prompt = build_task_prompt(&config.title, &config.description, &config.vcs_command);
         let command = spec.build_command(&prompt);
 
         let shell_command = build_shell_wrapped_command(&command);
@@ -309,15 +311,16 @@ fn write_generated_files(files: &[GeneratedFile]) {
     }
 }
 
-fn build_task_prompt(title: &str, description: &str) -> String {
+fn build_task_prompt(title: &str, description: &str, vcs_command: &VcsCommand) -> String {
     let base_prompt = if description.is_empty() {
         title.to_string()
     } else {
         format!("Work on this task:\n\nTitle: {title}\n\nDescription: {description}")
     };
 
+    let vcs_cmd = vcs_command.command_name();
     format!(
-        "{base_prompt}\n\nIMPORTANT: Do not commit these changes until I explicitly ask you to."
+        "{base_prompt}\n\nIMPORTANT: Do not commit these changes with '{vcs_cmd} commit' until I explicitly ask you to."
     )
 }
 

@@ -1,4 +1,5 @@
 use super::tab_state::{WorktreeMode, WorktreeTabState};
+use crate::views::settings::VcsCommand;
 use crate::views::StatusBarContent;
 use ratatui::{
     Frame,
@@ -17,15 +18,20 @@ const DETACHED_ICON: &str = "";
 const PATH_ICON: &str = "";
 const SELECTED_INDICATOR: &str = "▶";
 
-pub fn render(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
-    render_worktree_list(frame, area, state);
+pub fn render(frame: &mut Frame, area: Rect, state: &WorktreeTabState, vcs_command: &VcsCommand) {
+    render_worktree_list(frame, area, state, vcs_command);
 
     if let WorktreeMode::ConfirmDelete { worktree_index } = state.mode {
-        render_delete_confirmation(frame, area, state, worktree_index);
+        render_delete_confirmation(frame, area, state, worktree_index, vcs_command);
     }
 }
 
-fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState) {
+fn render_worktree_list(
+    frame: &mut Frame,
+    area: Rect,
+    state: &WorktreeTabState,
+    vcs_command: &VcsCommand,
+) {
     let outer_block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray))
@@ -34,13 +40,18 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
     let inner_area = outer_block.inner(area);
     frame.render_widget(outer_block, area);
 
+    if !vcs_command.supports_worktrees() {
+        render_unsupported_vcs_state(frame, inner_area, vcs_command);
+        return;
+    }
+
     if let Some(error) = &state.error_message {
-        render_error_state(frame, inner_area, error);
+        render_error_state(frame, inner_area, error, vcs_command);
         return;
     }
 
     if state.worktrees.is_empty() {
-        render_empty_state(frame, inner_area);
+        render_empty_state(frame, inner_area, vcs_command);
         return;
     }
 
@@ -49,16 +60,16 @@ fn render_worktree_list(frame: &mut Frame, area: Rect, state: &WorktreeTabState)
         .constraints([Constraint::Length(HEADER_HEIGHT), Constraint::Min(0)])
         .split(inner_area);
 
-    render_header(frame, layout[0], state.worktrees.len());
+    render_header(frame, layout[0], state.worktrees.len(), vcs_command);
     render_worktree_items(frame, layout[1], state);
 }
 
-fn render_header(frame: &mut Frame, area: Rect, count: usize) {
+fn render_header(frame: &mut Frame, area: Rect, count: usize, vcs_command: &VcsCommand) {
     let header_lines = vec![
         Line::from(""),
         Line::from(vec![
             Span::styled(
-                "  Git Worktrees",
+                format!("  {}", vcs_command.full_title()),
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
@@ -66,7 +77,7 @@ fn render_header(frame: &mut Frame, area: Rect, count: usize) {
             Span::styled(format!("  ({count})"), Style::default().fg(Color::DarkGray)),
         ]),
         Line::from(Span::styled(
-            "  Isolated working directories for parallel development",
+            format!("  {}", vcs_command.description()),
             Style::default().fg(Color::Gray),
         )),
         Line::from(Span::styled(
@@ -78,11 +89,41 @@ fn render_header(frame: &mut Frame, area: Rect, count: usize) {
     frame.render_widget(Paragraph::new(header_lines), area);
 }
 
-fn render_error_state(frame: &mut Frame, area: Rect, error: &str) {
+fn render_unsupported_vcs_state(frame: &mut Frame, area: Rect, vcs_command: &VcsCommand) {
+    let workspace_plural = vcs_command.workspace_term_plural();
+
+    let message_lines = vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            format!("  {} {} Not Yet Supported", vcs_command.display_name(), workspace_plural),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            format!("  {} workspace management is not yet implemented in Chloe.", vcs_command.display_name()),
+            Style::default().fg(Color::Gray),
+        )),
+        Line::from(Span::styled(
+            "  Currently, only Git worktrees are supported for task isolation.",
+            Style::default().fg(Color::Gray),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  To use this feature, switch to Git in Settings → Shell & Terminal → Version Control.",
+            Style::default().fg(Color::DarkGray),
+        )),
+    ];
+
+    frame.render_widget(Paragraph::new(message_lines), area);
+}
+
+fn render_error_state(frame: &mut Frame, area: Rect, error: &str, vcs_command: &VcsCommand) {
     let error_lines = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  ⚠ Error Loading Worktrees",
+            format!("  ⚠ Error Loading {}", vcs_command.workspace_term_plural()),
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
@@ -100,18 +141,21 @@ fn render_error_state(frame: &mut Frame, area: Rect, error: &str) {
     frame.render_widget(Paragraph::new(error_lines), area);
 }
 
-fn render_empty_state(frame: &mut Frame, area: Rect) {
+fn render_empty_state(frame: &mut Frame, area: Rect, vcs_command: &VcsCommand) {
+    let workspace_plural = vcs_command.workspace_term_plural();
+    let workspace_singular = vcs_command.workspace_term();
+
     let empty_lines = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  No Worktrees Found",
+            format!("  No {} Found", workspace_plural),
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(Span::styled(
-            "  Worktrees will appear here when you start tasks.",
+            format!("  {} will appear here when you start tasks.", workspace_plural),
             Style::default().fg(Color::Gray),
         )),
         Line::from(Span::styled(
@@ -120,7 +164,7 @@ fn render_empty_state(frame: &mut Frame, area: Rect) {
         )),
         Line::from(""),
         Line::from(Span::styled(
-            "  Tip: Start a task in the Tasks tab to create a worktree.",
+            format!("  Tip: Start a task in the Tasks tab to create a {}.", workspace_singular.to_lowercase()),
             Style::default().fg(Color::DarkGray),
         )),
     ];
@@ -259,6 +303,7 @@ fn render_delete_confirmation(
     area: Rect,
     state: &WorktreeTabState,
     worktree_index: usize,
+    vcs_command: &VcsCommand,
 ) {
     const POPUP_WIDTH_PERCENT: u16 = 60;
     const POPUP_HEIGHT: u16 = 7;
@@ -269,10 +314,12 @@ fn render_delete_confirmation(
         return;
     };
 
+    let workspace_singular = vcs_command.workspace_term().to_lowercase();
+
     let confirmation_text = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "Delete worktree?",
+            format!("Delete {}?", workspace_singular),
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),

@@ -44,7 +44,12 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         },
         Tab::Instances => instances::view::render(frame, &mut app.instances, layout.content),
         Tab::Roadmap => roadmap::view::render(frame, app, layout.content),
-        Tab::Worktree => worktree::view::render(frame, layout.content, &app.worktree),
+        Tab::Worktree => worktree::view::render(
+            frame,
+            layout.content,
+            &app.worktree,
+            &app.settings.settings.vcs_command,
+        ),
         Tab::PullRequests => pull_requests::view::render(frame, layout.content, &app.pull_requests),
         Tab::Settings => settings::view::render(frame, &app.settings, layout.content),
     }

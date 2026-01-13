@@ -1,6 +1,6 @@
 use super::state::{
     IdeCommand, SettingItem, SettingsFocus, SettingsMode, SettingsSection, SettingsState,
-    TerminalCommand,
+    TerminalCommand, VcsCommand,
 };
 use crate::views::StatusBarContent;
 use crate::views::tasks::dialogs::{
@@ -245,9 +245,10 @@ const fn get_item_type_indicator(item: SettingItem) -> &'static str {
     match item {
         SettingItem::DefaultShell => "[text]",
         SettingItem::AutoSaveInterval => "[number]",
-        SettingItem::IdeCommand | SettingItem::TerminalCommand | SettingItem::DefaultProvider => {
-            "[select]"
-        }
+        SettingItem::IdeCommand
+        | SettingItem::TerminalCommand
+        | SettingItem::VcsCommand
+        | SettingItem::DefaultProvider => "[select]",
     }
 }
 
@@ -259,6 +260,7 @@ fn get_setting_value_text(item: SettingItem, state: &SettingsState) -> String {
         }
         SettingItem::IdeCommand => state.settings.ide_command.display_name().to_string(),
         SettingItem::TerminalCommand => state.settings.terminal_command.display_name().to_string(),
+        SettingItem::VcsCommand => state.settings.vcs_command.display_name().to_string(),
         SettingItem::DefaultProvider => state.settings.default_provider.display_name().to_string(),
     }
 }
@@ -278,6 +280,9 @@ fn render_dialogs(frame: &mut Frame, area: Rect, state: &SettingsState) {
         }
         SettingsMode::SelectingTerminal { selected_index } => {
             render_terminal_selection_dialog(frame, area, state, selected_index);
+        }
+        SettingsMode::SelectingVcs { selected_index } => {
+            render_vcs_selection_dialog(frame, area, state, selected_index);
         }
         SettingsMode::EditingShell { .. } => {
             render_text_input_dialog(frame, area, "Edit Default Shell", &state.edit_buffer);
@@ -398,6 +403,59 @@ const fn is_current_terminal(command: &TerminalCommand, index: usize) -> bool {
     matches!(
         (command, index),
         (TerminalCommand::AppleTerminal, 0) | (TerminalCommand::ITerm2, 1)
+    )
+}
+
+fn render_vcs_selection_dialog(
+    frame: &mut Frame,
+    area: Rect,
+    state: &SettingsState,
+    selected_index: usize,
+) {
+    let popup_area = centered_rect(
+        SELECTION_POPUP_WIDTH_PERCENT,
+        SELECTION_POPUP_HEIGHT_PERCENT,
+        area,
+    );
+    render_popup_background(frame, popup_area);
+
+    let block = Block::default()
+        .title(" Select Version Control System ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan))
+        .padding(Padding::uniform(1));
+
+    let inner_area = block.inner(popup_area);
+    frame.render_widget(block, popup_area);
+
+    let options = [
+        ("Git", "Traditional version control system"),
+        ("Jujutsu (jj)", "Next-generation version control"),
+    ];
+
+    let current_vcs = &state.settings.vcs_command;
+    let items: Vec<ListItem> = options
+        .iter()
+        .enumerate()
+        .map(|(index, (name, description))| {
+            render_selection_option(
+                name,
+                description,
+                index,
+                selected_index,
+                is_current_vcs(current_vcs, index),
+            )
+        })
+        .collect();
+
+    let list = List::new(items);
+    frame.render_widget(list, inner_area);
+}
+
+const fn is_current_vcs(command: &VcsCommand, index: usize) -> bool {
+    matches!(
+        (command, index),
+        (VcsCommand::Git, 0) | (VcsCommand::Jujutsu, 1)
     )
 }
 
@@ -525,7 +583,8 @@ pub fn get_status_bar_content(state: &SettingsState, width: u16) -> StatusBarCon
         SettingsMode::EditingShell { .. } | SettingsMode::EditingAutoSave { .. } => "EDITING",
         SettingsMode::SelectingProvider { .. }
         | SettingsMode::SelectingIde { .. }
-        | SettingsMode::SelectingTerminal { .. } => "SELECT",
+        | SettingsMode::SelectingTerminal { .. }
+        | SettingsMode::SelectingVcs { .. } => "SELECT",
     };
 
     let help_text = if width < STATUS_BAR_WIDTH_THRESHOLD {
@@ -533,7 +592,8 @@ pub fn get_status_bar_content(state: &SettingsState, width: u16) -> StatusBarCon
             SettingsMode::Normal => "jk:nav  Tab:focus  Enter:edit",
             SettingsMode::SelectingProvider { .. }
             | SettingsMode::SelectingIde { .. }
-            | SettingsMode::SelectingTerminal { .. } => "jk:navigate  Enter:select  Esc:cancel",
+            | SettingsMode::SelectingTerminal { .. }
+            | SettingsMode::SelectingVcs { .. } => "jk:navigate  Enter:select  Esc:cancel",
             _ => "Enter:confirm  Esc:cancel",
         }
     } else {
@@ -546,7 +606,8 @@ pub fn get_status_bar_content(state: &SettingsState, width: u16) -> StatusBarCon
             }
             SettingsMode::SelectingProvider { .. }
             | SettingsMode::SelectingIde { .. }
-            | SettingsMode::SelectingTerminal { .. } => {
+            | SettingsMode::SelectingTerminal { .. }
+            | SettingsMode::SelectingVcs { .. } => {
                 "jk/arrows: navigate  Enter: select  Esc: cancel"
             }
             SettingsMode::Normal => {

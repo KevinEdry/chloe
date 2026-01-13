@@ -63,7 +63,11 @@ impl SettingsSection {
     #[must_use]
     pub const fn items(self) -> &'static [SettingItem] {
         match self {
-            Self::ShellAndTerminal => &[SettingItem::DefaultShell, SettingItem::TerminalCommand],
+            Self::ShellAndTerminal => &[
+                SettingItem::DefaultShell,
+                SettingItem::TerminalCommand,
+                SettingItem::VcsCommand,
+            ],
             Self::EditorAndIde => &[SettingItem::IdeCommand],
             Self::Agent => &[SettingItem::DefaultProvider],
             Self::Persistence => &[SettingItem::AutoSaveInterval],
@@ -89,6 +93,8 @@ pub struct Settings {
     pub auto_save_interval_seconds: u64,
     pub ide_command: IdeCommand,
     pub terminal_command: TerminalCommand,
+    #[serde(default)]
+    pub vcs_command: VcsCommand,
     #[serde(default)]
     pub default_provider: AgentProvider,
     #[serde(default)]
@@ -163,6 +169,116 @@ pub enum TerminalCommand {
     Custom(String),
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum VcsCommand {
+    Git,
+    Jujutsu,
+}
+
+impl Default for VcsCommand {
+    fn default() -> Self {
+        Self::detect()
+    }
+}
+
+impl VcsCommand {
+    #[must_use]
+    pub fn detect() -> Self {
+        if std::process::Command::new("jj")
+            .arg("--version")
+            .output()
+            .is_ok()
+        {
+            return Self::Jujutsu;
+        }
+
+        Self::Git
+    }
+
+    #[must_use]
+    pub const fn command_name(&self) -> &str {
+        match self {
+            Self::Git => "git",
+            Self::Jujutsu => "jj",
+        }
+    }
+
+    #[must_use]
+    pub const fn supports_worktrees(&self) -> bool {
+        match self {
+            Self::Git => true,
+            Self::Jujutsu => false,
+        }
+    }
+
+    #[must_use]
+    pub const fn display_name(&self) -> &str {
+        match self {
+            Self::Git => "Git",
+            Self::Jujutsu => "Jujutsu (jj)",
+        }
+    }
+
+    #[must_use]
+    pub const fn workspace_term(&self) -> &str {
+        match self {
+            Self::Git => "Worktree",
+            Self::Jujutsu => "Workspace",
+        }
+    }
+
+    #[must_use]
+    pub const fn workspace_term_plural(&self) -> &str {
+        match self {
+            Self::Git => "Worktrees",
+            Self::Jujutsu => "Workspaces",
+        }
+    }
+
+    #[must_use]
+    pub const fn full_title(&self) -> &str {
+        match self {
+            Self::Git => "Git Worktrees",
+            Self::Jujutsu => "Jujutsu Workspaces",
+        }
+    }
+
+    #[must_use]
+    pub const fn description(&self) -> &str {
+        match self {
+            Self::Git => "Isolated working directories for parallel development",
+            Self::Jujutsu => "Isolated workspaces for parallel development",
+        }
+    }
+
+    #[must_use]
+    pub fn available_commands() -> Vec<Self> {
+        let mut commands = Vec::new();
+
+        if std::process::Command::new("git")
+            .arg("--version")
+            .output()
+            .is_ok()
+        {
+            commands.push(Self::Git);
+        }
+
+        if std::process::Command::new("jj")
+            .arg("--version")
+            .output()
+            .is_ok()
+        {
+            commands.push(Self::Jujutsu);
+        }
+
+        if commands.is_empty() {
+            commands.push(Self::Git);
+        }
+
+        commands
+    }
+}
+
 impl TerminalCommand {
     #[must_use]
     pub const fn detect() -> Self {
@@ -224,6 +340,7 @@ impl Default for Settings {
             auto_save_interval_seconds: 30,
             ide_command: IdeCommand::detect(),
             terminal_command: TerminalCommand::detect(),
+            vcs_command: VcsCommand::detect(),
             default_provider: AgentProvider::default(),
             skip_provider_selection: false,
             provider_registry: ProviderRegistry::new(),
@@ -250,6 +367,9 @@ pub enum SettingsMode {
     SelectingTerminal {
         selected_index: usize,
     },
+    SelectingVcs {
+        selected_index: usize,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -258,6 +378,7 @@ pub enum SettingItem {
     AutoSaveInterval,
     IdeCommand,
     TerminalCommand,
+    VcsCommand,
     DefaultProvider,
 }
 
@@ -269,6 +390,7 @@ impl SettingItem {
             Self::AutoSaveInterval => "Auto-save Interval",
             Self::IdeCommand => "IDE Command",
             Self::TerminalCommand => "Terminal",
+            Self::VcsCommand => "Version Control",
             Self::DefaultProvider => "Default Agent",
         }
     }
@@ -401,6 +523,12 @@ impl SettingsState {
                     selected_index: current_index,
                 };
             }
+            SettingItem::VcsCommand => {
+                let current_index = self.get_current_vcs_index();
+                self.mode = SettingsMode::SelectingVcs {
+                    selected_index: current_index,
+                };
+            }
             SettingItem::DefaultProvider => {
                 if self.detected_providers.len() <= 1 {
                     if let Some(detected) = self.detected_providers.first() {
@@ -430,6 +558,13 @@ impl SettingsState {
         }
     }
 
+    const fn get_current_vcs_index(&self) -> usize {
+        match &self.settings.vcs_command {
+            VcsCommand::Git => 0,
+            VcsCommand::Jujutsu => 1,
+        }
+    }
+
     pub fn select_ide(&mut self, index: usize) {
         self.settings.ide_command = match index {
             0 => IdeCommand::Cursor,
@@ -449,12 +584,22 @@ impl SettingsState {
         self.mode = SettingsMode::Normal;
     }
 
+    pub fn select_vcs(&mut self, index: usize) {
+        self.settings.vcs_command = match index {
+            0 => VcsCommand::Git,
+            1 => VcsCommand::Jujutsu,
+            _ => return,
+        };
+        self.mode = SettingsMode::Normal;
+    }
+
     pub fn confirm_edit(&mut self) {
         match self.mode {
             SettingsMode::Normal
             | SettingsMode::SelectingProvider { .. }
             | SettingsMode::SelectingIde { .. }
-            | SettingsMode::SelectingTerminal { .. } => {}
+            | SettingsMode::SelectingTerminal { .. }
+            | SettingsMode::SelectingVcs { .. } => {}
             SettingsMode::EditingShell { .. } => {
                 if !self.edit_buffer.is_empty() {
                     self.settings.default_shell = self.edit_buffer.clone();
@@ -484,7 +629,8 @@ impl SettingsState {
             SettingsMode::Normal
             | SettingsMode::SelectingProvider { .. }
             | SettingsMode::SelectingIde { .. }
-            | SettingsMode::SelectingTerminal { .. } => {}
+            | SettingsMode::SelectingTerminal { .. }
+            | SettingsMode::SelectingVcs { .. } => {}
             SettingsMode::EditingShell { .. } => {
                 self.edit_buffer.push(character);
             }

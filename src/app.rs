@@ -175,6 +175,7 @@ impl App {
                 description: task_description,
                 working_directory,
                 provider,
+                vcs_command: self.settings.settings.vcs_command.clone(),
                 rows: DEFAULT_PTY_ROWS,
                 columns: DEFAULT_PTY_COLUMNS,
             };
@@ -207,6 +208,7 @@ impl App {
                 description: task_description,
                 working_directory,
                 provider,
+                vcs_command: self.settings.settings.vcs_command.clone(),
                 rows: DEFAULT_PTY_ROWS,
                 columns: DEFAULT_PTY_COLUMNS,
             };

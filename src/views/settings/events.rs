@@ -4,6 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 
 const IDE_OPTIONS_COUNT: usize = 3;
 const TERMINAL_OPTIONS_COUNT: usize = 2;
+const VCS_OPTIONS_COUNT: usize = 2;
 
 pub enum SettingsAction {
     None,
@@ -19,6 +20,7 @@ pub fn handle_key_event(state: &mut SettingsState, key: KeyEvent) -> SettingsAct
         SettingsMode::SelectingProvider { .. } => handle_provider_selection_mode(state, key),
         SettingsMode::SelectingIde { .. } => handle_ide_selection_mode(state, key),
         SettingsMode::SelectingTerminal { .. } => handle_terminal_selection_mode(state, key),
+        SettingsMode::SelectingVcs { .. } => handle_vcs_selection_mode(state, key),
     }
 }
 
@@ -192,6 +194,36 @@ fn handle_terminal_selection_mode(state: &mut SettingsState, key: KeyEvent) -> S
         }
         KeyCode::Enter => {
             state.select_terminal(selected_index);
+            SettingsAction::SaveSettings
+        }
+        _ => SettingsAction::None,
+    }
+}
+
+fn handle_vcs_selection_mode(state: &mut SettingsState, key: KeyEvent) -> SettingsAction {
+    let SettingsMode::SelectingVcs { selected_index } = state.mode else {
+        return SettingsAction::None;
+    };
+
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            state.mode = SettingsMode::Normal;
+            SettingsAction::None
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            state.mode = SettingsMode::SelectingVcs {
+                selected_index: selected_index.saturating_sub(1),
+            };
+            SettingsAction::None
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            state.mode = SettingsMode::SelectingVcs {
+                selected_index: (selected_index + 1).min(VCS_OPTIONS_COUNT - 1),
+            };
+            SettingsAction::None
+        }
+        KeyCode::Enter => {
+            state.select_vcs(selected_index);
             SettingsAction::SaveSettings
         }
         _ => SettingsAction::None,
