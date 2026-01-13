@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-01-13
+
+### Bug Fixes
+
+- **instances:** Improve PTY input handling by @KevinEdry
+- **kanban:** Enable text wrapping in Add Task dialog input field by @KevinEdry
+- **tasks:** Add backspace key handler to focus mode for moving tasks back by @KevinEdry
+- Box large enum variant and format docs by @KevinEdry
+
+### Documentation
+
+- Update CHANGELOG.md for v0.2.0 by @KevinEdry
+- Add /install redirect by @KevinEdry
+- Add Discord links and update install URL by @KevinEdry
+- Update README for multi-provider support by @KevinEdry
+- Rewrite README with compelling competitive positioning by @KevinEdry
+- Update landing page and docs for multi-provider support by @KevinEdry
+
+### Features
+
+- **review:** Add diff-based review popup by @KevinEdry
+- **tasks:** Add worktree selection dialog by @KevinEdry
+- **instance:** Add AgentProvider enum and config schema by @KevinEdry
+- **config:** Implement provider spawn command configuration by @KevinEdry
+- **tasks:** Add provider selection UI for task startup by @KevinEdry
+- **providers:** Auto-detect available providers with path display by @KevinEdry
+- **settings:** Redesign settings UI with sidebar layout and selection dialogs by @KevinEdry
+- **providers:** Refactor to declarative ProviderSpec pattern by @KevinEdry
+- **opencode:** Add event handling for notifications by @KevinEdry
+
+### Miscellaneous
+
+- Update beads status and metadata by @KevinEdry
+- Remove worktrees from git tracking by @KevinEdry
+
+### Refactoring
+
+- Fix all clippy lints and improve code quality by @KevinEdry
+
 ## [0.2.0] - 2026-01-10
 
 ### Bug Fixes
