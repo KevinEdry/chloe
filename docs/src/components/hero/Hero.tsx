@@ -1,6 +1,6 @@
+import { HeroContent } from './HeroContent'
 import { HeroOverlay } from './HeroOverlay'
 import { HeroTiledBackground } from './HeroTiledBackground'
-import { HeroContent } from './HeroContent'
 
 export function Hero() {
   return (

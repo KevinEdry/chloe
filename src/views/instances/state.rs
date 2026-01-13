@@ -13,7 +13,7 @@ pub enum SplitDirection {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PaneNode {
-    Leaf(InstancePane),
+    Leaf(Box<InstancePane>),
     Split {
         direction: SplitDirection,
         ratio: f32,

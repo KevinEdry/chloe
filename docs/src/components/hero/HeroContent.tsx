@@ -1,8 +1,8 @@
 import { HeroAnnouncementBadge } from './HeroAnnouncementBadge'
 import { HeroHeadline } from './HeroHeadline'
+import { HeroStats } from './HeroStats'
 import { HeroSubtitle } from './HeroSubtitle'
 import { HeroInstallationCommand } from './hero-installation-command/HeroInstallationCommand'
-import { HeroStats } from './HeroStats'
 
 export function HeroContent() {
   return (

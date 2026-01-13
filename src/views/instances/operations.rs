@@ -37,7 +37,7 @@ impl InstanceState {
         let pane_id = pane.id;
 
         if self.root.is_none() {
-            self.root = Some(PaneNode::Leaf(pane));
+            self.root = Some(PaneNode::Leaf(Box::new(pane)));
             self.selected_pane_id = Some(pane_id);
             return;
         }
@@ -127,7 +127,7 @@ impl InstanceState {
         let pane_id = pane.id;
 
         if self.root.is_none() {
-            self.root = Some(PaneNode::Leaf(pane));
+            self.root = Some(PaneNode::Leaf(Box::new(pane)));
             self.selected_pane_id = Some(pane_id);
         } else {
             self.split_biggest_pane_with_new_pane(pane);
@@ -375,7 +375,7 @@ fn split_node_at_pane(
                     direction,
                     ratio,
                     first: Box::new(PaneNode::Leaf(pane)),
-                    second: Box::new(PaneNode::Leaf(new_pane)),
+                    second: Box::new(PaneNode::Leaf(Box::new(new_pane))),
                 }
             } else {
                 PaneNode::Leaf(pane)

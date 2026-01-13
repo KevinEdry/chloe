@@ -1,8 +1,8 @@
-import { Metadata } from 'next'
-import { Hero } from '@/components/hero/Hero'
+import type { Metadata } from 'next'
 import { Demo } from '@/components/Demo'
 import { Features } from '@/components/Features'
 import { Faq } from '@/components/faq/Faq'
+import { Hero } from '@/components/hero/Hero'
 
 export const metadata: Metadata = {
   alternates: {

@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
 import { track } from '@vercel/analytics'
-import { Platform, platforms } from './types'
-import { PlatformDropdown } from './PlatformDropdown'
+import { useState } from 'react'
+import { HeroSecondaryLink } from '../HeroSecondaryLink'
 import { CommandDisplay } from './CommandDisplay'
 import { CopyIcon } from './CopyIcon'
-import { HeroSecondaryLink } from '../HeroSecondaryLink'
+import { PlatformDropdown } from './PlatformDropdown'
+import { type Platform, platforms } from './types'
 
 export function HeroInstallationCommand() {
   const [copied, setCopied] = useState(false)

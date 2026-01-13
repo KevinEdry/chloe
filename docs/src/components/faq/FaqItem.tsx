@@ -28,9 +28,7 @@ export function FaqItem({ question, answer }: FaqItemProps) {
         </svg>
       </button>
       {isOpen && (
-        <div className="pb-5 text-[var(--color-text-secondary)] leading-relaxed">
-          {answer}
-        </div>
+        <div className="pb-5 text-[var(--color-text-secondary)] leading-relaxed">{answer}</div>
       )}
     </div>
   )

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Platform, platforms } from './types'
+import { type Platform, platforms } from './types'
 
 interface PlatformDropdownProps {
   selectedPlatform: Platform
