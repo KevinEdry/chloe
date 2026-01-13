@@ -1,4 +1,5 @@
 use super::state::{PullRequest, PullRequestStatusState, PullRequestsMode, PullRequestsState};
+use crate::helpers::text;
 use crate::views::StatusBarContent;
 use ratatui::{
     Frame,
@@ -128,19 +129,31 @@ fn create_list_item(
         .saturating_sub(state_indicator_width)
         .saturating_sub(spacing_width);
 
-    let title_span = Span::styled(
-        truncate_string(&pull_request.title, title_max_width),
-        Style::default().fg(Color::White),
-    );
+    let wrapped_title_lines = text::wrap(&pull_request.title, title_max_width);
 
-    let content = Line::from(vec![
-        Span::raw("  "),
-        number_span,
-        state_indicator,
-        title_span,
-    ]);
+    let mut lines = Vec::new();
 
-    let mut item = ListItem::new(content);
+    if let Some(first_line) = wrapped_title_lines.first() {
+        let first_content = Line::from(vec![
+            Span::raw("  "),
+            number_span,
+            state_indicator,
+            Span::styled(first_line.clone(), Style::default().fg(Color::White)),
+        ]);
+        lines.push(first_content);
+
+        for line in wrapped_title_lines.iter().skip(1) {
+            let continuation_line = Line::from(vec![
+                Span::raw("  "),
+                Span::raw(" ".repeat(number_width)),
+                Span::raw(" ".repeat(state_indicator_width)),
+                Span::styled(line.clone(), Style::default().fg(Color::White)),
+            ]);
+            lines.push(continuation_line);
+        }
+    }
+
+    let mut item = ListItem::new(lines);
 
     if is_selected {
         item = item.style(
@@ -266,14 +279,6 @@ fn render_details(frame: &mut Frame, area: Rect, state: &PullRequestsState) {
     frame.render_widget(Paragraph::new(state_line), details_layout[4]);
     frame.render_widget(Paragraph::new(changes_line), details_layout[5]);
     frame.render_widget(Paragraph::new(url_line), details_layout[7]);
-}
-
-fn truncate_string(string: &str, max_length: usize) -> String {
-    if string.len() <= max_length {
-        string.to_string()
-    } else {
-        format!("{}...", &string[..max_length.saturating_sub(3)])
-    }
 }
 
 #[must_use]
