@@ -20,9 +20,7 @@ impl<'a> Spinner<'a> {
         Self {
             frame,
             message: None,
-            style: Style::new()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
+            style: Style::new().fg(Color::Yellow).add_modifier(Modifier::BOLD),
         }
     }
 

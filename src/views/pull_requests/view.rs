@@ -70,11 +70,13 @@ fn render_pull_request_list(frame: &mut Frame, area: Rect, state: &PullRequestsS
 }
 
 fn render_list(frame: &mut Frame, area: Rect, state: &PullRequestsState) {
+    let available_width = area.width.saturating_sub(4) as usize;
+
     let items: Vec<ListItem> = state
         .pull_requests
         .iter()
         .enumerate()
-        .map(|(index, pull_request)| create_list_item(index, pull_request, state))
+        .map(|(index, pull_request)| create_list_item(index, pull_request, state, available_width))
         .collect();
 
     let list = List::new(items).block(
@@ -91,6 +93,7 @@ fn create_list_item(
     index: usize,
     pull_request: &PullRequest,
     state: &PullRequestsState,
+    available_width: usize,
 ) -> ListItem<'static> {
     let is_selected = state.selected_index == Some(index);
 
@@ -117,8 +120,16 @@ fn create_list_item(
             .add_modifier(Modifier::BOLD),
     );
 
+    let number_width = format!("#{}", pull_request.number).len();
+    let state_indicator_width = 9;
+    let spacing_width = 2;
+    let title_max_width = available_width
+        .saturating_sub(number_width)
+        .saturating_sub(state_indicator_width)
+        .saturating_sub(spacing_width);
+
     let title_span = Span::styled(
-        truncate_string(&pull_request.title, 40),
+        truncate_string(&pull_request.title, title_max_width),
         Style::default().fg(Color::White),
     );
 
