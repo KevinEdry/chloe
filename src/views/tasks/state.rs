@@ -269,7 +269,7 @@ impl Task {
             instance_id: None,
             is_paused: false,
             worktree_info: None,
-            is_classifying: false,
+            is_classifying: true,
         }
     }
 }

@@ -1,4 +1,4 @@
-use super::TasksAction;
+use crate::views::tasks::events::TasksAction;
 use crate::views::tasks::state::{MergeTarget, ReviewAction, ReviewPanel, TasksMode, TasksState};
 use crate::views::worktree::{find_repository_root, get_current_branch, get_worktree_status};
 use crossterm::event::{KeyCode, KeyEvent};

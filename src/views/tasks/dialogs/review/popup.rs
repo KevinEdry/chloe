@@ -1,4 +1,5 @@
-use super::{centered_rect, render_popup_background, review_details, review_status};
+use super::super::{centered_rect, render_popup_background};
+use super::{details, status};
 use crate::app::App;
 use crate::views::instances::InstancePane;
 use crate::views::tasks::state::{ReviewAction, ReviewPanel};
@@ -138,7 +139,7 @@ fn render_status_header(frame: &mut Frame, info: &ReviewInfo, area: Rect) {
     frame.render_widget(block, area);
 
     let lines =
-        review_status::build_status_lines(info.branch_name.as_deref(), &info.worktree_status);
+        status::build_status_lines(info.branch_name.as_deref(), &info.worktree_status);
     let text = Paragraph::new(lines);
     frame.render_widget(text, inner_area);
 }
@@ -185,7 +186,7 @@ fn render_diff_section(
     focused_panel: ReviewPanel,
     area: Rect,
 ) {
-    let diff_panel = review_details::build_diff_panel(app, task_id, selected_file_index);
+    let diff_panel = details::build_diff_panel(app, task_id, selected_file_index);
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
@@ -211,7 +212,7 @@ fn render_diff_section(
 
 fn render_file_list_section(
     frame: &mut Frame,
-    diff_panel: &review_details::DiffPanelState,
+    diff_panel: &details::DiffPanelState,
     is_focused: bool,
     area: Rect,
 ) {
@@ -219,7 +220,7 @@ fn render_file_list_section(
     let inner_area = block.inner(area);
     frame.render_widget(block, area);
 
-    let lines = review_details::build_file_list_lines(
+    let lines = details::build_file_list_lines(
         &diff_panel.files,
         diff_panel.selected_index,
         is_focused,
@@ -234,7 +235,7 @@ fn render_file_list_section(
 
 fn render_diff_content_section(
     frame: &mut Frame,
-    diff_panel: &review_details::DiffPanelState,
+    diff_panel: &details::DiffPanelState,
     diff_scroll_offset: usize,
     is_focused: bool,
     area: Rect,

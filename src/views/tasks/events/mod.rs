@@ -2,11 +2,11 @@ mod dialogs;
 mod focus_navigation;
 mod kanban_navigation;
 mod provider_selection;
-mod review;
 mod terminal;
 mod text_input;
 mod worktree_selection;
 
+use super::dialogs::review;
 use super::state::{MergeTarget, TasksMode, TasksState, TasksViewMode, WorktreeSelectionOption};
 use crate::types::AgentProvider;
 use crossterm::event::{KeyCode, KeyEvent};

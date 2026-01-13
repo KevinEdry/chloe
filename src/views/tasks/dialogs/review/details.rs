@@ -1,5 +1,5 @@
 use crate::app::App;
-use crate::review::diff;
+use super::diff;
 use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},

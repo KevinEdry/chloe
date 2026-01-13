@@ -2,9 +2,7 @@ mod add_task;
 mod exit_confirmation;
 mod merge_confirmation;
 mod provider_selection;
-mod review_details;
-mod review_popup;
-mod review_status;
+pub mod review;
 mod worktree_selection;
 
 pub use add_task::{AddTaskDialogState, render_add_task_dialog};
@@ -14,7 +12,7 @@ pub use provider_selection::{
     ProviderSelectionResult, ProviderSelectionViewState, get_option_count, get_selection_result,
     render_provider_selection,
 };
-pub use review_popup::{ReviewPopupViewState, render_review_popup};
+pub use review::{ReviewPopupViewState, render_review_popup};
 pub use worktree_selection::{WorktreeSelectionViewState, render_worktree_selection};
 
 use ratatui::{
