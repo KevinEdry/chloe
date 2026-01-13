@@ -1,7 +1,8 @@
+use crate::views::settings::VcsCommand;
 use crate::views::tasks::state::{ReviewAction, ReviewPanel, TasksMode, TasksState};
 use crossterm::event::{KeyCode, KeyEvent};
 
-pub fn handle_kanban_normal_mode(state: &mut TasksState, key: KeyEvent) {
+pub fn handle_kanban_normal_mode(state: &mut TasksState, key: KeyEvent, vcs_command: &VcsCommand) {
     match key.code {
         KeyCode::Left | KeyCode::Char('h') => state.previous_column(),
         KeyCode::Right | KeyCode::Char('l') => state.next_column(),
@@ -41,7 +42,7 @@ pub fn handle_kanban_normal_mode(state: &mut TasksState, key: KeyEvent) {
                     };
                 }
             } else if !is_in_progress_column {
-                state.move_task_next();
+                state.move_task_next(vcs_command);
             }
         }
         KeyCode::Backspace => {

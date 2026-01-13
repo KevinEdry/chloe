@@ -1,3 +1,4 @@
+use crate::views::settings::VcsCommand;
 use crate::views::tasks::state::{TasksMode, TasksState};
 use uuid::Uuid;
 
@@ -5,7 +6,7 @@ use crate::views::tasks::state::WorktreeSelectionOption;
 use crate::views::worktree::WorktreeInfo;
 
 impl TasksState {
-    pub fn move_task_next(&mut self) {
+    pub fn move_task_next(&mut self, vcs_command: &VcsCommand) {
         let can_move_next = self.kanban_selected_column < self.columns.len() - 1;
         if !can_move_next {
             return;
@@ -31,7 +32,7 @@ impl TasksState {
             let has_worktree = task.is_some_and(|task| task.worktree_info.is_some());
             if !has_worktree {
                 if let Some(task) = task {
-                    self.begin_worktree_selection_for_task(task.id);
+                    self.begin_worktree_selection_for_task(task.id, vcs_command);
                 }
                 return;
             }
@@ -164,7 +165,7 @@ impl TasksState {
         true
     }
 
-    pub fn move_task_to_done_by_id(&mut self, task_id: Uuid) -> bool {
+    pub fn move_task_to_done_by_id(&mut self, task_id: Uuid, vcs_command: &VcsCommand) -> bool {
         let review_column_index = 2;
         let done_column_index = 3;
 
@@ -200,7 +201,7 @@ impl TasksState {
         }
 
         let task = &self.columns[review_column_index].tasks[task_index];
-        Self::try_cleanup_worktree(task);
+        Self::try_cleanup_worktree(task, vcs_command);
 
         let mut task = self.columns[review_column_index].tasks.remove(task_index);
 
@@ -213,7 +214,11 @@ impl TasksState {
         true
     }
 
-    pub fn move_task_to_in_progress(&mut self, task_index: usize) -> Option<Uuid> {
+    pub fn move_task_to_in_progress(
+        &mut self,
+        task_index: usize,
+        vcs_command: &VcsCommand,
+    ) -> Option<Uuid> {
         let review_column_index = 2;
         let in_progress_column_index = 1;
 
@@ -235,7 +240,7 @@ impl TasksState {
         let has_worktree = task.is_some_and(|task| task.worktree_info.is_some());
         if !has_worktree {
             if let Some(task) = task {
-                self.begin_worktree_selection_for_task(task.id);
+                self.begin_worktree_selection_for_task(task.id, vcs_command);
             }
             return None;
         }
@@ -254,7 +259,11 @@ impl TasksState {
         instance_id
     }
 
-    pub fn move_task_to_in_progress_by_id(&mut self, task_id: Uuid) -> Option<Uuid> {
+    pub fn move_task_to_in_progress_by_id(
+        &mut self,
+        task_id: Uuid,
+        vcs_command: &VcsCommand,
+    ) -> Option<Uuid> {
         let in_progress_column_index = 1;
 
         let task_location = self
@@ -281,7 +290,7 @@ impl TasksState {
             let has_worktree = task.is_some_and(|task| task.worktree_info.is_some());
             if !has_worktree {
                 if let Some(task) = task {
-                    self.begin_worktree_selection_for_task(task.id);
+                    self.begin_worktree_selection_for_task(task.id, vcs_command);
                 }
                 return None;
             }
@@ -300,7 +309,7 @@ impl TasksState {
         let has_worktree = task.is_some_and(|task| task.worktree_info.is_some());
         if !has_worktree {
             if let Some(task) = task {
-                self.begin_worktree_selection_for_task(task.id);
+                self.begin_worktree_selection_for_task(task.id, vcs_command);
             }
             return None;
         }
@@ -317,6 +326,7 @@ impl TasksState {
         &mut self,
         task_id: Uuid,
         worktree_option: WorktreeSelectionOption,
+        vcs_command: &VcsCommand,
     ) -> Option<Uuid> {
         let in_progress_column_index = 1;
 
@@ -343,7 +353,7 @@ impl TasksState {
         let task_title = task.map(|task| task.title.clone())?;
         let worktree_info = match worktree_option {
             WorktreeSelectionOption::AutoCreate => {
-                Self::create_worktree_for_new_task(&task_title, &task_id)
+                Self::create_worktree_for_new_task(&task_title, &task_id, vcs_command)
             }
             WorktreeSelectionOption::Existing {
                 branch_name,

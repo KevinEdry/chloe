@@ -1,3 +1,4 @@
+use crate::views::settings::VcsCommand;
 use crate::views::tasks::state::{Task, TasksMode, TasksState, WorktreeSelectionOption};
 use crate::views::worktree::WorktreeInfo;
 use crate::views::worktree::operations::list_worktrees;
@@ -12,7 +13,7 @@ impl TasksState {
         };
     }
 
-    fn load_worktree_selection_options() -> Vec<WorktreeSelectionOption> {
+    fn load_worktree_selection_options(vcs_command: &VcsCommand) -> Vec<WorktreeSelectionOption> {
         let mut options = vec![WorktreeSelectionOption::AutoCreate];
 
         let Ok(current_directory) = std::env::current_dir() else {
@@ -24,7 +25,7 @@ impl TasksState {
             return options;
         };
 
-        let Ok(worktrees) = list_worktrees(&repository_root) else {
+        let Ok(worktrees) = list_worktrees(&repository_root, vcs_command) else {
             return options;
         };
 
@@ -38,12 +39,12 @@ impl TasksState {
         options
     }
 
-    pub fn begin_worktree_selection_for_task(&mut self, task_id: Uuid) {
+    pub fn begin_worktree_selection_for_task(&mut self, task_id: Uuid, vcs_command: &VcsCommand) {
         let Some(task) = self.find_task_by_id(task_id) else {
             return;
         };
 
-        let options = Self::load_worktree_selection_options();
+        let options = Self::load_worktree_selection_options(vcs_command);
         self.mode = TasksMode::SelectWorktree {
             task_id,
             task_title: task.title.clone(),
@@ -87,7 +88,11 @@ impl TasksState {
     }
 
     #[must_use]
-    pub fn create_worktree_for_new_task(task_title: &str, task_id: &Uuid) -> Option<WorktreeInfo> {
+    pub fn create_worktree_for_new_task(
+        task_title: &str,
+        task_id: &Uuid,
+        vcs_command: &VcsCommand,
+    ) -> Option<WorktreeInfo> {
         let Ok(current_directory) = std::env::current_dir() else {
             return None;
         };
@@ -97,7 +102,8 @@ impl TasksState {
             return None;
         };
 
-        crate::views::worktree::create_worktree(&repository_root, task_title, task_id).ok()
+        crate::views::worktree::create_worktree(&repository_root, task_title, task_id, vcs_command)
+            .ok()
     }
 
     #[must_use]
@@ -116,7 +122,7 @@ impl TasksState {
         crate::views::worktree::merge_worktree_to_main(&repository_root, worktree_info).ok()
     }
 
-    pub fn try_cleanup_worktree(task: &Task) {
+    pub fn try_cleanup_worktree(task: &Task, vcs_command: &VcsCommand) {
         let Some(worktree_info) = &task.worktree_info else {
             return;
         };
@@ -124,7 +130,7 @@ impl TasksState {
         let was_auto_created = worktree_info.auto_created;
         if !was_auto_created {
             return;
-        }
+        };
 
         let Ok(current_directory) = std::env::current_dir() else {
             return;
@@ -135,6 +141,7 @@ impl TasksState {
             return;
         };
 
-        let _ = crate::views::worktree::delete_worktree(&repository_root, worktree_info);
+        let _ =
+            crate::views::worktree::delete_worktree(&repository_root, worktree_info, vcs_command);
     }
 }

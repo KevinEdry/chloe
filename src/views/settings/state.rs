@@ -204,14 +204,6 @@ impl VcsCommand {
     }
 
     #[must_use]
-    pub const fn supports_worktrees(&self) -> bool {
-        match self {
-            Self::Git => true,
-            Self::Jujutsu => false,
-        }
-    }
-
-    #[must_use]
     pub const fn display_name(&self) -> &str {
         match self {
             Self::Git => "Git",
@@ -249,33 +241,6 @@ impl VcsCommand {
             Self::Git => "Isolated working directories for parallel development",
             Self::Jujutsu => "Isolated workspaces for parallel development",
         }
-    }
-
-    #[must_use]
-    pub fn available_commands() -> Vec<Self> {
-        let mut commands = Vec::new();
-
-        if std::process::Command::new("git")
-            .arg("--version")
-            .output()
-            .is_ok()
-        {
-            commands.push(Self::Git);
-        }
-
-        if std::process::Command::new("jj")
-            .arg("--version")
-            .output()
-            .is_ok()
-        {
-            commands.push(Self::Jujutsu);
-        }
-
-        if commands.is_empty() {
-            commands.push(Self::Git);
-        }
-
-        commands
     }
 }
 

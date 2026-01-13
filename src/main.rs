@@ -198,7 +198,8 @@ where
                         polling::process_roadmap_action(app, &action);
                     }
                     Tab::Worktree => {
-                        app.worktree.handle_key_event(key);
+                        let vcs_command = &app.settings.settings.vcs_command;
+                        app.worktree.handle_key_event(key, vcs_command);
                         polling::process_worktree_pending_actions(app);
                     }
                     Tab::PullRequests => {

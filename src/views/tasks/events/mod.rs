@@ -9,6 +9,7 @@ mod worktree_selection;
 use super::dialogs::review;
 use super::state::{MergeTarget, TasksMode, TasksState, TasksViewMode, WorktreeSelectionOption};
 use crate::types::AgentProvider;
+use crate::views::settings::VcsCommand;
 use crossterm::event::{KeyCode, KeyEvent};
 use uuid::Uuid;
 
@@ -58,6 +59,7 @@ pub fn handle_key_event(
     key: KeyEvent,
     selected_instance_id: Option<Uuid>,
     default_provider: AgentProvider,
+    vcs_command: &VcsCommand,
 ) -> TasksAction {
     if state.error_message.is_some() {
         state.error_message = None;
@@ -71,11 +73,14 @@ pub fn handle_key_event(
 
     match &state.mode {
         TasksMode::Normal => match state.view_mode {
-            TasksViewMode::Focus => {
-                focus_navigation::handle_focus_normal_mode(state, key, selected_instance_id)
-            }
+            TasksViewMode::Focus => focus_navigation::handle_focus_normal_mode(
+                state,
+                key,
+                selected_instance_id,
+                vcs_command,
+            ),
             TasksViewMode::Kanban => {
-                kanban_navigation::handle_kanban_normal_mode(state, key);
+                kanban_navigation::handle_kanban_normal_mode(state, key, vcs_command);
                 TasksAction::None
             }
         },

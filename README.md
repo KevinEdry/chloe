@@ -56,7 +56,7 @@ AI coding agents are powerful, but managing multiple sessions is chaos. You're j
 - **Terminal-native**: Stays in your workflow. No context switching.
 - **Multi-agent orchestration**: Run Claude Code, Gemini CLI, Amp, or OpenCode in parallel panes.
 - **Kanban + terminals**: See what each agent is working on while watching their output.
-- **Git worktree support**: Each task gets its own branch, isolated and ready.
+- **Git & Jujutsu support**: Each task gets its own worktree (Git) or workspace (Jujutsu), isolated and ready.
 - **100% safe Rust**: Memory safety guaranteed. No undefined behavior. Ever.
 
 ---
@@ -94,12 +94,14 @@ Full PTY support means real terminal emulation:
 
 Plan work across milestones. Visualize what's coming, what's blocked, and what's done.
 
-### Git Worktrees
+### Git Worktrees & Jujutsu Workspaces
 
 Parallel development without branch switching:
-- Each task can have its own worktree
+- Each task can have its own worktree (Git) or workspace (Jujutsu)
+- Choose your preferred version control system in Settings
 - Isolated environments for each agent
 - No stash/checkout dance
+- Chloe adapts UI terminology based on your VCS choice
 
 ---
 
@@ -146,7 +148,7 @@ That's it. No configuration required.
 | Terminal-native | Yes | No | No | Yes |
 | Single binary | Yes | No | No | Yes |
 | Provider agnostic | Yes | No | No | Yes |
-| Git worktree integration | Yes | No | No | Manual |
+| Git & Jujutsu support | Yes | No | No | Manual |
 | Offline-capable | Yes | Partial | Partial | Yes |
 
 **Chloe fills a gap**: It's like tmux met a kanban board and learned to speak to AI agents.

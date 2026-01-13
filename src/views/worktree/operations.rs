@@ -1,4 +1,5 @@
 use super::state::{Worktree, WorktreeInfo};
+use crate::views::settings::VcsCommand;
 use anyhow::{Context, Result, anyhow};
 use git2::{BranchType, Repository};
 use std::fs;
@@ -328,12 +329,19 @@ pub fn find_repository_root(path: &Path) -> Result<PathBuf> {
     Ok(workdir.to_path_buf())
 }
 
-/// List all existing worktrees in the repository
+/// List all existing worktrees/workspaces in the repository
 ///
 /// # Errors
 ///
 /// Returns an error if the repository cannot be opened or worktrees cannot be listed.
-pub fn list_worktrees(repository_path: &Path) -> Result<Vec<Worktree>> {
+pub fn list_worktrees(repository_path: &Path, vcs_command: &VcsCommand) -> Result<Vec<Worktree>> {
+    match vcs_command {
+        VcsCommand::Git => list_git_worktrees(repository_path),
+        VcsCommand::Jujutsu => list_jj_workspaces(repository_path),
+    }
+}
+
+fn list_git_worktrees(repository_path: &Path) -> Result<Vec<Worktree>> {
     let repository = Repository::open(repository_path).context("Failed to open git repository")?;
 
     let worktree_list = repository.worktrees().context("Failed to list worktrees")?;
@@ -359,6 +367,47 @@ pub fn list_worktrees(repository_path: &Path) -> Result<Vec<Worktree>> {
     }
 
     Ok(worktrees)
+}
+
+fn list_jj_workspaces(repository_path: &Path) -> Result<Vec<Worktree>> {
+    let output = std::process::Command::new("jj")
+        .arg("workspace")
+        .arg("list")
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to execute jj workspace list")?;
+
+    if !output.status.success() {
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow!("jj workspace list failed: {error_message}"));
+    }
+
+    let output_text = String::from_utf8_lossy(&output.stdout);
+    let mut workspaces = Vec::new();
+
+    for line in output_text.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+
+        let parts: Vec<&str> = line.split(':').collect();
+        if parts.len() < 2 {
+            continue;
+        }
+
+        let workspace_name = parts[0].trim();
+        let workspace_path_str = parts[1].trim();
+        let workspace_path = PathBuf::from(workspace_path_str);
+
+        workspaces.push(Worktree {
+            path: workspace_path,
+            branch_name: workspace_name.to_string(),
+            is_bare: false,
+            is_detached: false,
+        });
+    }
+
+    Ok(workspaces)
 }
 
 /// Generate a valid git branch name from a task title
@@ -392,13 +441,25 @@ pub fn generate_branch_name(task_title: &str) -> String {
     format!("chloe/{truncated_slug}")
 }
 
-/// Create a new worktree for a task
-/// Returns `WorktreeInfo` with the branch name and path
+/// Create a new worktree/workspace for a task
+/// Returns `WorktreeInfo` with the branch/workspace name and path
 ///
 /// # Errors
 ///
-/// Returns an error if the repository cannot be opened or worktree creation fails.
+/// Returns an error if the repository cannot be opened or worktree/workspace creation fails.
 pub fn create_worktree(
+    repository_path: &Path,
+    task_title: &str,
+    task_id: &Uuid,
+    vcs_command: &VcsCommand,
+) -> Result<WorktreeInfo> {
+    match vcs_command {
+        VcsCommand::Git => create_git_worktree(repository_path, task_title, task_id),
+        VcsCommand::Jujutsu => create_jj_workspace(repository_path, task_title, task_id),
+    }
+}
+
+fn create_git_worktree(
     repository_path: &Path,
     task_title: &str,
     task_id: &Uuid,
@@ -441,6 +502,65 @@ pub fn create_worktree(
     generate_claude_settings(&worktree_path, task_id)?;
 
     Ok(worktree_info)
+}
+
+fn create_jj_workspace(
+    repository_path: &Path,
+    task_title: &str,
+    task_id: &Uuid,
+) -> Result<WorktreeInfo> {
+    let workspace_name = generate_workspace_name(task_title, task_id);
+    let workspace_path = repository_path.join(format!(".chloe/workspaces/{workspace_name}"));
+
+    let output = std::process::Command::new("jj")
+        .arg("workspace")
+        .arg("add")
+        .arg("--name")
+        .arg(&workspace_name)
+        .arg(&workspace_path)
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to execute jj workspace add")?;
+
+    if !output.status.success() {
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow!("jj workspace add failed: {error_message}"));
+    }
+
+    let worktree_info = WorktreeInfo::new(workspace_name, workspace_path.clone());
+
+    generate_claude_settings(&workspace_path, task_id)?;
+
+    Ok(worktree_info)
+}
+
+fn generate_workspace_name(task_title: &str, task_id: &Uuid) -> String {
+    let slug = task_title
+        .to_lowercase()
+        .chars()
+        .map(|character| {
+            if character.is_alphanumeric() {
+                character
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>();
+
+    let slug = slug
+        .split('-')
+        .filter(|segment| !segment.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+
+    let truncated_slug = if slug.len() > MAX_SLUG_LENGTH {
+        &slug[..MAX_SLUG_LENGTH]
+    } else {
+        &slug
+    };
+
+    let short_id = &task_id.to_string()[..8];
+    format!("chloe-{truncated_slug}-{short_id}")
 }
 
 /// Merge a worktree branch into main (legacy function, calls `merge_worktree` with "main")
@@ -543,12 +663,23 @@ fn get_conflicted_files(repository_path: &Path) -> Result<Vec<String>> {
     Ok(conflicted_files)
 }
 
-/// Delete a worktree (cleanup)
+/// Delete a worktree/workspace (cleanup)
 ///
 /// # Errors
 ///
-/// Returns an error if the worktree or branch cannot be deleted.
-pub fn delete_worktree(repository_path: &Path, worktree_info: &WorktreeInfo) -> Result<()> {
+/// Returns an error if the worktree/workspace or branch cannot be deleted.
+pub fn delete_worktree(
+    repository_path: &Path,
+    worktree_info: &WorktreeInfo,
+    vcs_command: &VcsCommand,
+) -> Result<()> {
+    match vcs_command {
+        VcsCommand::Git => delete_git_worktree(repository_path, worktree_info),
+        VcsCommand::Jujutsu => delete_jj_workspace(repository_path, worktree_info),
+    }
+}
+
+fn delete_git_worktree(repository_path: &Path, worktree_info: &WorktreeInfo) -> Result<()> {
     let output = std::process::Command::new("git")
         .arg("worktree")
         .arg("remove")
@@ -570,6 +701,28 @@ pub fn delete_worktree(repository_path: &Path, worktree_info: &WorktreeInfo) -> 
         .context("Failed to find branch")?;
 
     branch.delete().context("Failed to delete branch")?;
+
+    Ok(())
+}
+
+fn delete_jj_workspace(repository_path: &Path, worktree_info: &WorktreeInfo) -> Result<()> {
+    let output = std::process::Command::new("jj")
+        .arg("workspace")
+        .arg("forget")
+        .arg(&worktree_info.branch_name)
+        .current_dir(repository_path)
+        .output()
+        .context("Failed to execute jj workspace forget")?;
+
+    if !output.status.success() {
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow!("jj workspace forget failed: {error_message}"));
+    }
+
+    if worktree_info.worktree_path.exists() {
+        fs::remove_dir_all(&worktree_info.worktree_path)
+            .context("Failed to remove workspace directory")?;
+    }
 
     Ok(())
 }

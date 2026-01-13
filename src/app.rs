@@ -267,7 +267,9 @@ impl App {
         match event.event_type() {
             crate::events::EventType::Start => {
                 pane.claude_state = crate::views::instances::ClaudeState::Running;
-                self.tasks.move_task_to_in_progress_by_id(task_id);
+                let vcs_command = &self.settings.settings.vcs_command;
+                self.tasks
+                    .move_task_to_in_progress_by_id(task_id, vcs_command);
             }
             crate::events::EventType::End => {
                 pane.claude_state = crate::views::instances::ClaudeState::Done;
@@ -419,8 +421,13 @@ Do not push to remote.";
 
         match merge_result {
             Ok(crate::views::worktree::MergeResult::Success) => {
-                let _ = crate::views::worktree::delete_worktree(&repository_root, &worktree_info);
-                self.tasks.move_task_to_done_by_id(task_id);
+                let vcs_command = &self.settings.settings.vcs_command;
+                let _ = crate::views::worktree::delete_worktree(
+                    &repository_root,
+                    &worktree_info,
+                    vcs_command,
+                );
+                self.tasks.move_task_to_done_by_id(task_id, vcs_command);
                 let _ = self.save();
             }
             Ok(crate::views::worktree::MergeResult::Conflicts { conflicted_files }) => {
@@ -428,8 +435,10 @@ Do not push to remote.";
                     "Please resolve merge conflicts in the following files:\n{}\n\nThen commit the resolution.",
                     conflicted_files.join("\n")
                 );
+                let vcs_command = &self.settings.settings.vcs_command;
                 if let Some(task_index) = self.tasks.find_task_index_by_id(task_id)
-                    && let Some(instance_id) = self.tasks.move_task_to_in_progress(task_index)
+                    && let Some(instance_id) =
+                        self.tasks.move_task_to_in_progress(task_index, vcs_command)
                 {
                     self.instances
                         .send_input_to_instance(instance_id, &conflict_message);
@@ -483,8 +492,9 @@ Do not push to remote.";
             )
         };
 
+        let vcs_command = &self.settings.settings.vcs_command;
         if let Some(task_index) = self.tasks.find_task_index_by_id(task_id)
-            && let Some(instance_id) = self.tasks.move_task_to_in_progress(task_index)
+            && let Some(instance_id) = self.tasks.move_task_to_in_progress(task_index, vcs_command)
         {
             self.instances
                 .send_input_to_instance(instance_id, &conflict_message);

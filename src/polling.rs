@@ -25,7 +25,8 @@ pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
     app.instances.poll_pty_output();
 
     if app.active_tab == Tab::Worktree {
-        app.worktree.poll_worktrees();
+        let vcs_command = &app.settings.settings.vcs_command;
+        app.worktree.poll_worktrees(vcs_command);
     }
 
     if app.active_tab == Tab::PullRequests && app.pull_requests.should_refresh() {
@@ -51,7 +52,8 @@ pub fn process_tasks_pending_actions(app: &mut App) {
                 .as_path(),
         )
     {
-        let _ = views::worktree::delete_worktree(&repo_root, &worktree_info);
+        let vcs_command = &app.settings.settings.vcs_command;
+        let _ = views::worktree::delete_worktree(&repo_root, &worktree_info, vcs_command);
     }
 
     if let Some(task_id) = app.tasks.pending_ide_open.take() {
@@ -62,11 +64,15 @@ pub fn process_tasks_pending_actions(app: &mut App) {
         app.open_task_in_terminal(task_id);
     }
 
-    if let Some((task_id, change_request)) = app.tasks.pending_change_request.take()
-        && let Some(instance_id) = app.tasks.move_task_to_in_progress_by_id(task_id)
-    {
-        app.instances
-            .send_input_to_instance(instance_id, &change_request);
+    if let Some((task_id, change_request)) = app.tasks.pending_change_request.take() {
+        let vcs_command = &app.settings.settings.vcs_command;
+        if let Some(instance_id) = app
+            .tasks
+            .move_task_to_in_progress_by_id(task_id, vcs_command)
+        {
+            app.instances
+                .send_input_to_instance(instance_id, &change_request);
+        }
     }
 
     app.sync_task_instances();
@@ -104,8 +110,14 @@ pub fn process_worktree_pending_actions(app: &mut App) {
 pub fn process_tasks_event(app: &mut App, key: KeyEvent) {
     let selected_instance_id = get_selected_instance_id(app);
     let default_provider = app.settings.settings.default_provider;
-    let action =
-        views::tasks::handle_key_event(&mut app.tasks, key, selected_instance_id, default_provider);
+    let vcs_command = &app.settings.settings.vcs_command;
+    let action = views::tasks::handle_key_event(
+        &mut app.tasks,
+        key,
+        selected_instance_id,
+        default_provider,
+        vcs_command,
+    );
 
     handle_tasks_action(app, action);
     app.tasks.clamp_focus_selection();
@@ -176,7 +188,11 @@ fn handle_tasks_action(app: &mut App, action: TasksAction) {
         TasksAction::OpenInIDE(task_id) => app.open_task_in_ide(task_id),
         TasksAction::SwitchToTerminal(task_id) => app.open_task_in_terminal(task_id),
         TasksAction::RequestChanges { task_id, message } => {
-            if let Some(instance_id) = app.tasks.move_task_to_in_progress_by_id(task_id) {
+            let vcs_command = &app.settings.settings.vcs_command;
+            if let Some(instance_id) = app
+                .tasks
+                .move_task_to_in_progress_by_id(task_id, vcs_command)
+            {
                 app.instances.send_input_to_instance(instance_id, &message);
             }
         }
@@ -223,8 +239,9 @@ fn handle_worktree_selected(
             app.settings.settings.default_provider
         };
         app.tasks.set_task_provider(task_id, provider);
+        let vcs_command = &app.settings.settings.vcs_command;
         app.tasks
-            .move_task_to_in_progress_with_worktree(task_id, worktree_option);
+            .move_task_to_in_progress_with_worktree(task_id, worktree_option, vcs_command);
         let _ = app.save();
     } else {
         app.tasks.mode = views::tasks::TasksMode::SelectProvider {
@@ -249,8 +266,9 @@ fn handle_provider_selected(
         app.settings.settings.skip_provider_selection = true;
         let _ = app.save_settings();
     }
+    let vcs_command = &app.settings.settings.vcs_command;
     app.tasks
-        .move_task_to_in_progress_with_worktree(task_id, worktree_option);
+        .move_task_to_in_progress_with_worktree(task_id, worktree_option, vcs_command);
     let _ = app.save();
 }
 

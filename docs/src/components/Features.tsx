@@ -99,8 +99,8 @@ export function Features() {
               />
             </svg>
           }
-          title="Git Worktrees"
-          description="Manage git worktrees for parallel branch development"
+          title="Git & Jujutsu Support"
+          description="Manage worktrees (Git) or workspaces (Jujutsu) for parallel branch development"
         />
 
         <Feature

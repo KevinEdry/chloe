@@ -1,6 +1,6 @@
 use super::tab_state::{WorktreeMode, WorktreeTabState};
-use crate::views::settings::VcsCommand;
 use crate::views::StatusBarContent;
+use crate::views::settings::VcsCommand;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -39,11 +39,6 @@ fn render_worktree_list(
 
     let inner_area = outer_block.inner(area);
     frame.render_widget(outer_block, area);
-
-    if !vcs_command.supports_worktrees() {
-        render_unsupported_vcs_state(frame, inner_area, vcs_command);
-        return;
-    }
 
     if let Some(error) = &state.error_message {
         render_error_state(frame, inner_area, error, vcs_command);
@@ -89,36 +84,6 @@ fn render_header(frame: &mut Frame, area: Rect, count: usize, vcs_command: &VcsC
     frame.render_widget(Paragraph::new(header_lines), area);
 }
 
-fn render_unsupported_vcs_state(frame: &mut Frame, area: Rect, vcs_command: &VcsCommand) {
-    let workspace_plural = vcs_command.workspace_term_plural();
-
-    let message_lines = vec![
-        Line::from(""),
-        Line::from(Span::styled(
-            format!("  {} {} Not Yet Supported", vcs_command.display_name(), workspace_plural),
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(Span::styled(
-            format!("  {} workspace management is not yet implemented in Chloe.", vcs_command.display_name()),
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(Span::styled(
-            "  Currently, only Git worktrees are supported for task isolation.",
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  To use this feature, switch to Git in Settings → Shell & Terminal → Version Control.",
-            Style::default().fg(Color::DarkGray),
-        )),
-    ];
-
-    frame.render_widget(Paragraph::new(message_lines), area);
-}
-
 fn render_error_state(frame: &mut Frame, area: Rect, error: &str, vcs_command: &VcsCommand) {
     let error_lines = vec![
         Line::from(""),
@@ -155,7 +120,10 @@ fn render_empty_state(frame: &mut Frame, area: Rect, vcs_command: &VcsCommand) {
         )),
         Line::from(""),
         Line::from(Span::styled(
-            format!("  {} will appear here when you start tasks.", workspace_plural),
+            format!(
+                "  {} will appear here when you start tasks.",
+                workspace_plural
+            ),
             Style::default().fg(Color::Gray),
         )),
         Line::from(Span::styled(
@@ -164,7 +132,10 @@ fn render_empty_state(frame: &mut Frame, area: Rect, vcs_command: &VcsCommand) {
         )),
         Line::from(""),
         Line::from(Span::styled(
-            format!("  Tip: Start a task in the Tasks tab to create a {}.", workspace_singular.to_lowercase()),
+            format!(
+                "  Tip: Start a task in the Tasks tab to create a {}.",
+                workspace_singular.to_lowercase()
+            ),
             Style::default().fg(Color::DarkGray),
         )),
     ];

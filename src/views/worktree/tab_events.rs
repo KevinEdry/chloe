@@ -1,13 +1,14 @@
 use super::tab_state::{WorktreeMode, WorktreeTabState};
+use crate::views::settings::VcsCommand;
 use crossterm::event::{KeyCode, KeyEvent};
 use std::time::{Duration, Instant};
 
 impl WorktreeTabState {
-    pub fn handle_key_event(&mut self, key: KeyEvent) -> bool {
+    pub fn handle_key_event(&mut self, key: KeyEvent, vcs_command: &VcsCommand) -> bool {
         match self.mode {
             WorktreeMode::Normal => self.handle_normal_mode(key),
             WorktreeMode::ConfirmDelete { worktree_index } => {
-                self.handle_confirm_delete_mode(key, worktree_index)
+                self.handle_confirm_delete_mode(key, worktree_index, vcs_command)
             }
         }
     }
@@ -41,10 +42,15 @@ impl WorktreeTabState {
         }
     }
 
-    fn handle_confirm_delete_mode(&mut self, key: KeyEvent, worktree_index: usize) -> bool {
+    fn handle_confirm_delete_mode(
+        &mut self,
+        key: KeyEvent,
+        worktree_index: usize,
+        vcs_command: &VcsCommand,
+    ) -> bool {
         match key.code {
             KeyCode::Char('y' | 'Y') => {
-                self.delete_worktree_at_index(worktree_index);
+                self.delete_worktree_at_index(worktree_index, vcs_command);
                 self.mode = WorktreeMode::Normal;
                 true
             }
@@ -82,7 +88,7 @@ impl WorktreeTabState {
         });
     }
 
-    fn refresh_worktrees(&mut self) {
+    fn refresh_worktrees(&mut self, vcs_command: &VcsCommand) {
         let current_dir = match std::env::current_dir() {
             Ok(dir) => dir,
             Err(error) => {
@@ -101,7 +107,7 @@ impl WorktreeTabState {
             }
         };
 
-        match super::operations::list_worktrees(&repository_root) {
+        match super::operations::list_worktrees(&repository_root, vcs_command) {
             Ok(worktrees) => {
                 self.worktrees = worktrees;
                 self.error_message = None;
@@ -122,7 +128,7 @@ impl WorktreeTabState {
         }
     }
 
-    fn delete_worktree_at_index(&mut self, index: usize) {
+    fn delete_worktree_at_index(&mut self, index: usize, vcs_command: &VcsCommand) {
         let Some(worktree) = self.worktrees.get(index) else {
             return;
         };
@@ -149,10 +155,10 @@ impl WorktreeTabState {
             }
         };
 
-        match super::operations::delete_worktree(&repository_root, &worktree_info) {
+        match super::operations::delete_worktree(&repository_root, &worktree_info, vcs_command) {
             Ok(()) => {
                 self.error_message = None;
-                self.refresh_worktrees();
+                self.refresh_worktrees(vcs_command);
             }
             Err(error) => {
                 self.error_message = Some(format!("Failed to delete worktree: {error}"));
@@ -160,14 +166,14 @@ impl WorktreeTabState {
         }
     }
 
-    pub fn poll_worktrees(&mut self) {
+    pub fn poll_worktrees(&mut self, vcs_command: &VcsCommand) {
         let should_refresh = self.needs_initial_refresh || self.should_refresh_now();
 
         if !should_refresh {
             return;
         }
 
-        self.refresh_worktrees();
+        self.refresh_worktrees(vcs_command);
         self.last_refresh = Some(Instant::now());
         self.needs_initial_refresh = false;
     }

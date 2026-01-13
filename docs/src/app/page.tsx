@@ -17,7 +17,7 @@ const jsonLd = {
   applicationCategory: 'DeveloperApplication',
   operatingSystem: 'macOS, Linux, Windows',
   description:
-    'A terminal multiplexer for AI coding agents. Run Claude Code, Gemini CLI, Amp, OpenCode, and more in parallel with integrated Kanban task management.',
+    'A terminal multiplexer for AI coding agents. Run Claude Code, Gemini CLI, Amp, OpenCode, and more in parallel with integrated Kanban task management. Supports Git worktrees and Jujutsu workspaces.',
   url: 'https://getchloe.sh',
   author: {
     '@type': 'Person',

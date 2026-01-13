@@ -1,4 +1,5 @@
 use super::TasksAction;
+use crate::views::settings::VcsCommand;
 use crate::views::tasks::operations::{
     get_active_task_count, get_active_tasks, get_done_task_count, get_done_tasks,
 };
@@ -11,6 +12,7 @@ pub fn handle_focus_normal_mode(
     state: &mut TasksState,
     key: KeyEvent,
     selected_instance_id: Option<Uuid>,
+    vcs_command: &VcsCommand,
 ) -> TasksAction {
     let active_count = get_active_task_count(&state.columns);
     let done_count = get_done_task_count(&state.columns);
@@ -70,7 +72,7 @@ pub fn handle_focus_normal_mode(
                 let is_review = task_ref.column_index == 2;
 
                 if is_planning {
-                    state.begin_worktree_selection_for_task(task_ref.task.id);
+                    state.begin_worktree_selection_for_task(task_ref.task.id, vcs_command);
                     TasksAction::None
                 } else if is_in_progress {
                     selected_instance_id.map_or(TasksAction::None, |instance_id| {
@@ -101,7 +103,7 @@ pub fn handle_focus_normal_mode(
             if let Some(task_ref) = selected_task {
                 let is_planning = task_ref.column_index == 0;
                 if is_planning {
-                    state.begin_worktree_selection_for_task(task_ref.task.id);
+                    state.begin_worktree_selection_for_task(task_ref.task.id, vcs_command);
                 }
             }
             TasksAction::None
