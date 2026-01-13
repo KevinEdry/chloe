@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Padding, Paragraph},
+    widgets::{Block, Borders, Padding, Paragraph, Wrap},
 };
 
 use super::{centered_rect, render_popup_background};
@@ -45,21 +45,28 @@ pub fn render_add_task_dialog(frame: &mut Frame, state: &AddTaskDialogState<'_>,
 }
 
 fn render_input_area(frame: &mut Frame, area: Rect, state: &AddTaskDialogState<'_>) {
-    let content = vec![
-        Line::from(Span::styled(
-            state.prompt,
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(state.input.to_string(), Style::default().fg(Color::White)),
-            Span::styled("▏", Style::default().fg(Color::Cyan)),
-        ]),
-    ];
+    let prompt_line = Line::from(Span::styled(
+        state.prompt,
+        Style::default()
+            .fg(Color::White)
+            .add_modifier(Modifier::BOLD),
+    ));
 
-    frame.render_widget(Paragraph::new(content), area);
+    let prompt_paragraph = Paragraph::new(prompt_line);
+    frame.render_widget(prompt_paragraph, area);
+
+    let input_area = Rect {
+        y: area.y + 2,
+        height: area.height.saturating_sub(2),
+        ..area
+    };
+
+    let input_with_cursor = format!("{}▏", state.input);
+    let input_paragraph = Paragraph::new(input_with_cursor)
+        .style(Style::default().fg(Color::White))
+        .wrap(Wrap { trim: false });
+
+    frame.render_widget(input_paragraph, input_area);
 }
 
 fn render_tip_block(frame: &mut Frame, area: Rect) {
