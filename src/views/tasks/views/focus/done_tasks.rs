@@ -109,6 +109,7 @@ fn build_done_task_items(
             is_selected,
             task.is_classifying,
             title_max_length,
+            app.tasks.spinner_frame,
         ));
     }
 
@@ -121,12 +122,14 @@ fn create_task_item(
     is_selected: bool,
     is_classifying: bool,
     title_max_length: usize,
+    spinner_frame: usize,
 ) -> ListItem<'static> {
     let mut item = TaskItem::new(title, task_type)
         .selected(is_selected)
         .classifying(is_classifying)
         .selection_color(Color::Green)
-        .title_max_length(title_max_length);
+        .title_max_length(title_max_length)
+        .spinner_frame(spinner_frame);
 
     if !is_selected {
         item = item.badge_color(Color::DarkGray);

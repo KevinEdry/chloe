@@ -1,7 +1,7 @@
 use crate::helpers::text;
 use crate::views::instances::ClaudeState;
 use crate::views::tasks::TaskType;
-use crate::widgets::claude_indicator;
+use crate::widgets::{claude_indicator, spinner};
 use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
@@ -9,7 +9,6 @@ use ratatui::{
 };
 
 const DEFAULT_TITLE_MAX_LENGTH: usize = 25;
-const CLASSIFYING_INDICATOR: &str = "◎";
 
 pub struct TaskItem {
     title: String,
@@ -20,6 +19,7 @@ pub struct TaskItem {
     title_max_length: usize,
     selection_color: Color,
     badge_color_override: Option<Color>,
+    spinner_frame: usize,
 }
 
 impl TaskItem {
@@ -34,6 +34,7 @@ impl TaskItem {
             title_max_length: DEFAULT_TITLE_MAX_LENGTH,
             selection_color: Color::Cyan,
             badge_color_override: None,
+            spinner_frame: 0,
         }
     }
 
@@ -74,6 +75,12 @@ impl TaskItem {
     }
 
     #[must_use]
+    pub const fn spinner_frame(mut self, frame: usize) -> Self {
+        self.spinner_frame = frame;
+        self
+    }
+
+    #[must_use]
     pub fn build(self) -> ListItem<'static> {
         let truncated_title = text::truncate(&self.title, self.title_max_length);
 
@@ -100,19 +107,14 @@ impl TaskItem {
         let mut spans = vec![self.build_selection_indicator()];
 
         if self.is_classifying {
-            spans.push(Span::styled(
-                format!("{CLASSIFYING_INDICATOR} "),
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            ));
+            spans.push(spinner::spinner_span(self.spinner_frame, "Planning..."));
         } else {
             spans.push(Span::styled(
                 format!("[{badge_text}]"),
                 Style::default().fg(badge_color),
             ));
-            spans.push(Span::raw(" "));
         }
+        spans.push(Span::raw(" "));
 
         spans.push(Span::styled(
             truncated_title,

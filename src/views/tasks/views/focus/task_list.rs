@@ -130,6 +130,7 @@ fn build_task_list_items(
                     task.is_classifying,
                     claude_state,
                     title_max_length,
+                    app.tasks.spinner_frame,
                 ));
                 current_index += 1;
             }
@@ -163,11 +164,13 @@ fn create_task_item(
     is_classifying: bool,
     claude_state: Option<crate::views::instances::ClaudeState>,
     title_max_length: usize,
+    spinner_frame: usize,
 ) -> ListItem<'static> {
     TaskItem::new(title, task_type)
         .selected(is_selected)
         .classifying(is_classifying)
         .claude_state(claude_state)
         .title_max_length(title_max_length)
+        .spinner_frame(spinner_frame)
         .build()
 }

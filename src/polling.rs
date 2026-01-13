@@ -10,6 +10,9 @@ use uuid::Uuid;
 pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
     if app.active_tab == Tab::Tasks {
         app.tasks.poll_classification();
+        if app.tasks.has_pending_classifications() {
+            app.tasks.advance_spinner();
+        }
     }
 
     if app.active_tab == Tab::Roadmap {
@@ -156,7 +159,8 @@ fn handle_tasks_action(app: &mut App, action: TasksAction) {
             }
         }
         TasksAction::CreateTask { title } => {
-            app.tasks.start_classification(title);
+            let provider = app.settings.settings.default_provider;
+            app.tasks.start_classification(title, provider);
             let _ = app.save();
         }
         TasksAction::UpdateTask { task_id, new_title } => {

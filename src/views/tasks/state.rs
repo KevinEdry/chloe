@@ -51,6 +51,8 @@ pub struct TasksState {
     pub pending_change_request: Option<(Uuid, String)>,
     #[serde(skip)]
     pub error_message: Option<String>,
+    #[serde(skip)]
+    pub spinner_frame: usize,
 }
 
 impl TasksState {
@@ -91,6 +93,7 @@ impl TasksState {
             pending_terminal_switch: None,
             pending_change_request: None,
             error_message: None,
+            spinner_frame: 0,
         }
     }
 
@@ -162,6 +165,15 @@ impl TasksState {
                 | TasksMode::EditingTask { .. }
                 | TasksMode::ReviewRequestChanges { .. }
         )
+    }
+
+    pub const fn advance_spinner(&mut self) {
+        self.spinner_frame = (self.spinner_frame + 1) % 10;
+    }
+
+    #[must_use]
+    pub const fn has_pending_classifications(&self) -> bool {
+        !self.pending_classifications.is_empty()
     }
 }
 
