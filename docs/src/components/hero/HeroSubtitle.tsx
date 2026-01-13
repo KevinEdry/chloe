@@ -1,11 +1,11 @@
 export function HeroSubtitle() {
   return (
     <p className="mt-6 text-lg text-[var(--color-text-secondary)] sm:text-xl max-w-2xl mx-auto leading-relaxed">
-      Chloe is a terminal multiplexer for running{' '}
+      A terminal multiplexer for Claude Code, OpenCode, and more.{' '}
       <span className="hidden sm:inline">
         <br />
       </span>
-      parallel Claude Code instances with integrated task management.
+      Built-in task management. Zero Electron bloat.
     </p>
   )
 }

@@ -2,8 +2,8 @@ import { Steps } from 'nextra/components'
 
 export const metadata = {
   title: 'Common Workflows',
-  description: 'Practical patterns for using Chloe effectively. Learn how to run multiple Claude Code instances, manage git worktrees, and optimize your AI-assisted development workflow.',
-  keywords: ['Chloe workflows', 'Claude Code patterns', 'parallel development', 'git worktree', 'AI development workflow'],
+  description: 'Practical patterns for using Chloe effectively. Learn how to run multiple AI coding agents in parallel, manage git worktrees, and optimize your AI-assisted development workflow.',
+  keywords: ['Chloe workflows', 'AI coding agents', 'Claude Code', 'Gemini CLI', 'parallel development', 'git worktree', 'AI development workflow', 'multi-agent orchestration'],
   alternates: { canonical: '/docs/common-workflows' },
 }
 
@@ -11,9 +11,9 @@ export const metadata = {
 
 Practical patterns for getting the most out of Chloe.
 
-## Running Multiple Claude Code Instances
+## Running Multiple AI Coding Agents
 
-The primary use case for Chloe is orchestrating multiple Claude Code sessions working on different parts of your project.
+The primary use case for Chloe is orchestrating multiple AI coding agent sessions working on different parts of your project.
 
 <Steps>
 ### Create tasks for each piece of work
@@ -26,10 +26,10 @@ The primary use case for Chloe is orchestrating multiple Claude Code sessions wo
 - Press `2` to go to Instances
 - Press `c` multiple times to create panes (2-4 is typical)
 
-### Start Claude Code in each pane
+### Start AI agents in each pane
 
 - Press `Enter` to focus a pane
-- Run `claude` to start Claude Code
+- Start your preferred AI agent (Claude Code, Gemini CLI, Amp, OpenCode, etc.)
 - Press `Esc` to exit focus mode
 - Repeat for each pane
 
@@ -71,7 +71,7 @@ When working on a new feature across multiple sessions:
 - Check "In Progress" column for active work
 
 **Work in parallel**
-- Different Claude instances can work on different tasks
+- Different AI agent instances can work on different tasks
 - Use the task board to track what each is doing
 
 **Handling blockers**: Move blocked tasks back to "To Do" with `Backspace` and add notes by editing the task with `e`.
@@ -158,7 +158,7 @@ Press `3`
 
 When working in a terminal pane:
 1. Press `Enter` to focus (sends keystrokes to terminal)
-2. Do your work in Claude Code
+2. Do your work with your AI agent
 3. Press `Esc` to exit focus and navigate elsewhere
 4. Use `2` to return to Instances view if needed
 

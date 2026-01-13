@@ -2,8 +2,8 @@ import { Callout, Cards, Steps } from 'nextra/components'
 
 export const metadata = {
   title: 'Tasks',
-  description: 'Learn how to use the Tasks tab in Chloe. Manage your work with a Kanban board, create tasks, link them to Claude Code instances, and review completed work.',
-  keywords: ['Chloe tasks', 'Kanban board', 'task management', 'Claude Code tasks', 'workflow management'],
+  description: 'Learn how to use the Tasks tab in Chloe. Manage your work with a Kanban board, create tasks, link them to AI coding agents, and review completed work.',
+  keywords: ['Chloe tasks', 'Kanban board', 'task management', 'AI coding agents', 'Claude Code', 'Gemini CLI', 'workflow management'],
   alternates: { canonical: '/docs/tasks' },
 }
 
@@ -81,18 +81,12 @@ When you're ready to work on a task:
 
 1. Navigate to the task in the Planning column
 2. Press `s` to start the task
+3. Select your preferred AI provider (if multiple are installed)
 
 This automatically:
 - Moves the task to In Progress
 - Creates a new terminal instance
-- Sends your task to Claude Code with the prompt:
-  ```
-  Work on this task:
-
-  Title: [your task title]
-
-  Description: [your task description]
-  ```
+- Sends your task to the selected AI agent with your task details
 
 ![Starting a task](/docs/tasks-start.gif)
 
@@ -101,25 +95,25 @@ This automatically:
 When a task is In Progress, press `Enter` to enter Terminal Focus Mode:
 
 - All keyboard input goes directly to the terminal
-- Watch Claude work on your task in real-time
+- Watch your AI agent work on your task in real-time
 - Press `Esc` to exit and return to task navigation
 
 ![Terminal focus mode](/docs/tasks-terminal-focus.gif)
 
 ## Review Workflow
 
-When Claude completes a task, it automatically moves to the Review column. Press `Enter` on a review task to see your options:
+When an AI agent completes a task, it automatically moves to the Review column. Press `Enter` on a review task to see your options:
 
 
 | Action | Description |
 |--------|-------------|
 | **Review in IDE** | Opens the changed files in your configured IDE |
 | **Review in Terminal** | Opens a terminal at the worktree location |
-| **Request Changes** | Send feedback to Claude for revisions |
+| **Request Changes** | Send feedback to the agent for revisions |
 | **Merge to Branch** | Merge the worktree changes to your main branch |
 
 <Callout type="warning">
-If merge conflicts are detected, the "Merge to Branch" option changes to "Resolve Conflicts" and Claude will be prompted to fix them.
+If merge conflicts are detected, the "Merge to Branch" option changes to "Resolve Conflicts" and the agent will be prompted to fix them.
 </Callout>
 
 ## Keybindings

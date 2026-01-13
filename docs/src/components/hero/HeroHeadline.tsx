@@ -6,7 +6,7 @@ export function HeroHeadline() {
       </span>
       <br />
       <span className="bg-gradient-to-b from-[var(--color-text-primary)] to-[#a1a1aa] bg-clip-text text-transparent">
-        Claude Code instances
+        AI coding agents
       </span>
     </h1>
   )

@@ -10,19 +10,22 @@ const siteUrl = 'https://getchloe.sh'
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Chloe - Terminal Multiplexer for Claude Code',
+    default: 'Chloe - Terminal Multiplexer for AI Coding Agents',
     template: '%s | Chloe',
   },
   description:
-    'A terminal multiplexer for running parallel Claude Code instances with integrated Kanban task management. Built in 100% safe Rust.',
+    'A terminal multiplexer for AI coding agents. Run Claude Code, Gemini CLI, Amp, OpenCode, and more in parallel with integrated Kanban task management. Built in 100% safe Rust.',
   keywords: [
+    'AI coding agents',
     'Claude Code',
+    'Gemini CLI',
+    'OpenCode',
+    'Amp',
     'terminal multiplexer',
     'AI coding assistant',
     'Rust',
     'tmux alternative',
-    'Claude',
-    'Anthropic',
+    'multi-agent orchestration',
     'task management',
     'Kanban',
     'developer tools',
@@ -40,23 +43,23 @@ export const metadata = {
     locale: 'en_US',
     url: siteUrl,
     siteName: 'Chloe',
-    title: 'Chloe - Terminal Multiplexer for Claude Code',
+    title: 'Chloe - Terminal Multiplexer for AI Coding Agents',
     description:
-      'A terminal multiplexer for running parallel Claude Code instances with integrated Kanban task management. Built in 100% safe Rust.',
+      'A terminal multiplexer for AI coding agents. Run Claude Code, Gemini CLI, Amp, OpenCode, and more in parallel with integrated Kanban task management. Built in 100% safe Rust.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Chloe - Terminal Multiplexer for Claude Code',
+        alt: 'Chloe - Terminal Multiplexer for AI Coding Agents',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Chloe - Terminal Multiplexer for Claude Code',
+    title: 'Chloe - Terminal Multiplexer for AI Coding Agents',
     description:
-      'A terminal multiplexer for running parallel Claude Code instances with integrated Kanban task management. Built in 100% safe Rust.',
+      'A terminal multiplexer for AI coding agents. Run Claude Code, Gemini CLI, Amp, OpenCode, and more in parallel with integrated Kanban task management. Built in 100% safe Rust.',
     images: ['/og-image.png'],
   },
   robots: {

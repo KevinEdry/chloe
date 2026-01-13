@@ -2,8 +2,8 @@ import { Callout, Steps, Tabs } from 'nextra/components'
 
 export const metadata = {
   title: 'Quick Start',
-  description: 'Get Chloe up and running in under 5 minutes. Learn how to install, initialize, and start managing multiple Claude Code instances.',
-  keywords: ['Chloe installation', 'quick start guide', 'Claude Code setup', 'terminal multiplexer install'],
+  description: 'Get Chloe up and running in under 5 minutes. Learn how to install, initialize, and start managing multiple AI coding agents like Claude Code, Gemini CLI, Amp, and OpenCode.',
+  keywords: ['Chloe installation', 'quick start guide', 'AI coding agents setup', 'Claude Code', 'Gemini CLI', 'OpenCode', 'terminal multiplexer install'],
   alternates: { canonical: '/docs/quick-start' },
 }
 
@@ -13,9 +13,16 @@ Get Chloe running in your project in under 5 minutes.
 
 ## Prerequisites
 
-- [Claude Pro/Max subscription](https://claude.ai/upgrade)
-- Claude Code CLI - `npm install -g @anthropic-ai/claude-code`
+- At least one AI coding agent installed:
+  - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) - `npm install -g @anthropic-ai/claude-code`
+  - [Gemini CLI](https://github.com/google-gemini/gemini-cli) - `npm install -g @anthropic-ai/gemini-cli`
+  - [Amp](https://ampcode.com/) - Follow Amp installation guide
+  - [OpenCode](https://opencode.ai/) - `npm install -g opencode`
 - A project directory where you want to use Chloe
+
+<Callout type="info">
+Chloe auto-detects installed providers and lets you choose which one to use when starting tasks.
+</Callout>
 
 ## Installation
 
@@ -86,7 +93,7 @@ The task appears in the "To Do" column.
 
 1. Press `2` to switch to the Instances tab
 2. Press `c` to create a new terminal pane
-3. Start Claude Code or any other command
+3. Start your preferred AI coding agent or any other command
 
 ### Link Task to Instance
 

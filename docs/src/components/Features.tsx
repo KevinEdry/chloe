@@ -52,8 +52,8 @@ export function Features() {
               />
             </svg>
           }
-          title="Terminal Multiplexer"
-          description="Run multiple PTY sessions side-by-side with full terminal emulation"
+          title="Multi-Provider Support"
+          description="Works with Claude Code, Gemini CLI, Amp, OpenCode, and any terminal-based AI agent"
         />
 
         <Feature

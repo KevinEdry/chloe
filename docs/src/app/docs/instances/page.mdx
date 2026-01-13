@@ -2,8 +2,8 @@ import { Callout } from 'nextra/components'
 
 export const metadata = {
   title: 'Instances',
-  description: 'Manage terminal panes in Chloe. Learn how to create, navigate, and focus PTY sessions for running multiple Claude Code instances simultaneously.',
-  keywords: ['Chloe instances', 'terminal panes', 'PTY sessions', 'terminal multiplexer', 'Claude Code terminals'],
+  description: 'Manage terminal panes in Chloe. Learn how to create, navigate, and focus PTY sessions for running multiple AI coding agents simultaneously.',
+  keywords: ['Chloe instances', 'terminal panes', 'PTY sessions', 'terminal multiplexer', 'AI coding agents', 'Claude Code', 'Gemini CLI', 'OpenCode'],
   alternates: { canonical: '/docs/instances' },
 }
 
@@ -32,7 +32,7 @@ Press `c` to create a new terminal pane. This spawns a new shell session in your
 ![Creating a pane](/docs/instances-create.gif)
 
 <Callout type="info">
-Panes created from tasks automatically start Claude Code with your task description.
+Panes created from tasks automatically start your selected AI agent with your task description.
 </Callout>
 
 ## Navigation Modes
@@ -74,19 +74,19 @@ While in Focused mode, you can navigate the terminal's scrollback buffer:
 | `Shift+End` | Jump to latest output |
 
 <Callout>
-The scrollback buffer preserves the full terminal history, so you can review Claude's previous output even after it scrolls off screen.
+The scrollback buffer preserves the full terminal history, so you can review the agent's previous output even after it scrolls off screen.
 </Callout>
 
-## Claude State Indicators
+## Agent State Indicators
 
-Each instance tracks Claude's current state:
+Each instance tracks the AI agent's current state:
 
 | State | Meaning |
 |-------|---------|
 | **Idle** | Terminal waiting for input |
-| **Running** | Claude is actively working |
-| **Needs Permissions** | Claude is waiting for approval |
-| **Done** | Claude has completed the task |
+| **Running** | Agent is actively working |
+| **Needs Permissions** | Agent is waiting for approval |
+| **Done** | Agent has completed the task |
 
 
 ## Task Integration
@@ -94,11 +94,11 @@ Each instance tracks Claude's current state:
 When you start a task from the Tasks tab:
 
 1. A new terminal instance is created automatically
-2. Claude Code is launched with your task description
+2. Your selected AI agent is launched with your task description
 3. The task and instance are linked by ID
 4. Press `t` in the Tasks tab to jump to the linked instance
 
-When Claude signals completion, the linked task automatically moves to the Review column.
+When the agent signals completion, the linked task automatically moves to the Review column.
 
 ## Mouse Support
 
