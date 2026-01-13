@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  Chloe (a wordplay on "Claude TUI") is a terminal-based task management application built with Rust. It combines a kanban board for tracking work with integrated terminal instances, letting you manage multiple Claude Code sessions in parallel while maintaining visibility and control over what each instance is doing.
+  Chloe is a terminal-based task management application built with Rust. It combines a kanban board for tracking work with integrated terminal instances, letting you manage multiple AI coding agent sessions in parallel while maintaining visibility and control over what each instance is doing.
 </p>
 
 <p align="center">
@@ -39,6 +39,14 @@
 </details>
 
 ## Features
+
+**Multi-Provider Support** - Works with multiple AI coding agents out of the box:
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) - Anthropic's agentic coding tool
+- [Gemini CLI](https://github.com/google-gemini/gemini-cli) - Google's AI assistant for the terminal
+- [Amp](https://ampcode.com/) - Sourcegraph's AI coding agent
+- [OpenCode](https://opencode.ai/) - Open-source AI coding assistant
+
+Chloe auto-detects installed providers and lets you choose which one to use for each task.
 
 **Task Management** - Macro-level task viewer with kanban board and task list views. Track work across To Do, In Progress, and Done states with persistent storage.
 
