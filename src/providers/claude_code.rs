@@ -26,7 +26,14 @@ fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile>
             ]
         },
         "hooks": {
-            "PreToolUse": [
+            "UserPromptSubmit": [
+                {
+                    "hooks": [
+                        { "type": "command", "command": notify_start }
+                    ]
+                }
+            ],
+            "PermissionRequest": [
                 {
                     "matcher": "*",
                     "hooks": [
@@ -34,17 +41,8 @@ fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile>
                     ]
                 }
             ],
-            "PostToolUse": [
-                {
-                    "matcher": "*",
-                    "hooks": [
-                        { "type": "command", "command": notify_start }
-                    ]
-                }
-            ],
             "Stop": [
                 {
-                    "matcher": "*",
                     "hooks": [
                         { "type": "command", "command": notify_end }
                     ]
