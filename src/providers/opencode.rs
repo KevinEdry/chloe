@@ -11,15 +11,40 @@ pub static SPEC: ProviderSpec = ProviderSpec {
 };
 
 fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile> {
+    let log_path = working_directory.join(".opencode").join("chloe-plugin.log");
+    let log_path_str = log_path.to_string_lossy();
+
     let plugin_content = format!(
         r#"// Chloe integration plugin for OpenCode
-export const ChloeNotifier = async ({{ $ }}) => {{
+import {{ appendFileSync }} from "fs";
+
+const log = (msg) => appendFileSync("{log_path_str}", new Date().toISOString() + " " + msg + "\n");
+
+export const ChloeNotifier = async () => {{
+  const {{ spawn }} = await import("child_process");
   const taskId = "{task_id}";
+
+  const notify = (type) => {{
+    spawn("chloe", ["notify", type, "--worktree-id", taskId], {{
+      detached: true,
+      stdio: "ignore",
+    }}).unref();
+  }};
+
+  log("Plugin loaded, taskId: " + taskId);
 
   return {{
     event: async ({{ event }}) => {{
-      if (event.type === "session.status" && event.properties?.status === "idle") {{
-        await $`chloe notify end --worktree-id ${{taskId}}`;
+      log("event: " + event.type);
+      if (event.type === "permission.updated") {{
+        notify("permission");
+      }}
+      if (event.type === "session.updated") {{
+        notify("start");
+      }}
+      if (event.type === "session.idle") {{
+        log("session.idle detected, notifying end");
+        notify("end");
       }}
     }},
   }};
