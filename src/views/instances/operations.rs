@@ -24,11 +24,10 @@ pub struct TaskPaneConfig {
 impl InstanceState {
     pub fn create_pane(&mut self, rows: u16, columns: u16) {
         let working_directory = env::current_dir().unwrap_or_else(|_| PathBuf::from("/"));
-        let (actual_rows, actual_columns) = self.calculate_pane_dimensions(rows, columns);
 
-        let mut pane = InstancePane::new(working_directory.clone(), actual_rows, actual_columns);
+        let mut pane = InstancePane::new(working_directory.clone(), rows, columns);
 
-        match pty::PtySession::spawn(&working_directory, actual_rows, actual_columns) {
+        match pty::PtySession::spawn(&working_directory, rows, columns) {
             Ok(session) => {
                 pane.pty_session = Some(session);
             }
@@ -75,32 +74,15 @@ impl InstanceState {
         }
     }
 
-    fn calculate_pane_dimensions(&self, default_rows: u16, default_columns: u16) -> (u16, u16) {
-        let Some(area) = self.last_render_area else {
-            return (default_rows, default_columns);
-        };
-
-        let inner_area = ratatui::widgets::Block::default()
-            .borders(ratatui::widgets::Borders::ALL)
-            .inner(area);
-
-        let rows = inner_area.height.max(1);
-        let columns = inner_area.width.max(1);
-
-        (rows, columns)
-    }
-
     pub fn create_pane_for_task(&mut self, config: TaskPaneConfig) -> Uuid {
         let working_directory = config
             .working_directory
             .unwrap_or_else(|| env::current_dir().unwrap_or_else(|_| PathBuf::from("/")));
-        let (actual_rows, actual_columns) =
-            self.calculate_pane_dimensions(config.rows, config.columns);
 
         let mut pane = InstancePane::with_provider(
             working_directory.clone(),
-            actual_rows,
-            actual_columns,
+            config.rows,
+            config.columns,
             config.provider,
         );
 
@@ -117,7 +99,7 @@ impl InstanceState {
         let command = spec.build_command(&prompt);
 
         let shell_command = build_shell_wrapped_command(&command);
-        let spawn_options = pty::SpawnOptions::new(working_directory, actual_rows, actual_columns)
+        let spawn_options = pty::SpawnOptions::new(working_directory, config.rows, config.columns)
             .with_command(shell_command.0, shell_command.1)
             .with_environment(command.environment);
 
