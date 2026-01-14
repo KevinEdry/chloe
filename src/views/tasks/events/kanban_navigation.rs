@@ -46,7 +46,17 @@ pub fn handle_kanban_normal_mode(state: &mut TasksState, key: KeyEvent, vcs_comm
             }
         }
         KeyCode::Backspace => {
-            state.move_task_previous();
+            let is_review_column = state.kanban_selected_column == 2;
+            let is_in_progress_column = state.kanban_selected_column == 1;
+            let needs_confirmation = is_review_column || is_in_progress_column;
+
+            if needs_confirmation {
+                if let Some(task) = state.get_kanban_selected_task() {
+                    state.mode = TasksMode::ConfirmMoveBack { task_id: task.id };
+                }
+            } else {
+                state.move_task_previous();
+            }
         }
         _ => {}
     }

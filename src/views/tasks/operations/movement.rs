@@ -1,5 +1,5 @@
 use crate::views::settings::VcsCommand;
-use crate::views::tasks::state::{TasksMode, TasksState};
+use crate::views::tasks::state::TasksState;
 use uuid::Uuid;
 
 use crate::views::tasks::state::WorktreeSelectionOption;
@@ -74,22 +74,7 @@ impl TasksState {
             return;
         }
 
-        let Some(task_index) = self.kanban_selected_task else {
-            return;
-        };
-
-        let Some(task) = self.columns[self.kanban_selected_column]
-            .tasks
-            .get(task_index)
-        else {
-            return;
-        };
-
-        let is_in_progress_column = self.kanban_selected_column == 1;
-        let has_instance = task.instance_id.is_some();
-
-        if is_in_progress_column && has_instance {
-            self.mode = TasksMode::ConfirmMoveBack { task_id: task.id };
+        if self.kanban_selected_task.is_none() {
             return;
         }
 
