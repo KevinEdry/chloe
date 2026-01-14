@@ -1,10 +1,11 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 
 interface FaqItemProps {
   question: string
-  answer: string
+  answer: string | ReactNode
 }
 
 export function FaqItem({ question, answer }: FaqItemProps) {
