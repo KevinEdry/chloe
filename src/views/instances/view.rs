@@ -1,6 +1,7 @@
 use super::layout;
 use super::state::{InstancePane, InstanceState};
 use crate::views::StatusBarContent;
+use crate::widgets::activity_summary::ActivitySummaryWidget;
 use crate::widgets::claude_indicator;
 use crate::widgets::terminal::{AlacrittyScreen, Cursor, PseudoTerminal};
 use ratatui::{
@@ -22,6 +23,10 @@ pub fn render(f: &mut Frame, state: &mut InstanceState, area: Rect) {
     }
 
     render_panes(f, state, area);
+
+    if state.mode == super::state::InstanceMode::ActivitySummary {
+        render_activity_summary(f, state, area);
+    }
 }
 
 fn render_empty_state(f: &mut Frame, area: Rect) {
@@ -156,6 +161,15 @@ fn render_pane(
         ),
     ];
 
+    if pane.generate_activity_summary().is_some() {
+        title_spans.push(Span::styled(
+            " 🔔",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
+
     if is_scroll {
         let max_scrollback = pane.scrollback_len();
         let scroll_info = if max_scrollback > 0 {
@@ -201,12 +215,28 @@ fn render_pane(
     f.render_widget(terminal, inner_area);
 }
 
+fn render_activity_summary(f: &mut Frame, state: &InstanceState, area: Rect) {
+    let Some(pane) = state.selected_pane_id.and_then(|id| state.find_pane(id)) else {
+        return;
+    };
+
+    let Some(summary) = pane.generate_activity_summary() else {
+        return;
+    };
+
+    let widget =
+        ActivitySummaryWidget::new(&summary).scroll_offset(state.activity_summary_scroll_offset);
+
+    f.render_widget(widget, area);
+}
+
 #[must_use]
 pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarContent {
     let (mode_text, mode_color) = match state.mode {
         super::InstanceMode::Normal => ("NAVIGATE", Color::Cyan),
         super::InstanceMode::Focused => ("FOCUSED", Color::Green),
         super::InstanceMode::Scroll => ("SCROLL", Color::Yellow),
+        super::InstanceMode::ActivitySummary => ("ACTIVITY", Color::Magenta),
     };
 
     let pane_count = state.pane_count();
@@ -216,9 +246,9 @@ pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarCon
             if pane_count == 0 {
                 "c:create"
             } else if width < STATUS_BAR_WIDTH_THRESHOLD {
-                "h/j/k/l:nav  Enter:focus  c:create  x:close"
+                "h/j/k/l:nav  Enter:focus  A:activity  c:create  x:close"
             } else {
-                "h/j/k/l:navigate  Enter:focus  c:create-pane  x:close-pane"
+                "h/j/k/l:navigate  Enter:focus  A:activity-summary  c:create-pane  x:close-pane"
             }
         }
         super::InstanceMode::Focused => {
@@ -233,6 +263,13 @@ pub fn get_status_bar_content(state: &InstanceState, width: u16) -> StatusBarCon
                 "j/k:line  Ctrl+d/u:page  g/G:top/bottom  q:exit"
             } else {
                 "j/k:scroll-line  Ctrl+d/u:half-page  g/G:top/bottom  q/Esc:exit-scroll"
+            }
+        }
+        super::InstanceMode::ActivitySummary => {
+            if width < STATUS_BAR_WIDTH_THRESHOLD {
+                "j/k:scroll  Ctrl+d/u:page  g:top  q:close"
+            } else {
+                "j/k:scroll  Ctrl+d/u:half-page  g:top  q/Esc:close-summary"
             }
         }
     };

@@ -100,6 +100,8 @@ pub struct InstanceState {
     pub last_render_area: Option<Rect>,
     #[serde(skip, default)]
     pub pane_areas: Vec<(Uuid, Rect)>,
+    #[serde(skip, default)]
+    pub activity_summary_scroll_offset: usize,
 }
 
 impl InstanceState {
@@ -111,6 +113,7 @@ impl InstanceState {
             mode: InstanceMode::Normal,
             last_render_area: None,
             pane_areas: Vec::new(),
+            activity_summary_scroll_offset: 0,
         }
     }
 
@@ -343,6 +346,7 @@ pub enum InstanceMode {
     Normal,
     Focused,
     Scroll,
+    ActivitySummary,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

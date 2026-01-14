@@ -7,6 +7,7 @@ pub fn handle_key_event(state: &mut InstanceState, key: KeyEvent) {
         InstanceMode::Normal => handle_navigation_mode(state, key),
         InstanceMode::Focused => handle_focused_mode(state, key),
         InstanceMode::Scroll => handle_scroll_mode(state, key),
+        InstanceMode::ActivitySummary => handle_activity_summary_mode(state, key),
     }
 }
 
@@ -37,6 +38,12 @@ fn handle_navigation_mode(state: &mut InstanceState, key: KeyEvent) {
         KeyCode::Char('x') => state.close_pane(),
         KeyCode::Tab => state.next_pane(),
         KeyCode::BackTab => state.previous_pane(),
+        KeyCode::Char('A') => {
+            if state.selected_pane_id.is_some() {
+                state.activity_summary_scroll_offset = 0;
+                state.mode = InstanceMode::ActivitySummary;
+            }
+        }
         _ => {}
     }
 }
@@ -173,5 +180,41 @@ fn send_input_to_instance(state: &mut InstanceState, key: KeyEvent) {
         };
 
         let _ = session.write_input(&data);
+    }
+}
+
+fn handle_activity_summary_mode(state: &mut InstanceState, key: KeyEvent) {
+    if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
+        if let Some(pane) = state.selected_pane_mut() {
+            pane.mark_viewed();
+        }
+        state.activity_summary_scroll_offset = 0;
+        state.mode = InstanceMode::Normal;
+        return;
+    }
+
+    match key.code {
+        KeyCode::Char('j') | KeyCode::Down => {
+            state.activity_summary_scroll_offset =
+                state.activity_summary_scroll_offset.saturating_add(1);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            state.activity_summary_scroll_offset =
+                state.activity_summary_scroll_offset.saturating_sub(1);
+        }
+        KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            state.activity_summary_scroll_offset = state
+                .activity_summary_scroll_offset
+                .saturating_add(SCROLL_LINES_HALF_PAGE);
+        }
+        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            state.activity_summary_scroll_offset = state
+                .activity_summary_scroll_offset
+                .saturating_sub(SCROLL_LINES_HALF_PAGE);
+        }
+        KeyCode::Char('g') => {
+            state.activity_summary_scroll_offset = 0;
+        }
+        _ => {}
     }
 }
