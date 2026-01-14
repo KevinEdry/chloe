@@ -14,6 +14,7 @@ pub struct TaskPaneConfig {
     pub title: String,
     pub description: String,
     pub working_directory: Option<PathBuf>,
+    pub pane_name: Option<String>,
     pub provider: AgentProvider,
     pub vcs_command: VcsCommand,
     pub rows: u16,
@@ -85,6 +86,8 @@ impl InstanceState {
             config.columns,
             config.provider,
         );
+
+        pane.name = config.pane_name;
 
         let spec = providers::get_spec(config.provider);
 

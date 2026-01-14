@@ -155,18 +155,23 @@ impl App {
                     .worktree_info
                     .as_ref()
                     .map(|info| info.worktree_path.clone());
+                let pane_name = task
+                    .worktree_info
+                    .as_ref()
+                    .map(|info| info.branch_name.clone());
                 let provider = task.provider.unwrap_or(default_provider);
                 (
                     task.id,
                     task.title.clone(),
                     task.description.clone(),
                     worktree_path,
+                    pane_name,
                     provider,
                 )
             })
             .collect();
 
-        for (task_id, task_title, task_description, working_directory, provider) in
+        for (task_id, task_title, task_description, working_directory, pane_name, provider) in
             tasks_needing_instances
         {
             let permission_config = self
@@ -182,6 +187,7 @@ impl App {
                 title: task_title,
                 description: task_description,
                 working_directory,
+                pane_name,
                 provider,
                 vcs_command: self.settings.settings.vcs_command.clone(),
                 rows: DEFAULT_PTY_ROWS,
@@ -202,6 +208,10 @@ impl App {
                 .worktree_info
                 .as_ref()
                 .map(|info| info.worktree_path.clone());
+            let pane_name = task
+                .worktree_info
+                .as_ref()
+                .map(|info| info.branch_name.clone());
             let provider = task
                 .provider
                 .unwrap_or(self.settings.settings.default_provider);
@@ -224,6 +234,7 @@ impl App {
                 title: task_title,
                 description: task_description,
                 working_directory,
+                pane_name,
                 provider,
                 vcs_command: self.settings.settings.vcs_command.clone(),
                 rows: DEFAULT_PTY_ROWS,
