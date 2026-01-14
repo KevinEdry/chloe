@@ -1,4 +1,5 @@
 use super::{GeneratedFile, OneShotPromptStyle, PromptStyle, ProviderSpec};
+use crate::types::PermissionConfig;
 use std::path::Path;
 use uuid::Uuid;
 
@@ -9,7 +10,11 @@ pub static SPEC: ProviderSpec = ProviderSpec {
     generate_files,
 };
 
-fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile> {
+fn generate_files(
+    task_id: Uuid,
+    working_directory: &Path,
+    permission_config: &PermissionConfig,
+) -> Vec<GeneratedFile> {
     let log_path = working_directory.join(".opencode").join("chloe-plugin.log");
     let log_path_str = log_path.to_string_lossy();
 
@@ -51,22 +56,15 @@ export const ChloeNotifier = async () => {{
 "#
     );
 
+    let allowed_tools = permission_config.to_provider_tool_list();
+
     let settings = serde_json::json!({
         "permissions": {
-            "allow": [
-                "Read",
-                "Edit",
-                "Write",
-                "MultiEdit",
-                "Glob",
-                "Grep",
-                "Bash",
-                "Skill"
-            ]
+            "allow": allowed_tools
         },
         "sandbox": {
-            "enabled": true,
-            "autoAllowBashIfSandboxed": true
+            "enabled": permission_config.sandbox.enabled,
+            "autoAllowBashIfSandboxed": permission_config.sandbox.auto_allow_bash_if_sandboxed
         },
         "includeCoAuthoredBy": false,
         "gitAttribution": false
@@ -102,8 +100,9 @@ mod tests {
     fn test_generate_files_creates_plugin() {
         let task_id = Uuid::new_v4();
         let working_dir = Path::new("/tmp/test");
+        let permission_config = PermissionConfig::default();
 
-        let files = generate_files(task_id, working_dir);
+        let files = generate_files(task_id, working_dir, &permission_config);
 
         assert_eq!(files.len(), 2);
         assert_eq!(

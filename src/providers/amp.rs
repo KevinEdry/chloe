@@ -1,4 +1,5 @@
 use super::{GeneratedFile, OneShotPromptStyle, PromptStyle, ProviderSpec};
+use crate::types::PermissionConfig;
 use std::path::Path;
 use uuid::Uuid;
 
@@ -9,7 +10,11 @@ pub static SPEC: ProviderSpec = ProviderSpec {
     generate_files,
 };
 
-fn generate_files(task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile> {
+fn generate_files(
+    task_id: Uuid,
+    working_directory: &Path,
+    _permission_config: &PermissionConfig,
+) -> Vec<GeneratedFile> {
     let notify_start = format!("chloe notify start --worktree-id {task_id}");
     let notify_end = format!("chloe notify end --worktree-id {task_id}");
 
@@ -59,8 +64,9 @@ mod tests {
     fn test_generate_files_creates_settings() {
         let task_id = Uuid::new_v4();
         let working_dir = Path::new("/tmp/test");
+        let permission_config = PermissionConfig::default();
 
-        let files = generate_files(task_id, working_dir);
+        let files = generate_files(task_id, working_dir, &permission_config);
 
         assert_eq!(files.len(), 1);
         assert_eq!(

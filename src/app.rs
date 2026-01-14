@@ -169,6 +169,14 @@ impl App {
         for (task_id, task_title, task_description, working_directory, provider) in
             tasks_needing_instances
         {
+            let permission_config = self
+                .settings
+                .settings
+                .permission_configs
+                .get(&provider)
+                .cloned()
+                .unwrap_or_default();
+
             let config = TaskPaneConfig {
                 task_id,
                 title: task_title,
@@ -178,6 +186,7 @@ impl App {
                 vcs_command: self.settings.settings.vcs_command.clone(),
                 rows: DEFAULT_PTY_ROWS,
                 columns: DEFAULT_PTY_COLUMNS,
+                permission_config,
             };
             let instance_id = self.instances.create_pane_for_task(config);
             self.tasks.link_task_to_instance(task_id, instance_id);
@@ -202,6 +211,14 @@ impl App {
                 return self.instances.select_pane_by_id(instance_id);
             }
 
+            let permission_config = self
+                .settings
+                .settings
+                .permission_configs
+                .get(&provider)
+                .cloned()
+                .unwrap_or_default();
+
             let config = TaskPaneConfig {
                 task_id,
                 title: task_title,
@@ -211,6 +228,7 @@ impl App {
                 vcs_command: self.settings.settings.vcs_command.clone(),
                 rows: DEFAULT_PTY_ROWS,
                 columns: DEFAULT_PTY_COLUMNS,
+                permission_config,
             };
             let instance_id = self.instances.create_pane_for_task(config);
             self.tasks.link_task_to_instance(task_id, instance_id);

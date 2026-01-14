@@ -5,6 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 const IDE_OPTIONS_COUNT: usize = 3;
 const TERMINAL_OPTIONS_COUNT: usize = 2;
 const VCS_OPTIONS_COUNT: usize = 2;
+const PERMISSION_PRESET_OPTIONS_COUNT: usize = 3;
 
 pub enum SettingsAction {
     None,
@@ -21,6 +22,9 @@ pub fn handle_key_event(state: &mut SettingsState, key: KeyEvent) -> SettingsAct
         SettingsMode::SelectingIde { .. } => handle_ide_selection_mode(state, key),
         SettingsMode::SelectingTerminal { .. } => handle_terminal_selection_mode(state, key),
         SettingsMode::SelectingVcs { .. } => handle_vcs_selection_mode(state, key),
+        SettingsMode::ConfiguringPermissions { .. } => {
+            handle_permission_configuration_mode(state, key)
+        }
     }
 }
 
@@ -224,6 +228,43 @@ fn handle_vcs_selection_mode(state: &mut SettingsState, key: KeyEvent) -> Settin
         }
         KeyCode::Enter => {
             state.select_vcs(selected_index);
+            SettingsAction::SaveSettings
+        }
+        _ => SettingsAction::None,
+    }
+}
+
+fn handle_permission_configuration_mode(
+    state: &mut SettingsState,
+    key: KeyEvent,
+) -> SettingsAction {
+    let SettingsMode::ConfiguringPermissions {
+        selected_preset_index,
+    } = state.mode
+    else {
+        return SettingsAction::None;
+    };
+
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            state.mode = SettingsMode::Normal;
+            SettingsAction::None
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            state.mode = SettingsMode::ConfiguringPermissions {
+                selected_preset_index: selected_preset_index.saturating_sub(1),
+            };
+            SettingsAction::None
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            state.mode = SettingsMode::ConfiguringPermissions {
+                selected_preset_index: (selected_preset_index + 1)
+                    .min(PERMISSION_PRESET_OPTIONS_COUNT - 1),
+            };
+            SettingsAction::None
+        }
+        KeyCode::Enter => {
+            state.select_permission_preset(selected_preset_index);
             SettingsAction::SaveSettings
         }
         _ => SettingsAction::None,
