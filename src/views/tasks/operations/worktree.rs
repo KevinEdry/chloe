@@ -128,12 +128,12 @@ impl TasksState {
 
         let Ok(current_directory) = std::env::current_dir() else {
             return;
-        }
+        };
 
         let Ok(repository_root) = crate::views::worktree::find_repository_root(&current_directory)
         else {
             return;
-        }
+        };
 
         let _ =
             crate::views::worktree::delete_worktree(&repository_root, worktree_info, vcs_command);
