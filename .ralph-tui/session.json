@@ -3,10 +3,10 @@
   "sessionId": "44e5c5e1-d438-4144-8ae7-d94eea5cace7",
   "status": "running",
   "startedAt": "2026-01-14T20:52:55.521Z",
-  "updatedAt": "2026-01-14T20:53:02.483Z",
-  "currentIteration": 0,
+  "updatedAt": "2026-01-14T20:55:25.576Z",
+  "currentIteration": 1,
   "maxIterations": 10,
-  "tasksCompleted": 0,
+  "tasksCompleted": 1,
   "isPaused": false,
   "agentPlugin": "claude",
   "trackerState": {
@@ -17,8 +17,8 @@
       {
         "id": "chloe-2ze.4",
         "title": "ralph: Implement activity summary generator",
-        "status": "in_progress",
-        "completedInSession": false
+        "status": "completed",
+        "completedInSession": true
       },
       {
         "id": "chloe-2ze.3",
@@ -40,11 +40,22 @@
       }
     ]
   },
-  "iterations": [],
+  "iterations": [
+    {
+      "iteration": 1,
+      "status": "completed",
+      "taskId": "chloe-2ze.4",
+      "taskTitle": "ralph: Implement activity summary generator",
+      "taskCompleted": true,
+      "durationMs": 141910,
+      "startedAt": "2026-01-14T20:53:02.398Z",
+      "endedAt": "2026-01-14T20:55:24.308Z"
+    }
+  ],
   "skippedTaskIds": [],
   "cwd": "/Users/kedry/RustroverProjects/chloe",
   "activeTaskIds": [
-    "chloe-2ze.4"
+    "chloe-2ze.6"
   ],
   "subagentPanelVisible": false
 }

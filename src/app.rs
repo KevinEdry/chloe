@@ -72,6 +72,7 @@ impl App {
 
             app.roadmap.sort_items_by_priority();
             app.settings = SettingsState::with_settings(settings);
+            app.instances.prune_all_activity_events();
             app
         } else {
             Self {

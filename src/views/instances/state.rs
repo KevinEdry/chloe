@@ -7,7 +7,8 @@ use std::collections::VecDeque;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-const MAX_ACTIVITY_EVENTS: usize = 100;
+const MAX_ACTIVITY_EVENTS: usize = 500;
+const ACTIVITY_RETENTION_DAYS: i64 = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SplitDirection {
@@ -75,6 +76,19 @@ impl PaneNode {
             Self::Split { first, second, .. } => first.pane_count() + second.pane_count(),
         }
     }
+
+    pub fn for_each_pane_mut<F>(&mut self, function: &mut F)
+    where
+        F: FnMut(&mut InstancePane),
+    {
+        match self {
+            Self::Leaf(pane) => function(pane),
+            Self::Split { first, second, .. } => {
+                first.for_each_pane_mut(function);
+                second.for_each_pane_mut(function);
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -132,6 +146,14 @@ impl InstanceState {
             .iter()
             .find(|(pane_id, _)| *pane_id == id)
             .map(|(_, area)| *area)
+    }
+
+    pub fn prune_all_activity_events(&mut self) {
+        if let Some(root) = &mut self.root {
+            root.for_each_pane_mut(&mut |pane| {
+                pane.prune_old_activity_events();
+            });
+        }
     }
 }
 
@@ -243,6 +265,14 @@ impl InstancePane {
         };
 
         self.activity_events.push_back(event);
+        self.prune_old_activity_events();
+    }
+
+    pub fn prune_old_activity_events(&mut self) {
+        let cutoff_time = Utc::now() - chrono::Duration::days(ACTIVITY_RETENTION_DAYS);
+
+        self.activity_events
+            .retain(|event| event.timestamp > cutoff_time);
 
         while self.activity_events.len() > MAX_ACTIVITY_EVENTS {
             self.activity_events.pop_front();
