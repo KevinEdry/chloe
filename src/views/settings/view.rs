@@ -2,6 +2,7 @@ use super::state::{
     IdeCommand, SettingItem, SettingsFocus, SettingsMode, SettingsSection, SettingsState,
     TerminalCommand, VcsCommand,
 };
+use crate::types::PermissionPreset;
 use crate::views::StatusBarContent;
 use crate::views::tasks::dialogs::{
     ProviderSelectionViewState, centered_rect, render_popup_background, render_provider_selection,
@@ -249,6 +250,7 @@ const fn get_item_type_indicator(item: SettingItem) -> &'static str {
         | SettingItem::TerminalCommand
         | SettingItem::VcsCommand
         | SettingItem::DefaultProvider => "[select]",
+        SettingItem::ProviderPermissions => "[configure]",
     }
 }
 
@@ -262,6 +264,16 @@ fn get_setting_value_text(item: SettingItem, state: &SettingsState) -> String {
         SettingItem::TerminalCommand => state.settings.terminal_command.display_name().to_string(),
         SettingItem::VcsCommand => state.settings.vcs_command.display_name().to_string(),
         SettingItem::DefaultProvider => state.settings.default_provider.display_name().to_string(),
+        SettingItem::ProviderPermissions => {
+            let config = state
+                .settings
+                .permission_configs
+                .get(&state.settings.default_provider)
+                .cloned()
+                .unwrap_or_default();
+            let preset = PermissionPreset::from_config(&config);
+            preset.display_name().to_string()
+        }
     }
 }
 
@@ -294,6 +306,11 @@ fn render_dialogs(frame: &mut Frame, area: Rect, state: &SettingsState) {
                 "Edit Auto-save Interval (seconds)",
                 &state.edit_buffer,
             );
+        }
+        SettingsMode::ConfiguringPermissions {
+            selected_preset_index,
+        } => {
+            render_permission_configuration_dialog(frame, area, state, selected_preset_index);
         }
         SettingsMode::Normal => {}
     }
@@ -501,6 +518,74 @@ fn render_selection_option(
     item
 }
 
+fn render_permission_configuration_dialog(
+    frame: &mut Frame,
+    area: Rect,
+    state: &SettingsState,
+    selected_preset_index: usize,
+) {
+    let popup_area = centered_rect(
+        SELECTION_POPUP_WIDTH_PERCENT,
+        SELECTION_POPUP_HEIGHT_PERCENT,
+        area,
+    );
+    render_popup_background(frame, popup_area);
+
+    let provider_name = state.settings.default_provider.display_name();
+    let title = format!(" Configure Permissions for {} ", provider_name);
+    let block = Block::default()
+        .title(title)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan))
+        .padding(Padding::uniform(1));
+
+    let inner_area = block.inner(popup_area);
+    frame.render_widget(block, popup_area);
+
+    let options = [
+        (
+            "Restrictive",
+            "Read-only access, requires approval for most actions",
+        ),
+        (
+            "Balanced",
+            "Standard tools with sandbox enabled (recommended)",
+        ),
+        ("Permissive", "All tools enabled, maximum agent autonomy"),
+    ];
+
+    let current_config = state
+        .settings
+        .permission_configs
+        .get(&state.settings.default_provider)
+        .cloned()
+        .unwrap_or_default();
+    let current_preset = PermissionPreset::from_config(&current_config);
+    let current_preset_index = match current_preset {
+        PermissionPreset::Restrictive => 0,
+        PermissionPreset::Balanced => 1,
+        PermissionPreset::Permissive => 2,
+        PermissionPreset::Custom => 1,
+    };
+
+    let items: Vec<ListItem> = options
+        .iter()
+        .enumerate()
+        .map(|(index, (name, description))| {
+            render_selection_option(
+                name,
+                description,
+                index,
+                selected_preset_index,
+                index == current_preset_index,
+            )
+        })
+        .collect();
+
+    let list = List::new(items);
+    frame.render_widget(list, inner_area);
+}
+
 fn render_text_input_dialog(frame: &mut Frame, area: Rect, title: &str, value: &str) {
     let dialog_width = 60;
     let dialog_height = 7;
@@ -584,7 +669,8 @@ pub fn get_status_bar_content(state: &SettingsState, width: u16) -> StatusBarCon
         SettingsMode::SelectingProvider { .. }
         | SettingsMode::SelectingIde { .. }
         | SettingsMode::SelectingTerminal { .. }
-        | SettingsMode::SelectingVcs { .. } => "SELECT",
+        | SettingsMode::SelectingVcs { .. }
+        | SettingsMode::ConfiguringPermissions { .. } => "SELECT",
     };
 
     let help_text = if width < STATUS_BAR_WIDTH_THRESHOLD {
@@ -593,7 +679,10 @@ pub fn get_status_bar_content(state: &SettingsState, width: u16) -> StatusBarCon
             SettingsMode::SelectingProvider { .. }
             | SettingsMode::SelectingIde { .. }
             | SettingsMode::SelectingTerminal { .. }
-            | SettingsMode::SelectingVcs { .. } => "jk:navigate  Enter:select  Esc:cancel",
+            | SettingsMode::SelectingVcs { .. }
+            | SettingsMode::ConfiguringPermissions { .. } => {
+                "jk:navigate  Enter:select  Esc:cancel"
+            }
             _ => "Enter:confirm  Esc:cancel",
         }
     } else {
@@ -607,7 +696,8 @@ pub fn get_status_bar_content(state: &SettingsState, width: u16) -> StatusBarCon
             SettingsMode::SelectingProvider { .. }
             | SettingsMode::SelectingIde { .. }
             | SettingsMode::SelectingTerminal { .. }
-            | SettingsMode::SelectingVcs { .. } => {
+            | SettingsMode::SelectingVcs { .. }
+            | SettingsMode::ConfiguringPermissions { .. } => {
                 "jk/arrows: navigate  Enter: select  Esc: cancel"
             }
             SettingsMode::Normal => {

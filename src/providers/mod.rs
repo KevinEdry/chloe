@@ -3,7 +3,7 @@ mod claude_code;
 mod gemini;
 mod opencode;
 
-use crate::types::AgentProvider;
+use crate::types::{AgentProvider, PermissionConfig};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
@@ -12,7 +12,7 @@ pub struct ProviderSpec {
     pub command: &'static str,
     pub prompt_style: PromptStyle,
     pub oneshot_style: OneShotPromptStyle,
-    generate_files: fn(Uuid, &Path) -> Vec<GeneratedFile>,
+    generate_files: fn(Uuid, &Path, &PermissionConfig) -> Vec<GeneratedFile>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -88,8 +88,13 @@ impl ProviderSpec {
     }
 
     #[must_use]
-    pub fn build_files(&self, task_id: Uuid, working_directory: &Path) -> Vec<GeneratedFile> {
-        (self.generate_files)(task_id, working_directory)
+    pub fn build_files(
+        &self,
+        task_id: Uuid,
+        working_directory: &Path,
+        permission_config: &PermissionConfig,
+    ) -> Vec<GeneratedFile> {
+        (self.generate_files)(task_id, working_directory, permission_config)
     }
 }
 

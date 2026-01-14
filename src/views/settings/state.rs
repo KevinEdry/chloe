@@ -1,5 +1,8 @@
-use crate::types::{AgentProvider, DetectedProvider, ProviderRegistry};
+use crate::types::{
+    AgentProvider, DetectedProvider, PermissionConfig, PermissionPreset, ProviderRegistry,
+};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 const SECTION_COUNT: usize = 4;
 
@@ -69,7 +72,10 @@ impl SettingsSection {
                 SettingItem::VcsCommand,
             ],
             Self::EditorAndIde => &[SettingItem::IdeCommand],
-            Self::Agent => &[SettingItem::DefaultProvider],
+            Self::Agent => &[
+                SettingItem::DefaultProvider,
+                SettingItem::ProviderPermissions,
+            ],
             Self::Persistence => &[SettingItem::AutoSaveInterval],
         }
     }
@@ -101,6 +107,8 @@ pub struct Settings {
     pub skip_provider_selection: bool,
     #[serde(default)]
     pub provider_registry: ProviderRegistry,
+    #[serde(default)]
+    pub permission_configs: HashMap<AgentProvider, PermissionConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -300,6 +308,11 @@ impl TerminalCommand {
 
 impl Default for Settings {
     fn default() -> Self {
+        let mut permission_configs = HashMap::new();
+        for provider in AgentProvider::all() {
+            permission_configs.insert(*provider, PermissionConfig::default());
+        }
+
         Self {
             default_shell: std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string()),
             auto_save_interval_seconds: 30,
@@ -309,6 +322,7 @@ impl Default for Settings {
             default_provider: AgentProvider::default(),
             skip_provider_selection: false,
             provider_registry: ProviderRegistry::new(),
+            permission_configs,
         }
     }
 }
@@ -335,6 +349,9 @@ pub enum SettingsMode {
     SelectingVcs {
         selected_index: usize,
     },
+    ConfiguringPermissions {
+        selected_preset_index: usize,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -345,6 +362,7 @@ pub enum SettingItem {
     TerminalCommand,
     VcsCommand,
     DefaultProvider,
+    ProviderPermissions,
 }
 
 impl SettingItem {
@@ -357,6 +375,7 @@ impl SettingItem {
             Self::TerminalCommand => "Terminal",
             Self::VcsCommand => "Version Control",
             Self::DefaultProvider => "Default Agent",
+            Self::ProviderPermissions => "Agent Permissions",
         }
     }
 }
@@ -503,6 +522,24 @@ impl SettingsState {
                     self.mode = SettingsMode::SelectingProvider { selected_index: 0 };
                 }
             }
+            SettingItem::ProviderPermissions => {
+                let current_config = self
+                    .settings
+                    .permission_configs
+                    .get(&self.settings.default_provider)
+                    .cloned()
+                    .unwrap_or_default();
+                let current_preset = PermissionPreset::from_config(&current_config);
+                let preset_index = match current_preset {
+                    PermissionPreset::Restrictive => 0,
+                    PermissionPreset::Balanced => 1,
+                    PermissionPreset::Permissive => 2,
+                    PermissionPreset::Custom => 1,
+                };
+                self.mode = SettingsMode::ConfiguringPermissions {
+                    selected_preset_index: preset_index,
+                };
+            }
         }
     }
 
@@ -564,7 +601,8 @@ impl SettingsState {
             | SettingsMode::SelectingProvider { .. }
             | SettingsMode::SelectingIde { .. }
             | SettingsMode::SelectingTerminal { .. }
-            | SettingsMode::SelectingVcs { .. } => {}
+            | SettingsMode::SelectingVcs { .. }
+            | SettingsMode::ConfiguringPermissions { .. } => {}
             SettingsMode::EditingShell { .. } => {
                 if !self.edit_buffer.is_empty() {
                     self.settings.default_shell = self.edit_buffer.clone();
@@ -595,7 +633,8 @@ impl SettingsState {
             | SettingsMode::SelectingProvider { .. }
             | SettingsMode::SelectingIde { .. }
             | SettingsMode::SelectingTerminal { .. }
-            | SettingsMode::SelectingVcs { .. } => {}
+            | SettingsMode::SelectingVcs { .. }
+            | SettingsMode::ConfiguringPermissions { .. } => {}
             SettingsMode::EditingShell { .. } => {
                 self.edit_buffer.push(character);
             }
@@ -609,6 +648,21 @@ impl SettingsState {
 
     pub fn handle_edit_backspace(&mut self) {
         self.edit_buffer.pop();
+    }
+
+    pub fn select_permission_preset(&mut self, index: usize) {
+        let preset = match index {
+            0 => PermissionPreset::Restrictive,
+            1 => PermissionPreset::Balanced,
+            2 => PermissionPreset::Permissive,
+            _ => return,
+        };
+
+        let config = preset.to_config();
+        self.settings
+            .permission_configs
+            .insert(self.settings.default_provider, config);
+        self.mode = SettingsMode::Normal;
     }
 }
 
