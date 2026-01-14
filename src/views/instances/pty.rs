@@ -177,7 +177,9 @@ impl PtySession {
         }
     }
 
-    pub fn read_output(&self) {
+    #[must_use]
+    pub fn read_output(&self) -> Vec<Vec<u8>> {
+        let mut all_data = Vec::new();
         while let Ok(data) = self.receiver.try_recv() {
             let Ok(mut term) = self.term.lock() else {
                 continue;
@@ -186,7 +188,9 @@ impl PtySession {
                 continue;
             };
             processor.advance(&mut *term, &data);
+            all_data.push(data);
         }
+        all_data
     }
 
     #[must_use]

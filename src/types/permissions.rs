@@ -47,7 +47,7 @@ impl ToolPermission {
     }
 
     #[must_use]
-    pub const fn display_name(&self) -> &'static str {
+    pub const fn display_name(self) -> &'static str {
         match self {
             Self::Read => "Read",
             Self::Edit => "Edit",
@@ -70,7 +70,8 @@ impl ToolPermission {
     }
 
     #[must_use]
-    pub const fn description(&self) -> &'static str {
+    #[allow(dead_code)]
+    pub const fn description(self) -> &'static str {
         match self {
             Self::Read => "Read files from the filesystem",
             Self::Edit => "Edit existing files with string replacement",
@@ -93,7 +94,8 @@ impl ToolPermission {
     }
 
     #[must_use]
-    pub const fn category(&self) -> ToolCategory {
+    #[allow(dead_code)]
+    pub const fn category(self) -> ToolCategory {
         match self {
             Self::Read | Self::Edit | Self::Write | Self::MultiEdit | Self::NotebookEdit => {
                 ToolCategory::FileOperations
@@ -110,6 +112,7 @@ impl ToolPermission {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum ToolCategory {
     FileOperations,
     Search,
@@ -121,6 +124,7 @@ pub enum ToolCategory {
 
 impl ToolCategory {
     #[must_use]
+    #[allow(dead_code)]
     pub const fn display_name(self) -> &'static str {
         match self {
             Self::FileOperations => "File Operations",
@@ -232,6 +236,7 @@ pub enum PermissionPreset {
 
 impl PermissionPreset {
     #[must_use]
+    #[allow(dead_code)]
     pub const fn all() -> &'static [Self] {
         &[Self::Restrictive, Self::Balanced, Self::Permissive]
     }
@@ -247,6 +252,7 @@ impl PermissionPreset {
     }
 
     #[must_use]
+    #[allow(dead_code)]
     pub const fn description(self) -> &'static str {
         match self {
             Self::Restrictive => "Read-only access, requires approval for most actions",

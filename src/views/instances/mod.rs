@@ -1,3 +1,4 @@
+pub mod activity;
 pub mod events;
 pub mod layout;
 pub mod operations;

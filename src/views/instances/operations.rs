@@ -129,7 +129,8 @@ impl InstanceState {
     }
 
     pub fn select_pane_by_id(&mut self, instance_id: Uuid) -> bool {
-        if self.find_pane(instance_id).is_some() {
+        if let Some(pane) = self.find_pane_mut(instance_id) {
+            pane.mark_viewed();
             self.selected_pane_id = Some(instance_id);
             self.mode = super::InstanceMode::Focused;
             return true;
@@ -184,6 +185,10 @@ impl InstanceState {
 
         let next_index = (current_index + 1) % pane_ids.len();
         self.selected_pane_id = Some(pane_ids[next_index]);
+
+        if let Some(pane) = self.selected_pane_mut() {
+            pane.mark_viewed();
+        }
     }
 
     pub fn previous_pane(&mut self) {
@@ -204,6 +209,10 @@ impl InstanceState {
         };
 
         self.selected_pane_id = Some(pane_ids[prev_index]);
+
+        if let Some(pane) = self.selected_pane_mut() {
+            pane.mark_viewed();
+        }
     }
 
     fn collect_all_pane_ids(&self) -> Vec<Uuid> {
@@ -221,7 +230,13 @@ impl InstanceState {
             if let Some(pane) = self.find_pane_mut(*pane_id)
                 && let Some(session) = &pane.pty_session
             {
-                session.read_output();
+                let output_chunks = session.read_output();
+
+                for chunk in output_chunks {
+                    if let Ok(text) = String::from_utf8(chunk) {
+                        super::activity::detect_and_log_activity(pane, &text);
+                    }
+                }
             }
         }
 
@@ -286,6 +301,9 @@ impl InstanceState {
 
         if let Some(pane_id) = target_pane_id {
             self.selected_pane_id = Some(pane_id);
+            if let Some(pane) = self.find_pane_mut(pane_id) {
+                pane.mark_viewed();
+            }
         }
     }
 }

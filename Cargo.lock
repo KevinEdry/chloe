@@ -235,6 +235,7 @@ dependencies = [
  "crossterm",
  "git2",
  "ratatui",
+ "regex",
  "serde",
  "serde_json",
  "similar",

@@ -532,7 +532,7 @@ fn render_permission_configuration_dialog(
     render_popup_background(frame, popup_area);
 
     let provider_name = state.settings.default_provider.display_name();
-    let title = format!(" Configure Permissions for {} ", provider_name);
+    let title = format!(" Configure Permissions for {provider_name} ");
     let block = Block::default()
         .title(title)
         .borders(Borders::ALL)
@@ -563,9 +563,8 @@ fn render_permission_configuration_dialog(
     let current_preset = PermissionPreset::from_config(&current_config);
     let current_preset_index = match current_preset {
         PermissionPreset::Restrictive => 0,
-        PermissionPreset::Balanced => 1,
+        PermissionPreset::Balanced | PermissionPreset::Custom => 1,
         PermissionPreset::Permissive => 2,
-        PermissionPreset::Custom => 1,
     };
 
     let items: Vec<ListItem> = options

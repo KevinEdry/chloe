@@ -532,9 +532,8 @@ impl SettingsState {
                 let current_preset = PermissionPreset::from_config(&current_config);
                 let preset_index = match current_preset {
                     PermissionPreset::Restrictive => 0,
-                    PermissionPreset::Balanced => 1,
+                    PermissionPreset::Balanced | PermissionPreset::Custom => 1,
                     PermissionPreset::Permissive => 2,
-                    PermissionPreset::Custom => 1,
                 };
                 self.mode = SettingsMode::ConfiguringPermissions {
                     selected_preset_index: preset_index,

@@ -25,3 +25,6 @@ docs/.next/
 .opencode/
 .amp/
 .gemini/
+
+# bv (beads viewer) local config and caches
+.bv/
