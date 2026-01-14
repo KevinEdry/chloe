@@ -130,7 +130,7 @@ impl TasksState {
         let was_auto_created = worktree_info.auto_created;
         if !was_auto_created {
             return;
-        };
+        }
 
         let Ok(current_directory) = std::env::current_dir() else {
             return;
