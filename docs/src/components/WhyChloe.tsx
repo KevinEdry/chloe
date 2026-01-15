@@ -110,34 +110,30 @@ export function WhyChloe() {
           </p>
         </div>
 
-        {/* Medium Card - Safety */}
+        {/* Medium Card - Provider Agnostic */}
         <div className="lg:col-span-2 bg-[var(--color-surface)]/50 border border-[var(--color-border)] rounded-2xl p-6 hover:border-[var(--color-primary)]/30 transition-colors">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-            <div className="p-2 rounded-lg bg-[var(--color-surface)] w-fit flex-shrink-0">
-              <svg
-                className="w-5 h-5 text-[var(--color-primary-light)]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
-                Safety First
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                100% safe Rust code, no unsafe blocks, memory-safe by design. No buffer overflows,
-                no data races, compiler-enforced safety guarantees.
-              </p>
-            </div>
+          <div className="p-2 rounded-lg bg-[var(--color-surface)] w-fit mb-4">
+            <svg
+              className="w-5 h-5 text-[var(--color-primary-light)]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
           </div>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
+            Provider Agnostic
+          </h3>
+          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+            Works with Claude Code, Gemini CLI, Amp, OpenCode, or any terminal-based AI agent.
+            Switch providers anytime, no lock-in.
+          </p>
         </div>
 
         {/* Small Card - Community */}

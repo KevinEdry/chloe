@@ -110,10 +110,10 @@ const categories: FaqCategory[] = [
             your terminal sessions, so you can associate tasks with specific AI agent instances and
             track progress visually.{' '}
             <Link
-              href="/comparisons/chloe-vs-tmux-screen"
+              href="#comparison"
               className="text-[var(--color-primary-light)] hover:underline"
             >
-              Read the full comparison guide
+              See the comparison table above
             </Link>
             .
           </>
@@ -144,10 +144,10 @@ const categories: FaqCategory[] = [
             </kbd>
             . You can run Chloe inside tmux if you want session persistence for remote servers.{' '}
             <Link
-              href="/comparisons/chloe-vs-tmux-screen"
+              href="#comparison"
               className="text-[var(--color-primary-light)] hover:underline"
             >
-              See the full migration guide
+              See the comparison table above
             </Link>
             .
           </>
@@ -220,12 +220,12 @@ export function Faq() {
           <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed">
             Everything you need to know about Chloe. Can't find what you're looking for?{' '}
             <Link
-              href="https://github.com/kevinedry/chloe/discussions"
+              href="https://github.com/kevinedry/chloe/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--color-primary-light)] hover:underline"
             >
-              Ask on GitHub
+              ask on GitHub
             </Link>
             .
           </p>

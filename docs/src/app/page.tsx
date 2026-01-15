@@ -4,6 +4,7 @@ import { Features } from '@/components/Features'
 import { WhyChloe } from '@/components/WhyChloe'
 import { HowItWorks } from '@/components/HowItWorks'
 import { InstallBanner } from '@/components/InstallBanner'
+import { Comparison } from '@/components/Comparison'
 import { Faq } from '@/components/faq/Faq'
 import { Hero } from '@/components/hero/Hero'
 
@@ -61,6 +62,7 @@ export default function LandingPage() {
         <WhyChloe />
         <HowItWorks />
         <Features />
+        <Comparison />
         {/* CTA Banner */}
         <InstallBanner />
         <Faq />
