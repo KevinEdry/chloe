@@ -28,3 +28,6 @@ docs/.next/
 
 # bv (beads viewer) local config and caches
 .bv/
+
+# ralph-tui session files
+.ralph-tui/
