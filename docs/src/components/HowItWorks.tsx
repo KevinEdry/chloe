@@ -1,70 +1,116 @@
-interface StepProps {
+'use client'
+
+import { useState } from 'react'
+import Image from 'next/image'
+
+interface Step {
   number: number
   title: string
   description: string
+  gif: string
 }
 
-function Step({ number, title, description }: StepProps) {
-  return (
-    <li className="flex gap-6">
-      <div className="flex-shrink-0">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[var(--color-primary-light)] font-bold">
-          {number}
-        </div>
-      </div>
-      <div className="flex-1 pt-1">
-        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">{title}</h3>
-        <p className="text-[var(--color-text-secondary)] leading-relaxed">{description}</p>
-      </div>
-    </li>
-  )
-}
+const steps: Step[] = [
+  {
+    number: 1,
+    title: 'Install',
+    description: 'One command, no dependencies. Works on macOS, Linux, and Windows.',
+    gif: '/tapes/step1-install.gif',
+  },
+  {
+    number: 2,
+    title: 'Launch',
+    description: 'Run chloe in any project directory to start managing your workflow.',
+    gif: '/tapes/step2-launch.gif',
+  },
+  {
+    number: 3,
+    title: 'Work',
+    description: 'Create tasks, launch AI agents in parallel, and ship faster.',
+    gif: '/tapes/step3-work.gif',
+  },
+]
 
 export function HowItWorks() {
+  const [activeStep, setActiveStep] = useState(1)
+  const currentStep = steps.find((s) => s.number === activeStep) || steps[0]
+
   return (
     <section className="relative bg-[var(--color-surface)]/30 border-y border-[var(--color-border)]">
       <div className="max-w-[1208px] mx-auto px-6 py-20">
-        <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] pb-12">
-          How It Works
-        </h2>
+        {/* Header */}
+        <div className="max-w-3xl mb-12">
+          <h2 className="text-3xl md:text-4xl font-semibold text-[var(--color-text-primary)] mb-4">
+            How It Works
+          </h2>
+          <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed">
+            Get up and running in minutes. No complex setup, no configuration files.
+          </p>
+        </div>
 
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-10 list-none">
-          <Step
-            number={1}
-            title="Install in one command"
-            description="Get started instantly with a simple curl command. No configuration files, no complex setup, no credit card required."
-          />
+        {/* Main content: Steps on left, Terminal on right */}
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
+          {/* Steps - Left side */}
+          <div className="lg:w-1/3 space-y-2">
+            {steps.map((step) => (
+              <div
+                key={step.number}
+                className={`relative p-4 rounded-xl cursor-pointer transition-all ${
+                  activeStep === step.number
+                    ? 'bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20'
+                    : 'hover:bg-[var(--color-surface)]/50 border border-transparent'
+                }`}
+                onMouseEnter={() => setActiveStep(step.number)}
+              >
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors ${
+                      activeStep === step.number
+                        ? 'bg-[var(--color-primary)] text-white'
+                        : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border)]'
+                    }`}
+                  >
+                    {step.number}
+                  </div>
+                  <div>
+                    <h3
+                      className={`font-semibold mb-1 transition-colors ${
+                        activeStep === step.number
+                          ? 'text-[var(--color-text-primary)]'
+                          : 'text-[var(--color-text-secondary)]'
+                      }`}
+                    >
+                      {step.title}
+                    </h3>
+                    <p
+                      className={`text-sm leading-relaxed transition-colors ${
+                        activeStep === step.number
+                          ? 'text-[var(--color-text-secondary)]'
+                          : 'text-[var(--color-text-tertiary)]'
+                      }`}
+                    >
+                      {step.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-          <Step
-            number={2}
-            title="Create tasks on the Kanban board"
-            description="Organize your work with a built-in Kanban board. Move tasks between To Do, In Progress, and Done columns with vim-style navigation."
-          />
-
-          <Step
-            number={3}
-            title="Launch AI agent instances"
-            description="Run Claude Code, Gemini CLI, Amp, OpenCode, and other AI coding agents in parallel. Chloe automatically detects and configures each agent."
-          />
-
-          <Step
-            number={4}
-            title="Work across multiple branches"
-            description="Leverage Git worktrees or Jujutsu workspaces to work on multiple branches simultaneously. Each instance can run in a different branch."
-          />
-
-          <Step
-            number={5}
-            title="Track progress visually"
-            description="See all your agents working in real-time. Monitor task status, pause and resume agents, and manage your workflow from a single terminal."
-          />
-
-          <Step
-            number={6}
-            title="Ship faster with parallel work"
-            description="Complete multiple features simultaneously, review PRs while building new ones, and maintain context across all your work streams."
-          />
-        </ul>
+          {/* Terminal GIF - Right side */}
+          <div className="lg:w-2/3">
+            <div className="rounded-xl overflow-hidden border border-[var(--color-border)] bg-[#0d1117] shadow-2xl">
+              <Image
+                src={currentStep.gif}
+                alt={`Step ${currentStep.number}: ${currentStep.title}`}
+                width={800}
+                height={400}
+                className="w-full h-auto"
+                unoptimized
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )

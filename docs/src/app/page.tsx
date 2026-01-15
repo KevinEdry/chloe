@@ -3,6 +3,7 @@ import { Demo } from '@/components/Demo'
 import { Features } from '@/components/Features'
 import { WhyChloe } from '@/components/WhyChloe'
 import { HowItWorks } from '@/components/HowItWorks'
+import { InstallBanner } from '@/components/InstallBanner'
 import { Faq } from '@/components/faq/Faq'
 import { Hero } from '@/components/hero/Hero'
 
@@ -57,9 +58,11 @@ export default function LandingPage() {
       <div className="min-h-screen bg-[var(--color-background)]">
         <Hero />
         <Demo />
-        <Features />
         <WhyChloe />
         <HowItWorks />
+        <Features />
+        {/* CTA Banner */}
+        <InstallBanner />
         <Faq />
       </div>
     </>

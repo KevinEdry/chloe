@@ -22,7 +22,15 @@ function Feature({ icon, title, description }: FeatureProps) {
 export function Features() {
   return (
     <section className="relative max-w-[1208px] mx-auto px-6 py-20">
-      <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] pb-12">Features</h2>
+      {/* Header */}
+      <div className="max-w-3xl mb-12">
+        <h2 className="text-3xl md:text-4xl font-semibold text-[var(--color-text-primary)] mb-4">
+          Features
+        </h2>
+        <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed">
+          Everything you need to manage AI coding agents in one place.
+        </p>
+      </div>
 
       {/* Features grid */}
       <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 list-none">
