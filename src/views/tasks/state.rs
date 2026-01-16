@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::PathBuf;
 use uuid::Uuid;
 
@@ -36,7 +37,7 @@ pub struct TasksState {
     pub focus_details_scroll: u16,
 
     #[serde(skip)]
-    pub pending_classifications: Vec<super::ai_classifier::ClassificationRequest>,
+    pub pending_classifications: HashSet<Uuid>,
     #[serde(skip)]
     pub pending_instance_termination: Option<Uuid>,
     #[serde(skip)]
@@ -107,7 +108,7 @@ impl TasksState {
             focus_done_index: 0,
             focus_panel: FocusPanel::default(),
             focus_details_scroll: 0,
-            pending_classifications: Vec::new(),
+            pending_classifications: HashSet::new(),
             pending_instance_termination: None,
             pending_worktree_deletion: None,
             pending_instance_creation: None,
@@ -194,7 +195,7 @@ impl TasksState {
     }
 
     #[must_use]
-    pub const fn has_pending_classifications(&self) -> bool {
+    pub fn has_pending_classifications(&self) -> bool {
         !self.pending_classifications.is_empty()
     }
 }

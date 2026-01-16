@@ -1,4 +1,4 @@
-use crate::shared::events::AppEvent;
+use crate::events::AppEvent;
 use alacritty_terminal::event::{Event, EventListener, OnResize, WindowSize};
 use alacritty_terminal::grid::Dimensions;
 use alacritty_terminal::term::{Config, Term};

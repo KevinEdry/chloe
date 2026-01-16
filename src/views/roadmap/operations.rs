@@ -1,6 +1,8 @@
-use super::generator::{GeneratedRoadmap, RoadmapGenerationRequest};
-use super::state::{RoadmapItem, RoadmapPriority, RoadmapState};
+use super::generator::{GeneratedRoadmap, spawn_roadmap_generation};
+use super::state::{RoadmapItem, RoadmapMode, RoadmapPriority, RoadmapState};
+use crate::events::AppEvent;
 use chrono::Utc;
+use tokio::sync::mpsc;
 use uuid::Uuid;
 
 impl RoadmapState {
@@ -98,21 +100,20 @@ impl RoadmapState {
         });
     }
 
-    pub fn start_generation(&mut self, project_path: String) {
-        self.generation_request = Some(RoadmapGenerationRequest::spawn(project_path));
-        self.mode = super::state::RoadmapMode::Generating;
+    pub fn start_generation(
+        &mut self,
+        project_path: String,
+        event_sender: mpsc::UnboundedSender<AppEvent>,
+    ) {
+        self.mode = RoadmapMode::Generating;
+        spawn_roadmap_generation(project_path, event_sender);
     }
 
-    pub fn poll_generation(&mut self) {
-        if let Some(ref request) = self.generation_request
-            && let Some(result) = request.try_recv()
-        {
-            self.generation_request = None;
-            self.mode = super::state::RoadmapMode::Normal;
+    pub fn handle_generation_completed(&mut self, result: Result<GeneratedRoadmap, String>) {
+        self.mode = RoadmapMode::Normal;
 
-            if let Ok(generated) = result {
-                self.apply_generated_roadmap(generated);
-            }
+        if let Ok(generated) = result {
+            self.apply_generated_roadmap(generated);
         }
     }
 

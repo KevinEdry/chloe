@@ -1,5 +1,5 @@
 use super::tab_state::{WorktreeMode, WorktreeTabState};
-use crate::shared::events::{AppAction, EventHandler, EventResult};
+use crate::events::{AppAction, EventHandler, EventResult, WorktreeAction};
 use crate::views::settings::VcsCommand;
 use crossterm::event::{KeyCode, KeyEvent};
 use std::time::{Duration, Instant};
@@ -38,23 +38,27 @@ impl WorktreeTabState {
                 if let Some(index) = self.selected_index {
                     self.pending_ide_open = Some(index);
                 }
-                EventResult::Action(AppAction::OpenWorktreeInIde(
+                EventResult::Action(AppAction::Worktree(WorktreeAction::OpenInIde(
                     self.selected_index.unwrap_or(0),
-                ))
+                )))
             }
             KeyCode::Char('t') => {
                 if let Some(index) = self.selected_index {
                     self.pending_terminal_open = Some(index);
                 }
-                EventResult::Action(AppAction::OpenWorktreeInTerminal(
+                EventResult::Action(AppAction::Worktree(WorktreeAction::OpenInTerminal(
                     self.selected_index.unwrap_or(0),
-                ))
+                )))
             }
             _ => EventResult::Ignored,
         }
     }
 
-    const fn handle_confirm_delete_event(&mut self, key: KeyEvent, worktree_index: usize) -> EventResult {
+    const fn handle_confirm_delete_event(
+        &mut self,
+        key: KeyEvent,
+        worktree_index: usize,
+    ) -> EventResult {
         match key.code {
             KeyCode::Char('y' | 'Y') => {
                 self.pending_worktree_delete = Some(worktree_index);

@@ -1,3 +1,4 @@
+use crate::events::AppEvent;
 use crate::views::instances::InstanceState;
 use crate::views::instances::operations::TaskPaneConfig;
 use crate::views::pull_requests::PullRequestsState;
@@ -6,6 +7,7 @@ use crate::views::settings::SettingsState;
 use crate::views::tasks::{TaskType, TasksState};
 use crate::views::worktree::WorktreeTabState;
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
 
 const DEFAULT_PTY_ROWS: u16 = 24;
 const DEFAULT_PTY_COLUMNS: u16 = 80;
@@ -32,6 +34,8 @@ pub struct App {
     pub settings: SettingsState,
     #[serde(skip)]
     pub showing_exit_confirmation: bool,
+    #[serde(skip)]
+    event_sender: Option<mpsc::UnboundedSender<AppEvent>>,
 }
 
 impl App {
@@ -46,7 +50,18 @@ impl App {
             pull_requests: PullRequestsState::new(),
             settings: SettingsState::new(),
             showing_exit_confirmation: false,
+            event_sender: None,
         }
+    }
+
+    pub fn set_event_sender(&mut self, sender: mpsc::UnboundedSender<AppEvent>) {
+        self.event_sender = Some(sender.clone());
+        self.instances.set_event_sender(sender);
+    }
+
+    #[must_use]
+    pub fn event_sender(&self) -> Option<mpsc::UnboundedSender<AppEvent>> {
+        self.event_sender.clone()
     }
 
     #[must_use]

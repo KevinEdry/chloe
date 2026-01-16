@@ -1,6 +1,6 @@
 use super::operations::NavigationDirection;
 use super::state::{InstanceMode, InstanceState};
-use crate::shared::events::{AppAction, EventHandler, EventResult};
+use crate::events::{AppAction, EventHandler, EventResult, TerminalAction};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 const DEFAULT_PTY_ROWS: u16 = 24;
@@ -216,10 +216,10 @@ impl InstanceState {
             return EventResult::Ignored;
         };
 
-        EventResult::Action(AppAction::SendToTerminal {
+        EventResult::Action(AppAction::Terminal(TerminalAction::SendInput {
             instance_id: pane_id,
             data: b"\x1b".to_vec(),
-        })
+        }))
     }
 
     fn send_input_to_terminal(&self, key: KeyEvent) -> EventResult {
@@ -258,9 +258,9 @@ impl InstanceState {
             _ => return EventResult::Ignored,
         };
 
-        EventResult::Action(AppAction::SendToTerminal {
+        EventResult::Action(AppAction::Terminal(TerminalAction::SendInput {
             instance_id: pane_id,
             data,
-        })
+        }))
     }
 }

@@ -1,4 +1,4 @@
-use crate::shared::events::AppEvent;
+use crate::events::AppEvent;
 use crate::types::AgentProvider;
 use alacritty_terminal::grid::Dimensions;
 use chrono::{DateTime, Utc};

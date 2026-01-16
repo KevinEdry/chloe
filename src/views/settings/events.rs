@@ -1,5 +1,5 @@
 use super::state::{SettingsFocus, SettingsMode, SettingsSection, SettingsState};
-use crate::shared::events::{AppAction, EventHandler, EventResult};
+use crate::events::{AppAction, EventHandler, EventResult, SettingsAction as SharedSettingsAction};
 use crate::views::tasks::dialogs::{get_option_count, get_selection_result};
 use crossterm::event::{KeyCode, KeyEvent};
 
@@ -18,7 +18,9 @@ impl EventHandler for SettingsState {
         let action = handle_key_event(self, key);
         match action {
             SettingsAction::None => EventResult::Consumed,
-            SettingsAction::SaveSettings => EventResult::Action(AppAction::SaveSettings),
+            SettingsAction::SaveSettings => {
+                EventResult::Action(AppAction::Settings(SharedSettingsAction::Save))
+            }
         }
     }
 }

@@ -8,7 +8,7 @@ mod worktree_selection;
 
 use super::dialogs::review;
 use super::state::{MergeTarget, TasksMode, TasksState, TasksViewMode, WorktreeSelectionOption};
-use crate::shared::events::{AppAction, EventHandler, EventResult};
+use crate::events::{AppAction, EventHandler, EventResult, TaskAction, TerminalAction};
 use crate::types::AgentProvider;
 use crate::views::settings::VcsCommand;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -162,56 +162,71 @@ impl EventHandler for TasksState {
 fn convert_tasks_action_to_event_result(action: TasksAction) -> EventResult {
     match action {
         TasksAction::None => EventResult::Consumed,
-        TasksAction::JumpToInstance(instance_id) => {
-            EventResult::Action(AppAction::JumpToInstance(instance_id))
-        }
+        TasksAction::JumpToInstance(instance_id) => EventResult::Action(AppAction::Terminal(
+            TerminalAction::JumpToInstance(instance_id),
+        )),
         TasksAction::SendToTerminal(instance_id, data) => {
-            EventResult::Action(AppAction::SendToTerminal { instance_id, data })
+            EventResult::Action(AppAction::Terminal(TerminalAction::SendInput {
+                instance_id,
+                data,
+            }))
         }
         TasksAction::ScrollTerminal { instance_id, delta } => {
-            EventResult::Action(AppAction::ScrollTerminal { instance_id, delta })
+            EventResult::Action(AppAction::Terminal(TerminalAction::Scroll {
+                instance_id,
+                delta,
+            }))
         }
-        TasksAction::ScrollTerminalToTop(instance_id) => {
-            EventResult::Action(AppAction::ScrollTerminalToTop(instance_id))
+        TasksAction::ScrollTerminalToTop(instance_id) => EventResult::Action(AppAction::Terminal(
+            TerminalAction::ScrollToTop(instance_id),
+        )),
+        TasksAction::ScrollTerminalToBottom(instance_id) => EventResult::Action(
+            AppAction::Terminal(TerminalAction::ScrollToBottom(instance_id)),
+        ),
+        TasksAction::CreateTask { title } => {
+            EventResult::Action(AppAction::Task(TaskAction::Create { title }))
         }
-        TasksAction::ScrollTerminalToBottom(instance_id) => {
-            EventResult::Action(AppAction::ScrollTerminalToBottom(instance_id))
-        }
-        TasksAction::CreateTask { title } => EventResult::Action(AppAction::CreateTask { title }),
         TasksAction::UpdateTask { task_id, new_title } => {
-            EventResult::Action(AppAction::UpdateTask { task_id, new_title })
+            EventResult::Action(AppAction::Task(TaskAction::Update { task_id, new_title }))
         }
-        TasksAction::DeleteTask(task_id) => EventResult::Action(AppAction::DeleteTask(task_id)),
-        TasksAction::OpenInIDE(task_id) => EventResult::Action(AppAction::OpenTaskInIde(task_id)),
+        TasksAction::DeleteTask(task_id) => {
+            EventResult::Action(AppAction::Task(TaskAction::Delete(task_id)))
+        }
+        TasksAction::OpenInIDE(task_id) => {
+            EventResult::Action(AppAction::Task(TaskAction::OpenInIde(task_id)))
+        }
         TasksAction::SwitchToTerminal(task_id) => {
-            EventResult::Action(AppAction::OpenTaskInTerminal(task_id))
+            EventResult::Action(AppAction::Task(TaskAction::OpenInTerminal(task_id)))
         }
         TasksAction::RequestChanges { task_id, message } => {
-            EventResult::Action(AppAction::RequestChanges { task_id, message })
+            EventResult::Action(AppAction::Task(TaskAction::RequestChanges {
+                task_id,
+                message,
+            }))
         }
         TasksAction::CommitChanges(task_id) => {
-            EventResult::Action(AppAction::CommitChanges(task_id))
+            EventResult::Action(AppAction::Task(TaskAction::CommitChanges(task_id)))
         }
         TasksAction::MergeBranch { task_id, target } => {
-            EventResult::Action(AppAction::MergeBranch { task_id, target })
+            EventResult::Action(AppAction::Task(TaskAction::MergeBranch { task_id, target }))
         }
         TasksAction::WorktreeSelected {
             task_id,
             worktree_option,
-        } => EventResult::Action(AppAction::WorktreeSelected {
+        } => EventResult::Action(AppAction::Task(TaskAction::WorktreeSelected {
             task_id,
             worktree_option,
-        }),
+        })),
         TasksAction::ProviderSelected {
             task_id,
             provider,
             worktree_option,
             remember,
-        } => EventResult::Action(AppAction::ProviderSelected {
+        } => EventResult::Action(AppAction::Task(TaskAction::ProviderSelected {
             task_id,
             provider,
             worktree_option,
             remember,
-        }),
+        })),
     }
 }

@@ -20,7 +20,6 @@ mod helpers;
 mod persistence;
 mod polling;
 mod providers;
-mod shared;
 mod types;
 mod views;
 mod widgets;
@@ -70,15 +69,13 @@ async fn run_tui() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let event_listener = events::EventListener::start()?;
     let mut app = App::load_or_default();
     let mut event_loop = EventLoop::new();
 
-    app.instances.set_event_sender(event_loop.event_sender());
+    app.set_event_sender(event_loop.event_sender());
+    let _event_listener = events::EventListener::start(app.event_sender())?;
 
-    let result = event_loop
-        .run(&mut terminal, &mut app, &event_listener)
-        .await;
+    let result = event_loop.run(&mut terminal, &mut app).await;
 
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;

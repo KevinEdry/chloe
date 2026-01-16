@@ -1,5 +1,7 @@
 use super::state::{RoadmapMode, RoadmapPriority, RoadmapState};
-use crate::shared::events::{AppAction, EventHandler, EventResult};
+use crate::events::{
+    AppAction, EventHandler, EventResult, RoadmapAction as SharedRoadmapAction, SettingsAction,
+};
 use crossterm::event::{KeyCode, KeyEvent};
 
 pub enum RoadmapAction {
@@ -26,11 +28,15 @@ impl EventHandler for RoadmapState {
 
         match action {
             RoadmapAction::None => EventResult::Consumed,
-            RoadmapAction::ConvertToTask(index) => {
-                EventResult::Action(AppAction::ConvertRoadmapToTask(index))
+            RoadmapAction::ConvertToTask(index) => EventResult::Action(AppAction::Roadmap(
+                SharedRoadmapAction::ConvertToTask(index),
+            )),
+            RoadmapAction::SaveState => {
+                EventResult::Action(AppAction::Settings(SettingsAction::SaveState))
             }
-            RoadmapAction::SaveState => EventResult::Action(AppAction::SaveState),
-            RoadmapAction::GenerateRoadmap => EventResult::Action(AppAction::GenerateRoadmap),
+            RoadmapAction::GenerateRoadmap => {
+                EventResult::Action(AppAction::Roadmap(SharedRoadmapAction::Generate))
+            }
         }
     }
 }
@@ -210,7 +216,6 @@ impl RoadmapState {
     fn handle_generating_mode(&mut self, key: KeyEvent) -> RoadmapAction {
         match key.code {
             KeyCode::Esc => {
-                self.generation_request = None;
                 self.mode = RoadmapMode::Normal;
                 RoadmapAction::None
             }

@@ -1,41 +1,9 @@
 use crate::app::{App, Tab};
-use crate::events::EventListener;
 use crate::views;
 use crate::views::tasks::state::WorktreeSelectionOption;
 use crate::views::tasks::{FocusPanel, TasksAction, get_active_tasks, get_done_tasks};
 use crossterm::event::KeyEvent;
 use uuid::Uuid;
-
-pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
-    if app.active_tab == Tab::Tasks {
-        app.tasks.poll_classification();
-        if app.tasks.has_pending_classifications() {
-            app.tasks.advance_spinner();
-        }
-    }
-
-    if app.active_tab == Tab::Roadmap {
-        app.roadmap.poll_generation();
-        if app.roadmap.mode == views::roadmap::RoadmapMode::Generating {
-            app.roadmap.advance_spinner();
-        }
-    }
-
-    if app.active_tab == Tab::Worktree {
-        let vcs_command = &app.settings.settings.vcs_command;
-        app.worktree.poll_worktrees(vcs_command);
-    }
-
-    if app.active_tab == Tab::PullRequests && app.pull_requests.should_refresh() {
-        refresh_pull_requests(app);
-    }
-
-    for event in event_listener.poll_events() {
-        app.process_hook_event(&event);
-    }
-
-    app.auto_transition_completed_tasks();
-}
 
 pub fn process_tasks_pending_actions(app: &mut App) {
     if let Some(instance_id) = app.tasks.pending_instance_termination.take() {
@@ -149,9 +117,12 @@ fn handle_tasks_action(app: &mut App, action: TasksAction) {
             }
         }
         TasksAction::CreateTask { title } => {
-            let provider = app.settings.settings.default_provider;
-            app.tasks.start_classification(title, provider);
-            let _ = app.save();
+            if let Some(event_sender) = app.event_sender() {
+                let provider = app.settings.settings.default_provider;
+                app.tasks
+                    .start_classification(title, provider, event_sender);
+                let _ = app.save();
+            }
         }
         TasksAction::UpdateTask { task_id, new_title } => {
             app.tasks.update_task_title_by_id(task_id, new_title);

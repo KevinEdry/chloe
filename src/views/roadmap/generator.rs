@@ -1,8 +1,9 @@
 use super::{RoadmapItem, RoadmapPriority, RoadmapStatus};
+use crate::events::AppEvent;
 use crate::types::Result;
 use serde::{Deserialize, Serialize};
-use std::sync::mpsc::{Receiver, channel};
 use std::thread;
+use tokio::sync::mpsc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeneratedRoadmapItem {
@@ -23,59 +24,50 @@ pub struct GeneratedRoadmap {
     pub items: Vec<GeneratedRoadmapItem>,
 }
 
-#[derive(Debug)]
-pub struct RoadmapGenerationRequest {
-    receiver: Receiver<Result<GeneratedRoadmap>>,
-}
-
-impl Clone for RoadmapGenerationRequest {
-    fn clone(&self) -> Self {
-        panic!("RoadmapGenerationRequest cannot be cloned");
-    }
-}
-
-impl RoadmapGenerationRequest {
-    pub fn spawn(project_path: String) -> Self {
-        let (sender, receiver) = channel();
-
-        thread::spawn(move || {
-            let result = Self::generate_with_claude(&project_path);
-            let _ = sender.send(result);
+pub fn spawn_roadmap_generation(
+    project_path: String,
+    event_sender: mpsc::UnboundedSender<AppEvent>,
+) {
+    thread::spawn(move || {
+        let result = generate_with_claude(&project_path);
+        let event_result = result.map_err(|error| error.to_string());
+        let _ = event_sender.send(AppEvent::RoadmapGenerationCompleted {
+            result: event_result,
         });
+    });
+}
 
-        Self { receiver }
+fn generate_with_claude(project_path: &str) -> Result<GeneratedRoadmap> {
+    let prompt = build_roadmap_prompt(project_path);
+
+    let output = std::process::Command::new("claude")
+        .arg(&prompt)
+        .output()
+        .map_err(|error| {
+            crate::types::AppError::Config(format!("Failed to run claude CLI: {error}"))
+        })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(crate::types::AppError::Config(format!(
+            "claude CLI failed: {stderr}"
+        )));
     }
 
-    fn generate_with_claude(project_path: &str) -> Result<GeneratedRoadmap> {
-        let prompt = Self::build_roadmap_prompt(project_path);
+    let stdout = String::from_utf8_lossy(&output.stdout);
 
-        let output = std::process::Command::new("claude")
-            .arg(&prompt)
-            .output()
-            .map_err(|e| {
-                crate::types::AppError::Config(format!("Failed to run claude CLI: {e}"))
-            })?;
+    let json_string = extract_json(&stdout)?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(crate::types::AppError::Config(format!(
-                "claude CLI failed: {stderr}"
-            )));
-        }
+    let roadmap: GeneratedRoadmap = serde_json::from_str(&json_string).map_err(|error| {
+        crate::types::AppError::Config(format!("Failed to parse JSON: {error}"))
+    })?;
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(roadmap)
+}
 
-        let json_str = Self::extract_json(&stdout)?;
-
-        let roadmap: GeneratedRoadmap = serde_json::from_str(&json_str)
-            .map_err(|e| crate::types::AppError::Config(format!("Failed to parse JSON: {e}")))?;
-
-        Ok(roadmap)
-    }
-
-    fn build_roadmap_prompt(project_path: &str) -> String {
-        format!(
-            r#"You are an AI Product Strategist analyzing a software project to generate a strategic feature roadmap.
+fn build_roadmap_prompt(project_path: &str) -> String {
+    format!(
+        r#"You are an AI Product Strategist analyzing a software project to generate a strategic feature roadmap.
 
 # Your Task
 
@@ -145,27 +137,23 @@ Requirements:
 - Consider both short-term wins and long-term strategic features
 
 Output JSON only:"#
-        )
+    )
+}
+
+fn extract_json(text: &str) -> Result<String> {
+    if let Some(start) = text.find('{')
+        && let Some(end) = text.rfind('}')
+    {
+        return Ok(text[start..=end].to_string());
     }
 
-    fn extract_json(text: &str) -> Result<String> {
-        if let Some(start) = text.find('{')
-            && let Some(end) = text.rfind('}')
-        {
-            return Ok(text[start..=end].to_string());
-        }
-
-        Err(crate::types::AppError::Config(
-            "No JSON found in claude output".to_string(),
-        ))
-    }
-
-    pub fn try_recv(&self) -> Option<Result<GeneratedRoadmap>> {
-        self.receiver.try_recv().ok()
-    }
+    Err(crate::types::AppError::Config(
+        "No JSON found in claude output".to_string(),
+    ))
 }
 
 impl GeneratedRoadmapItem {
+    #[must_use]
     pub fn into_roadmap_item(self) -> RoadmapItem {
         let priority = match self.priority.to_lowercase().as_str() {
             "high" => RoadmapPriority::High,

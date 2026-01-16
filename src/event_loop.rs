@@ -1,14 +1,16 @@
 use crate::app::{App, Tab};
-use crate::shared::events::{AppAction, AppEvent, EventHandler, EventResult};
+use crate::events::{
+    AppAction, AppEvent, EventHandler, EventResult, PullRequestAction, RoadmapAction,
+    SettingsAction, TerminalAction, WorktreeAction,
+};
+use crate::polling;
 use crate::views;
-use crate::{events, polling};
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyModifiers};
 use futures::StreamExt;
 use std::io;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-const POLL_INTERVAL_MS: u64 = 20;
 const TICK_INTERVAL_MS: u64 = 100;
 
 pub struct EventLoop {
@@ -36,14 +38,12 @@ impl EventLoop {
         &mut self,
         terminal: &mut ratatui::Terminal<B>,
         app: &mut App,
-        event_listener: &events::EventListener,
     ) -> io::Result<()>
     where
         io::Error: From<B::Error>,
     {
         let mut event_stream = EventStream::new();
         let mut tick_interval = tokio::time::interval(Duration::from_millis(TICK_INTERVAL_MS));
-        let mut poll_interval = tokio::time::interval(Duration::from_millis(POLL_INTERVAL_MS));
 
         loop {
             terminal.draw(|frame| views::render(frame, app))?;
@@ -66,10 +66,6 @@ impl EventLoop {
 
                 _ = tick_interval.tick() => {
                     handle_tick(app);
-                }
-
-                _ = poll_interval.tick() => {
-                    poll_background_tasks(app, event_listener);
                 }
             }
         }
@@ -223,7 +219,7 @@ fn dispatch_instances_event(app: &mut App, key: KeyEvent) -> EventResult {
 }
 
 fn process_instances_action(app: &mut App, action: &AppAction) {
-    if let AppAction::SendToTerminal { instance_id, data } = action
+    if let AppAction::Terminal(TerminalAction::SendInput { instance_id, data }) = action
         && let Some(pane) = app.instances.find_pane_mut(*instance_id)
         && let Some(session) = &mut pane.pty_session
     {
@@ -244,17 +240,21 @@ fn dispatch_roadmap_event(app: &mut App, key: KeyEvent) -> EventResult {
 
 fn process_roadmap_action(app: &mut App, action: &AppAction) {
     match action {
-        AppAction::ConvertRoadmapToTask(index) => {
+        AppAction::Roadmap(RoadmapAction::ConvertToTask(index)) => {
             app.convert_roadmap_item_to_task(*index);
             app.active_tab = Tab::Tasks;
         }
-        AppAction::GenerateRoadmap => {
-            if let Ok(current_directory) = std::env::current_dir() {
-                app.roadmap
-                    .start_generation(current_directory.to_string_lossy().to_string());
+        AppAction::Roadmap(RoadmapAction::Generate) => {
+            if let Ok(current_directory) = std::env::current_dir()
+                && let Some(event_sender) = app.event_sender()
+            {
+                app.roadmap.start_generation(
+                    current_directory.to_string_lossy().to_string(),
+                    event_sender,
+                );
             }
         }
-        AppAction::SaveState => {
+        AppAction::Settings(SettingsAction::SaveState) => {
             let _ = app.save();
         }
         _ => {}
@@ -277,10 +277,10 @@ fn dispatch_worktree_event(app: &mut App, key: KeyEvent) -> EventResult {
 
 fn process_worktree_action(app: &App, action: &AppAction) {
     match action {
-        AppAction::OpenWorktreeInIde(index) => {
+        AppAction::Worktree(WorktreeAction::OpenInIde(index)) => {
             app.open_worktree_in_ide(*index);
         }
-        AppAction::OpenWorktreeInTerminal(index) => {
+        AppAction::Worktree(WorktreeAction::OpenInTerminal(index)) => {
             app.open_worktree_in_terminal(*index);
         }
         _ => {}
@@ -300,10 +300,10 @@ fn dispatch_pull_requests_event(app: &mut App, key: KeyEvent) -> EventResult {
 
 fn process_pull_requests_action(app: &mut App, action: &AppAction) {
     match action {
-        AppAction::RefreshPullRequests => {
+        AppAction::PullRequest(PullRequestAction::Refresh) => {
             polling::refresh_pull_requests(app);
         }
-        AppAction::OpenPullRequestInBrowser => {
+        AppAction::PullRequest(PullRequestAction::OpenInBrowser) => {
             if let Some(pull_request) = app.pull_requests.get_selected_pull_request() {
                 let url = pull_request.url.clone();
                 let _ = polling::open_url_in_browser(&url);
@@ -316,7 +316,10 @@ fn process_pull_requests_action(app: &mut App, action: &AppAction) {
 fn dispatch_settings_event(app: &mut App, key: KeyEvent) -> EventResult {
     let result = app.settings.handle_key(key);
 
-    if matches!(&result, EventResult::Action(AppAction::SaveSettings)) {
+    if matches!(
+        &result,
+        EventResult::Action(AppAction::Settings(SettingsAction::Save))
+    ) {
         let _ = app.save_settings();
         return EventResult::Consumed;
     }
@@ -332,6 +335,15 @@ fn handle_app_event(app: &mut App, event: AppEvent) {
         AppEvent::PtyExit { pane_id } => {
             app.instances.handle_pty_exit(pane_id);
         }
+        AppEvent::ClassificationCompleted { task_id, result } => {
+            app.tasks.handle_classification_completed(task_id, result);
+        }
+        AppEvent::RoadmapGenerationCompleted { result } => {
+            app.roadmap.handle_generation_completed(result);
+        }
+        AppEvent::HookReceived(hook_event) => {
+            app.process_hook_event(&hook_event);
+        }
     }
 }
 
@@ -344,8 +356,15 @@ fn handle_tick(app: &mut App) {
     {
         app.roadmap.advance_spinner();
     }
-}
 
-fn poll_background_tasks(app: &mut App, event_listener: &events::EventListener) {
-    polling::poll_background_tasks(app, event_listener);
+    if app.active_tab == Tab::Worktree {
+        let vcs_command = &app.settings.settings.vcs_command;
+        app.worktree.poll_worktrees(vcs_command);
+    }
+
+    if app.active_tab == Tab::PullRequests && app.pull_requests.should_refresh() {
+        polling::refresh_pull_requests(app);
+    }
+
+    app.auto_transition_completed_tasks();
 }

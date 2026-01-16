@@ -12,7 +12,6 @@ pub mod events;
 pub mod helpers;
 pub mod persistence;
 pub mod providers;
-pub mod shared;
 pub mod types;
 pub mod views;
 pub mod widgets;

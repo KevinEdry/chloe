@@ -1,5 +1,5 @@
 use super::state::{PullRequestsMode, PullRequestsState};
-use crate::shared::events::{AppAction, EventHandler, EventResult};
+use crate::events::{AppAction, EventHandler, EventResult, PullRequestAction};
 use crossterm::event::{KeyCode, KeyEvent};
 
 impl EventHandler for PullRequestsState {
@@ -32,10 +32,10 @@ impl PullRequestsState {
             }
             KeyCode::Char('r' | 'R') => {
                 self.mark_needs_refresh();
-                EventResult::Action(AppAction::RefreshPullRequests)
+                EventResult::Action(AppAction::PullRequest(PullRequestAction::Refresh))
             }
             KeyCode::Enter | KeyCode::Char('o') => {
-                EventResult::Action(AppAction::OpenPullRequestInBrowser)
+                EventResult::Action(AppAction::PullRequest(PullRequestAction::OpenInBrowser))
             }
             _ => EventResult::Ignored,
         }

@@ -3,19 +3,17 @@ use crate::views::tasks::state::{MergeTarget, WorktreeSelectionOption};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AppAction {
-    JumpToInstance(Uuid),
-
-    CreateTask {
+pub enum TaskAction {
+    Create {
         title: String,
     },
-    UpdateTask {
+    Update {
         task_id: Uuid,
         new_title: String,
     },
-    DeleteTask(Uuid),
-    OpenTaskInIde(Uuid),
-    OpenTaskInTerminal(Uuid),
+    Delete(Uuid),
+    OpenInIde(Uuid),
+    OpenInTerminal(Uuid),
     RequestChanges {
         task_id: Uuid,
         message: String,
@@ -35,27 +33,4 @@ pub enum AppAction {
         worktree_option: WorktreeSelectionOption,
         remember: bool,
     },
-
-    SendToTerminal {
-        instance_id: Uuid,
-        data: Vec<u8>,
-    },
-    ScrollTerminal {
-        instance_id: Uuid,
-        delta: isize,
-    },
-    ScrollTerminalToTop(Uuid),
-    ScrollTerminalToBottom(Uuid),
-
-    ConvertRoadmapToTask(usize),
-    GenerateRoadmap,
-
-    RefreshPullRequests,
-    OpenPullRequestInBrowser,
-
-    OpenWorktreeInIde(usize),
-    OpenWorktreeInTerminal(usize),
-
-    SaveSettings,
-    SaveState,
 }

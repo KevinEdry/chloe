@@ -1,9 +1,10 @@
+use super::AppEvent;
 use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
-use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread;
+use tokio::sync::mpsc;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,11 +48,11 @@ pub fn get_socket_path() -> PathBuf {
 }
 
 pub struct EventListener {
-    receiver: Receiver<HookEvent>,
+    _marker: (),
 }
 
 impl EventListener {
-    pub fn start() -> std::io::Result<Self> {
+    pub fn start(event_sender: Option<mpsc::UnboundedSender<AppEvent>>) -> std::io::Result<Self> {
         let socket_path = get_socket_path();
 
         if socket_path.exists() {
@@ -61,24 +62,11 @@ impl EventListener {
         let listener = UnixListener::bind(&socket_path)?;
         listener.set_nonblocking(true)?;
 
-        let (sender, receiver) = channel();
-
         thread::spawn(move || {
-            run_listener(&listener, &sender);
+            run_listener(&listener, event_sender.as_ref());
         });
 
-        Ok(Self { receiver })
-    }
-
-    #[must_use]
-    pub fn poll_events(&self) -> Vec<HookEvent> {
-        let mut events = Vec::new();
-
-        while let Ok(event) = self.receiver.try_recv() {
-            events.push(event);
-        }
-
-        events
+        Ok(Self { _marker: () })
     }
 }
 
@@ -89,11 +77,11 @@ impl Drop for EventListener {
     }
 }
 
-fn run_listener(listener: &UnixListener, sender: &Sender<HookEvent>) {
+fn run_listener(listener: &UnixListener, event_sender: Option<&mpsc::UnboundedSender<AppEvent>>) {
     loop {
         match listener.accept() {
             Ok((stream, _)) => {
-                handle_connection(stream, sender);
+                handle_connection(stream, event_sender);
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                 thread::sleep(std::time::Duration::from_millis(50));
@@ -105,7 +93,11 @@ fn run_listener(listener: &UnixListener, sender: &Sender<HookEvent>) {
     }
 }
 
-fn handle_connection(stream: UnixStream, sender: &Sender<HookEvent>) {
+fn handle_connection(stream: UnixStream, event_sender: Option<&mpsc::UnboundedSender<AppEvent>>) {
+    let Some(sender) = event_sender else {
+        return;
+    };
+
     let reader = BufReader::new(stream);
 
     for line in reader.lines() {
@@ -118,7 +110,7 @@ fn handle_connection(stream: UnixStream, sender: &Sender<HookEvent>) {
         }
 
         if let Ok(event) = serde_json::from_str::<HookEvent>(&line) {
-            let _ = sender.send(event);
+            let _ = sender.send(AppEvent::HookReceived(event));
         }
     }
 }

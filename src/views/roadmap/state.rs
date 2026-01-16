@@ -9,8 +9,6 @@ pub struct RoadmapState {
     pub selected_item: Option<usize>,
     pub mode: RoadmapMode,
     #[serde(skip)]
-    pub generation_request: Option<super::generator::RoadmapGenerationRequest>,
-    #[serde(skip)]
     pub spinner_frame: usize,
 }
 
@@ -21,7 +19,6 @@ impl RoadmapState {
             items: Vec::new(),
             selected_item: None,
             mode: RoadmapMode::Normal,
-            generation_request: None,
             spinner_frame: 0,
         }
     }
