@@ -258,6 +258,41 @@ pub fn get_default_branch(repository_path: &Path) -> Result<String> {
     Ok("main".to_string())
 }
 
+/// Get the number of commits a branch is ahead of the default branch.
+///
+/// # Errors
+///
+/// Returns an error if the repository or branches cannot be resolved.
+pub fn get_commits_ahead_of_base(
+    repository_path: &Path,
+    branch_name: &str,
+) -> Result<(String, usize)> {
+    let repository = Repository::open(repository_path).context("Failed to open git repository")?;
+    let base_branch_name = get_default_branch(repository_path)?;
+
+    let base_branch = repository
+        .find_branch(&base_branch_name, BranchType::Local)
+        .context("Failed to find base branch")?;
+    let review_branch = repository
+        .find_branch(branch_name, BranchType::Local)
+        .context("Failed to find review branch")?;
+
+    let base_commit = base_branch
+        .get()
+        .peel_to_commit()
+        .context("Failed to resolve base commit")?;
+    let review_commit = review_branch
+        .get()
+        .peel_to_commit()
+        .context("Failed to resolve review commit")?;
+
+    let (ahead, _) = repository
+        .graph_ahead_behind(review_commit.id(), base_commit.id())
+        .context("Failed to compare branches")?;
+
+    Ok((base_branch_name, ahead))
+}
+
 /// Check if merging a branch into the default branch would cause conflicts
 ///
 /// # Errors

@@ -15,15 +15,23 @@ const UNCOMMITTED_STATUS_PREFIX: &str = "Status: ";
 const UNCOMMITTED_STATUS_SUFFIX: &str = " uncommitted change";
 const MORE_FILES_PREFIX: &str = "  ... and ";
 const MORE_FILES_SUFFIX: &str = " more";
+const AHEAD_STATUS_PREFIX: &str = "Ahead of ";
+const AHEAD_STATUS_SEPARATOR: &str = ": ";
+const AHEAD_STATUS_SUFFIX: &str = " commit";
 
 #[must_use]
 pub fn build_status_lines(
     branch_name: Option<&str>,
+    base_branch_name: Option<&str>,
+    commits_ahead_count: Option<usize>,
     status: &WorktreeStatus,
 ) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
 
     lines.push(build_branch_line(branch_name));
+    if let Some(line) = build_ahead_line(base_branch_name, commits_ahead_count) {
+        lines.push(line);
+    }
     lines.push(build_status_line(status));
     append_changed_files_lines(status, &mut lines);
 
@@ -45,6 +53,23 @@ fn build_branch_line(branch_name: Option<&str>) -> Line<'static> {
         ),
         Span::styled(branch.to_string(), Style::default().fg(Color::White)),
     ])
+}
+
+fn build_ahead_line(
+    base_branch_name: Option<&str>,
+    commits_ahead_count: Option<usize>,
+) -> Option<Line<'static>> {
+    let base_branch_name = base_branch_name?;
+    let commits_ahead_count = commits_ahead_count?;
+
+    let suffix = if commits_ahead_count == 1 { "" } else { "s" };
+    let label = format!("{AHEAD_STATUS_PREFIX}{base_branch_name}{AHEAD_STATUS_SEPARATOR}");
+    let value = format!("{commits_ahead_count}{AHEAD_STATUS_SUFFIX}{suffix}");
+
+    Some(Line::from(vec![
+        Span::styled(label, Style::default().fg(Color::DarkGray)),
+        Span::styled(value, Style::default().fg(Color::White)),
+    ]))
 }
 
 fn build_status_line(status: &WorktreeStatus) -> Line<'static> {

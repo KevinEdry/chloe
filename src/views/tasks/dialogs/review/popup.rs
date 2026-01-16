@@ -3,7 +3,7 @@ use super::{details, status};
 use crate::app::App;
 use crate::views::instances::InstancePane;
 use crate::views::tasks::state::{ReviewAction, ReviewPanel};
-use crate::views::worktree::{WorktreeStatus, get_worktree_status};
+use crate::views::worktree::{WorktreeStatus, get_commits_ahead_of_base, get_worktree_status};
 use crate::widgets::terminal::{AlacrittyScreen, Cursor, PseudoTerminal};
 use ratatui::{
     Frame,
@@ -20,7 +20,7 @@ const REVIEW_POPUP_HEIGHT_PERCENT: u16 = 90;
 const BUTTON_COUNT: usize = 5;
 const BUTTON_WIDTH_PERCENT: u16 = 20;
 
-const STATUS_HEADER_HEIGHT: u16 = 8;
+const STATUS_HEADER_HEIGHT: u16 = 9;
 const BUTTON_ROW_HEIGHT: u16 = 3;
 
 const DIFF_SECTION_PERCENT: u16 = 70;
@@ -43,6 +43,8 @@ const BORDER_HEIGHT_OFFSET: u16 = 2;
 
 pub struct ReviewInfo {
     pub branch_name: Option<String>,
+    pub base_branch_name: Option<String>,
+    pub commits_ahead_count: Option<usize>,
     pub worktree_status: WorktreeStatus,
     pub task_title: String,
 }
@@ -94,6 +96,8 @@ fn get_review_info(app: &App, task_id: Uuid) -> ReviewInfo {
 
     let default_info = ReviewInfo {
         branch_name: None,
+        base_branch_name: None,
+        commits_ahead_count: None,
         worktree_status: WorktreeStatus::default(),
         task_title: "Unknown Task".to_string(),
     };
@@ -107,6 +111,8 @@ fn get_review_info(app: &App, task_id: Uuid) -> ReviewInfo {
     let Some(worktree_info) = &task.worktree_info else {
         return ReviewInfo {
             branch_name: None,
+            base_branch_name: None,
+            commits_ahead_count: None,
             worktree_status: WorktreeStatus {
                 is_clean: true,
                 ..WorktreeStatus::default()
@@ -116,9 +122,18 @@ fn get_review_info(app: &App, task_id: Uuid) -> ReviewInfo {
     };
 
     let worktree_status = get_worktree_status(&worktree_info.worktree_path).unwrap_or_default();
+    let (base_branch_name, commits_ahead_count) =
+        match get_commits_ahead_of_base(&worktree_info.worktree_path, &worktree_info.branch_name) {
+            Ok((base_branch_name, commits_ahead_count)) => {
+                (Some(base_branch_name), Some(commits_ahead_count))
+            }
+            Err(_) => (None, None),
+        };
 
     ReviewInfo {
         branch_name: Some(worktree_info.branch_name.clone()),
+        base_branch_name,
+        commits_ahead_count,
         worktree_status,
         task_title,
     }
@@ -138,7 +153,12 @@ fn render_status_header(frame: &mut Frame, info: &ReviewInfo, area: Rect) {
     let inner_area = block.inner(area);
     frame.render_widget(block, area);
 
-    let lines = status::build_status_lines(info.branch_name.as_deref(), &info.worktree_status);
+    let lines = status::build_status_lines(
+        info.branch_name.as_deref(),
+        info.base_branch_name.as_deref(),
+        info.commits_ahead_count,
+        &info.worktree_status,
+    );
     let text = Paragraph::new(lines);
     frame.render_widget(text, inner_area);
 }
