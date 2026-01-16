@@ -1,6 +1,7 @@
 use super::operations::NavigationDirection;
 use super::state::{InstanceMode, InstanceState};
-use crate::events::{AppAction, EventHandler, EventResult, TerminalAction};
+use super::TerminalAction;
+use crate::events::{AppAction, EventHandler, EventResult};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 const DEFAULT_PTY_ROWS: u16 = 24;

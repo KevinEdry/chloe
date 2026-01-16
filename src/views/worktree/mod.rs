@@ -1,9 +1,11 @@
+mod action;
 pub mod operations;
 pub mod state;
 pub mod tab_events;
 pub mod tab_state;
 pub mod view;
 
+pub use action::WorktreeAction;
 pub use operations::{
     MergeResult, WorktreeStatus, check_merge_conflicts, create_worktree, delete_worktree,
     find_repository_root, get_current_branch, get_default_branch, get_worktree_status,

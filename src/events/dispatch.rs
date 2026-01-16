@@ -1,5 +1,3 @@
-pub mod tasks;
-
 use crate::app::{App, Tab};
 use crate::events::{
     AppAction, AppEvent, EventHandler, EventResult, PullRequestAction, RoadmapAction,
@@ -133,7 +131,7 @@ fn dispatch_tasks_event(app: &mut App, key: KeyEvent) -> EventResult {
         return EventResult::Consumed;
     }
 
-    tasks::process_event(app, key);
+    views::tasks::dispatch::process_event(app, key);
     EventResult::Consumed
 }
 

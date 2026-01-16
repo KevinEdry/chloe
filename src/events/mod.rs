@@ -1,16 +1,16 @@
-pub mod actions;
-mod app_event;
+mod app;
 pub mod dispatch;
 mod event_loop;
-mod hook_event;
+mod hook;
 
-pub use actions::{
-    AppAction, PullRequestAction, RoadmapAction, SettingsAction, TaskAction, TerminalAction,
-    WorktreeAction,
-};
-pub use app_event::AppEvent;
+pub use app::AppEvent;
+pub use crate::views::instances::TerminalAction;
+pub use crate::views::pull_requests::PullRequestAction;
+pub use crate::views::roadmap::RoadmapAction;
+pub use crate::views::settings::SettingsAction;
+pub use crate::views::worktree::WorktreeAction;
 pub use event_loop::EventLoop;
-pub use hook_event::{EventListener, EventType, HookEvent, get_socket_path, send_event};
+pub use hook::{EventListener, EventType, HookEvent, get_socket_path, send_event};
 
 use crossterm::event::KeyEvent;
 
@@ -31,4 +31,13 @@ impl EventResult {
 
 pub trait EventHandler {
     fn handle_key(&mut self, key: KeyEvent) -> EventResult;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AppAction {
+    Terminal(TerminalAction),
+    Roadmap(RoadmapAction),
+    PullRequest(PullRequestAction),
+    Worktree(WorktreeAction),
+    Settings(SettingsAction),
 }

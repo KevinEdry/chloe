@@ -1,10 +1,9 @@
 use super::state::{RoadmapMode, RoadmapPriority, RoadmapState};
-use crate::events::{
-    AppAction, EventHandler, EventResult, RoadmapAction as SharedRoadmapAction, SettingsAction,
-};
+use super::RoadmapAction as AppRoadmapAction;
+use crate::events::{AppAction, EventHandler, EventResult, SettingsAction};
 use crossterm::event::{KeyCode, KeyEvent};
 
-pub enum RoadmapAction {
+enum RoadmapAction {
     None,
     ConvertToTask(usize),
     SaveState,
@@ -29,13 +28,13 @@ impl EventHandler for RoadmapState {
         match action {
             RoadmapAction::None => EventResult::Consumed,
             RoadmapAction::ConvertToTask(index) => EventResult::Action(AppAction::Roadmap(
-                SharedRoadmapAction::ConvertToTask(index),
+                AppRoadmapAction::ConvertToTask(index),
             )),
             RoadmapAction::SaveState => {
                 EventResult::Action(AppAction::Settings(SettingsAction::SaveState))
             }
             RoadmapAction::GenerateRoadmap => {
-                EventResult::Action(AppAction::Roadmap(SharedRoadmapAction::Generate))
+                EventResult::Action(AppAction::Roadmap(AppRoadmapAction::Generate))
             }
         }
     }

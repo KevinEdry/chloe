@@ -1,5 +1,6 @@
 use super::state::{PullRequestsMode, PullRequestsState};
-use crate::events::{AppAction, EventHandler, EventResult, PullRequestAction};
+use super::PullRequestAction;
+use crate::events::{AppAction, EventHandler, EventResult};
 use crossterm::event::{KeyCode, KeyEvent};
 
 impl EventHandler for PullRequestsState {

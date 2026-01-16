@@ -1,5 +1,6 @@
 pub mod ai_classifier;
 pub mod dialogs;
+pub mod dispatch;
 pub mod events;
 pub mod operations;
 pub mod state;

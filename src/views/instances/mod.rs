@@ -1,3 +1,4 @@
+mod action;
 pub mod activity;
 pub mod events;
 pub mod layout;
@@ -6,4 +7,5 @@ pub mod pty;
 pub mod state;
 pub mod view;
 
+pub use action::TerminalAction;
 pub use state::{ClaudeState, InstanceMode, InstancePane, InstanceState};
