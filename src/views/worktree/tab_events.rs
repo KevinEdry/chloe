@@ -1,9 +1,74 @@
 use super::tab_state::{WorktreeMode, WorktreeTabState};
+use crate::shared::events::{AppAction, EventHandler, EventResult};
 use crate::views::settings::VcsCommand;
 use crossterm::event::{KeyCode, KeyEvent};
 use std::time::{Duration, Instant};
 
+impl EventHandler for WorktreeTabState {
+    fn handle_key(&mut self, key: KeyEvent) -> EventResult {
+        match self.mode {
+            WorktreeMode::Normal => self.handle_normal_mode_event(key),
+            WorktreeMode::ConfirmDelete { worktree_index } => {
+                self.handle_confirm_delete_event(key, worktree_index)
+            }
+        }
+    }
+}
+
 impl WorktreeTabState {
+    fn handle_normal_mode_event(&mut self, key: KeyEvent) -> EventResult {
+        match key.code {
+            KeyCode::Char('j') | KeyCode::Down => {
+                self.select_next();
+                EventResult::Consumed
+            }
+            KeyCode::Char('k') | KeyCode::Up => {
+                self.select_previous();
+                EventResult::Consumed
+            }
+            KeyCode::Char('d') => {
+                if let Some(index) = self.selected_index {
+                    self.mode = WorktreeMode::ConfirmDelete {
+                        worktree_index: index,
+                    };
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('o') => {
+                if let Some(index) = self.selected_index {
+                    self.pending_ide_open = Some(index);
+                }
+                EventResult::Action(AppAction::OpenWorktreeInIde(
+                    self.selected_index.unwrap_or(0),
+                ))
+            }
+            KeyCode::Char('t') => {
+                if let Some(index) = self.selected_index {
+                    self.pending_terminal_open = Some(index);
+                }
+                EventResult::Action(AppAction::OpenWorktreeInTerminal(
+                    self.selected_index.unwrap_or(0),
+                ))
+            }
+            _ => EventResult::Ignored,
+        }
+    }
+
+    const fn handle_confirm_delete_event(&mut self, key: KeyEvent, worktree_index: usize) -> EventResult {
+        match key.code {
+            KeyCode::Char('y' | 'Y') => {
+                self.pending_worktree_delete = Some(worktree_index);
+                self.mode = WorktreeMode::Normal;
+                EventResult::Consumed
+            }
+            KeyCode::Char('n' | 'N') | KeyCode::Esc => {
+                self.mode = WorktreeMode::Normal;
+                EventResult::Consumed
+            }
+            _ => EventResult::Ignored,
+        }
+    }
+
     pub fn handle_key_event(&mut self, key: KeyEvent, vcs_command: &VcsCommand) -> bool {
         match self.mode {
             WorktreeMode::Normal => self.handle_normal_mode(key),

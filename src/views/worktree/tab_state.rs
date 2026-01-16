@@ -19,6 +19,8 @@ pub struct WorktreeTabState {
     pub pending_ide_open: Option<usize>,
     #[serde(skip)]
     pub pending_terminal_open: Option<usize>,
+    #[serde(skip)]
+    pub pending_worktree_delete: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -39,6 +41,7 @@ impl WorktreeTabState {
             needs_initial_refresh: true,
             pending_ide_open: None,
             pending_terminal_open: None,
+            pending_worktree_delete: None,
         }
     }
 

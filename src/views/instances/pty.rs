@@ -1,15 +1,16 @@
+use crate::shared::events::AppEvent;
 use alacritty_terminal::event::{Event, EventListener, OnResize, WindowSize};
 use alacritty_terminal::grid::Dimensions;
 use alacritty_terminal::term::{Config, Term};
-use alacritty_terminal::tty::EventedPty;
 use alacritty_terminal::tty::{self, Options, Pty, Shell};
-use alacritty_terminal::vte::ansi::Processor;
+use alacritty_terminal::vte::ansi::{Processor, StdSyncHandler};
 use std::io::{Read, Write};
 use std::path::Path;
-use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+use tokio::sync::mpsc;
+use uuid::Uuid;
 
 const DEFAULT_SCROLLBACK_LINES: usize = 10000;
 const READ_BUFFER_BYTES: usize = 4096;
@@ -42,30 +43,38 @@ impl EventListener for EventProxy {
 
 pub struct PtySession {
     term: Arc<Mutex<Term<EventProxy>>>,
-    processor: Arc<Mutex<Processor>>,
     pty: Pty,
-    receiver: Receiver<Vec<u8>>,
 }
 
 pub struct SpawnOptions {
+    pub pane_id: Uuid,
     pub working_directory: std::path::PathBuf,
     pub rows: u16,
     pub columns: u16,
     pub command: Option<String>,
     pub arguments: Vec<String>,
     pub environment: std::collections::HashMap<String, String>,
+    pub event_sender: mpsc::UnboundedSender<AppEvent>,
 }
 
 impl SpawnOptions {
     #[must_use]
-    pub fn new(working_directory: std::path::PathBuf, rows: u16, columns: u16) -> Self {
+    pub fn new(
+        pane_id: Uuid,
+        working_directory: std::path::PathBuf,
+        rows: u16,
+        columns: u16,
+        event_sender: mpsc::UnboundedSender<AppEvent>,
+    ) -> Self {
         Self {
+            pane_id,
             working_directory,
             rows,
             columns,
             command: None,
             arguments: Vec::new(),
             environment: std::collections::HashMap::new(),
+            event_sender,
         }
     }
 
@@ -87,8 +96,20 @@ impl SpawnOptions {
 }
 
 impl PtySession {
-    pub fn spawn(working_directory: &Path, rows: u16, columns: u16) -> anyhow::Result<Self> {
-        let options = SpawnOptions::new(working_directory.to_path_buf(), rows, columns);
+    pub fn spawn(
+        pane_id: Uuid,
+        working_directory: &Path,
+        rows: u16,
+        columns: u16,
+        event_sender: mpsc::UnboundedSender<AppEvent>,
+    ) -> anyhow::Result<Self> {
+        let options = SpawnOptions::new(
+            pane_id,
+            working_directory.to_path_buf(),
+            rows,
+            columns,
+            event_sender,
+        );
         Self::spawn_with_options(options)
     }
 
@@ -97,12 +118,13 @@ impl PtySession {
 
         let shell = options
             .command
-            .map(|command| Shell::new(command, options.arguments));
+            .clone()
+            .map(|command| Shell::new(command, options.arguments.clone()));
 
         let tty_options = Options {
             shell,
-            working_directory: Some(options.working_directory),
-            env: options.environment,
+            working_directory: Some(options.working_directory.clone()),
+            env: options.environment.clone(),
             drain_on_exit: true,
         };
 
@@ -127,36 +149,50 @@ impl PtySession {
         let term = Term::new(config, &term_size, EventProxy);
 
         let term = Arc::new(Mutex::new(term));
-        let processor = Arc::new(Mutex::new(Processor::new()));
 
-        let (sender, receiver) = channel();
         let reader = pty.file().try_clone()?;
+        let pane_id = options.pane_id;
+        let event_sender = options.event_sender;
+
+        let term_for_thread = Arc::clone(&term);
 
         thread::spawn(move || {
             let mut reader = reader;
             let mut buffer = [0u8; READ_BUFFER_BYTES];
+            let mut processor: Processor<StdSyncHandler> = Processor::new();
+
             loop {
                 match reader.read(&mut buffer) {
-                    Ok(0) => break,
+                    Ok(0) => {
+                        let _ = event_sender.send(AppEvent::PtyExit { pane_id });
+                        break;
+                    }
                     Ok(bytes_read) => {
-                        if sender.send(buffer[..bytes_read].to_vec()).is_err() {
+                        let data = buffer[..bytes_read].to_vec();
+
+                        if let Ok(mut term) = term_for_thread.lock() {
+                            processor.advance(&mut *term, &data);
+                        }
+
+                        if event_sender
+                            .send(AppEvent::PtyOutput { pane_id, data })
+                            .is_err()
+                        {
                             break;
                         }
                     }
                     Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                         thread::sleep(Duration::from_millis(READ_POLL_DELAY_MS));
                     }
-                    Err(_) => break,
+                    Err(_) => {
+                        let _ = event_sender.send(AppEvent::PtyExit { pane_id });
+                        break;
+                    }
                 }
             }
         });
 
-        Ok(Self {
-            term,
-            processor,
-            pty,
-            receiver,
-        })
+        Ok(Self { term, pty })
     }
 
     pub fn resize(&mut self, rows: u16, columns: u16) {
@@ -178,22 +214,6 @@ impl PtySession {
     }
 
     #[must_use]
-    pub fn read_output(&self) -> Vec<Vec<u8>> {
-        let mut all_data = Vec::new();
-        while let Ok(data) = self.receiver.try_recv() {
-            let Ok(mut term) = self.term.lock() else {
-                continue;
-            };
-            let Ok(mut processor) = self.processor.lock() else {
-                continue;
-            };
-            processor.advance(&mut *term, &data);
-            all_data.push(data);
-        }
-        all_data
-    }
-
-    #[must_use]
     pub fn term(&self) -> Arc<Mutex<Term<EventProxy>>> {
         Arc::clone(&self.term)
     }
@@ -203,13 +223,6 @@ impl PtySession {
         writer.write_all(data)?;
         writer.flush()?;
         Ok(())
-    }
-
-    pub fn check_process_exit(&mut self) -> bool {
-        matches!(
-            self.pty.next_child_event(),
-            Some(alacritty_terminal::tty::ChildEvent::Exited(_))
-        )
     }
 }
 

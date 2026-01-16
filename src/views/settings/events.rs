@@ -1,4 +1,5 @@
 use super::state::{SettingsFocus, SettingsMode, SettingsSection, SettingsState};
+use crate::shared::events::{AppAction, EventHandler, EventResult};
 use crate::views::tasks::dialogs::{get_option_count, get_selection_result};
 use crossterm::event::{KeyCode, KeyEvent};
 
@@ -10,6 +11,16 @@ const PERMISSION_PRESET_OPTIONS_COUNT: usize = 3;
 pub enum SettingsAction {
     None,
     SaveSettings,
+}
+
+impl EventHandler for SettingsState {
+    fn handle_key(&mut self, key: KeyEvent) -> EventResult {
+        let action = handle_key_event(self, key);
+        match action {
+            SettingsAction::None => EventResult::Consumed,
+            SettingsAction::SaveSettings => EventResult::Action(AppAction::SaveSettings),
+        }
+    }
 }
 
 pub fn handle_key_event(state: &mut SettingsState, key: KeyEvent) -> SettingsAction {

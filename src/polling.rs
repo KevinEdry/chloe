@@ -1,7 +1,6 @@
 use crate::app::{App, Tab};
 use crate::events::EventListener;
 use crate::views;
-use crate::views::pull_requests::events::PullRequestsAction;
 use crate::views::tasks::state::WorktreeSelectionOption;
 use crate::views::tasks::{FocusPanel, TasksAction, get_active_tasks, get_done_tasks};
 use crossterm::event::KeyEvent;
@@ -21,8 +20,6 @@ pub fn poll_background_tasks(app: &mut App, event_listener: &EventListener) {
             app.roadmap.advance_spinner();
         }
     }
-
-    app.instances.poll_pty_output();
 
     if app.active_tab == Tab::Worktree {
         let vcs_command = &app.settings.settings.vcs_command;
@@ -76,25 +73,6 @@ pub fn process_tasks_pending_actions(app: &mut App) {
     }
 
     app.sync_task_instances();
-}
-
-pub fn process_roadmap_action(app: &mut App, action: &views::roadmap::events::RoadmapAction) {
-    match action {
-        views::roadmap::events::RoadmapAction::ConvertToTask(item_index) => {
-            app.convert_roadmap_item_to_task(*item_index);
-            app.active_tab = Tab::Tasks;
-        }
-        views::roadmap::events::RoadmapAction::SaveState => {
-            let _ = app.save();
-        }
-        views::roadmap::events::RoadmapAction::GenerateRoadmap => {
-            if let Ok(current_dir) = std::env::current_dir() {
-                app.roadmap
-                    .start_generation(current_dir.to_string_lossy().to_string());
-            }
-        }
-        views::roadmap::events::RoadmapAction::None => {}
-    }
 }
 
 pub fn process_worktree_pending_actions(app: &mut App) {
@@ -272,22 +250,7 @@ fn handle_provider_selected(
     let _ = app.save();
 }
 
-pub fn process_pull_requests_action(app: &mut App, action: &PullRequestsAction) {
-    match action {
-        PullRequestsAction::Refresh => {
-            refresh_pull_requests(app);
-        }
-        PullRequestsAction::OpenInBrowser => {
-            if let Some(pull_request) = app.pull_requests.get_selected_pull_request() {
-                let url = pull_request.url.clone();
-                let _ = open_url_in_browser(&url);
-            }
-        }
-        PullRequestsAction::None => {}
-    }
-}
-
-fn refresh_pull_requests(app: &mut App) {
+pub fn refresh_pull_requests(app: &mut App) {
     app.pull_requests.is_loading = true;
 
     let pull_requests = fetch_pull_requests_from_github();
@@ -389,7 +352,7 @@ fn parse_github_pull_requests(
     Ok(pull_requests)
 }
 
-fn open_url_in_browser(url: &str) -> Result<(), String> {
+pub fn open_url_in_browser(url: &str) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     let command = "open";
     #[cfg(target_os = "linux")]

@@ -1,164 +1,243 @@
 use super::operations::NavigationDirection;
 use super::state::{InstanceMode, InstanceState};
+use crate::shared::events::{AppAction, EventHandler, EventResult};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-pub fn handle_key_event(state: &mut InstanceState, key: KeyEvent) {
-    match state.mode {
-        InstanceMode::Normal => handle_navigation_mode(state, key),
-        InstanceMode::Focused => handle_focused_mode(state, key),
-        InstanceMode::Scroll => handle_scroll_mode(state, key),
-        InstanceMode::ActivitySummary => handle_activity_summary_mode(state, key),
-    }
-}
-
-fn handle_navigation_mode(state: &mut InstanceState, key: KeyEvent) {
-    match key.code {
-        KeyCode::Char('h') | KeyCode::Left => {
-            state.navigate_to_pane_in_direction(NavigationDirection::Left);
-        }
-        KeyCode::Char('j') | KeyCode::Down => {
-            state.navigate_to_pane_in_direction(NavigationDirection::Down);
-        }
-        KeyCode::Char('k') | KeyCode::Up => {
-            state.navigate_to_pane_in_direction(NavigationDirection::Up);
-        }
-        KeyCode::Char('l') | KeyCode::Right => {
-            state.navigate_to_pane_in_direction(NavigationDirection::Right);
-        }
-        KeyCode::Enter => {
-            if state.pane_count() > 0 {
-                state.mode = InstanceMode::Focused;
-            }
-        }
-        KeyCode::Char('c') => {
-            const DEFAULT_ROWS: u16 = 24;
-            const DEFAULT_COLUMNS: u16 = 80;
-            state.create_pane(DEFAULT_ROWS, DEFAULT_COLUMNS);
-        }
-        KeyCode::Char('x') => state.close_pane(),
-        KeyCode::Tab => state.next_pane(),
-        KeyCode::BackTab => state.previous_pane(),
-        KeyCode::Char('A') => {
-            if state.selected_pane_id.is_some() {
-                state.activity_summary_scroll_offset = 0;
-                state.mode = InstanceMode::ActivitySummary;
-            }
-        }
-        _ => {}
-    }
-}
-
+const DEFAULT_PTY_ROWS: u16 = 24;
+const DEFAULT_PTY_COLUMNS: u16 = 80;
 const SCROLL_LINES_SINGLE: usize = 1;
 const SCROLL_LINES_HALF_PAGE: usize = 12;
 
-fn handle_focused_mode(state: &mut InstanceState, key: KeyEvent) {
-    let is_shift_escape = key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
-    if is_shift_escape {
-        send_escape_to_instance(state);
-        return;
+impl EventHandler for InstanceState {
+    fn handle_key(&mut self, key: KeyEvent) -> EventResult {
+        match self.mode {
+            InstanceMode::Normal => self.handle_navigation_mode(key),
+            InstanceMode::Focused => self.handle_focused_mode(key),
+            InstanceMode::Scroll => self.handle_scroll_mode(key),
+            InstanceMode::ActivitySummary => self.handle_activity_summary_mode(key),
+        }
     }
-
-    if key.code == KeyCode::Esc {
-        state.mode = InstanceMode::Normal;
-        return;
-    }
-
-    let is_ctrl_s = key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL);
-    if is_ctrl_s {
-        state.mode = InstanceMode::Scroll;
-        return;
-    }
-
-    if let Some(pane) = state.selected_pane_mut() {
-        pane.scroll_to_bottom();
-    }
-
-    send_input_to_instance(state, key);
 }
 
-fn handle_scroll_mode(state: &mut InstanceState, key: KeyEvent) {
-    if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
-        if let Some(pane) = state.selected_pane_mut() {
+impl InstanceState {
+    fn handle_navigation_mode(&mut self, key: KeyEvent) -> EventResult {
+        match key.code {
+            KeyCode::Char('h') | KeyCode::Left => {
+                self.navigate_to_pane_in_direction(NavigationDirection::Left);
+                EventResult::Consumed
+            }
+            KeyCode::Char('j') | KeyCode::Down => {
+                self.navigate_to_pane_in_direction(NavigationDirection::Down);
+                EventResult::Consumed
+            }
+            KeyCode::Char('k') | KeyCode::Up => {
+                self.navigate_to_pane_in_direction(NavigationDirection::Up);
+                EventResult::Consumed
+            }
+            KeyCode::Char('l') | KeyCode::Right => {
+                self.navigate_to_pane_in_direction(NavigationDirection::Right);
+                EventResult::Consumed
+            }
+            KeyCode::Enter => {
+                if self.pane_count() > 0 {
+                    self.mode = InstanceMode::Focused;
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('c') => {
+                self.create_pane(DEFAULT_PTY_ROWS, DEFAULT_PTY_COLUMNS);
+                EventResult::Consumed
+            }
+            KeyCode::Char('x') => {
+                self.close_pane();
+                EventResult::Consumed
+            }
+            KeyCode::Tab => {
+                self.next_pane();
+                EventResult::Consumed
+            }
+            KeyCode::BackTab => {
+                self.previous_pane();
+                EventResult::Consumed
+            }
+            KeyCode::Char('A') => {
+                if self.selected_pane_id.is_some() {
+                    self.activity_summary_scroll_offset = 0;
+                    self.mode = InstanceMode::ActivitySummary;
+                }
+                EventResult::Consumed
+            }
+            _ => EventResult::Ignored,
+        }
+    }
+
+    fn handle_focused_mode(&mut self, key: KeyEvent) -> EventResult {
+        let is_shift_escape =
+            key.code == KeyCode::Esc && key.modifiers.contains(KeyModifiers::SHIFT);
+        if is_shift_escape {
+            return self.send_escape_to_terminal();
+        }
+
+        if key.code == KeyCode::Esc {
+            self.mode = InstanceMode::Normal;
+            return EventResult::Consumed;
+        }
+
+        let is_ctrl_s =
+            key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL);
+        if is_ctrl_s {
+            self.mode = InstanceMode::Scroll;
+            return EventResult::Consumed;
+        }
+
+        if let Some(pane) = self.selected_pane_mut() {
             pane.scroll_to_bottom();
         }
-        state.mode = InstanceMode::Focused;
-        return;
+
+        self.send_input_to_terminal(key)
     }
 
-    let has_ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-
-    match key.code {
-        KeyCode::Char('j') | KeyCode::Down => {
-            if let Some(pane) = state.selected_pane_mut() {
-                pane.scroll_down(SCROLL_LINES_SINGLE);
-            }
-        }
-        KeyCode::Char('k') | KeyCode::Up => {
-            if let Some(pane) = state.selected_pane_mut() {
-                let max_scrollback = pane.scrollback_len();
-                pane.scroll_up(SCROLL_LINES_SINGLE, max_scrollback);
-            }
-        }
-        KeyCode::Char('d') if has_ctrl => {
-            if let Some(pane) = state.selected_pane_mut() {
-                pane.scroll_down(SCROLL_LINES_HALF_PAGE);
-            }
-        }
-        KeyCode::Char('u') if has_ctrl => {
-            if let Some(pane) = state.selected_pane_mut() {
-                let max_scrollback = pane.scrollback_len();
-                pane.scroll_up(SCROLL_LINES_HALF_PAGE, max_scrollback);
-            }
-        }
-        KeyCode::Char('\x04') => {
-            if let Some(pane) = state.selected_pane_mut() {
-                pane.scroll_down(SCROLL_LINES_HALF_PAGE);
-            }
-        }
-        KeyCode::Char('\x15') => {
-            if let Some(pane) = state.selected_pane_mut() {
-                let max_scrollback = pane.scrollback_len();
-                pane.scroll_up(SCROLL_LINES_HALF_PAGE, max_scrollback);
-            }
-        }
-        KeyCode::Char('g') => {
-            if let Some(pane) = state.selected_pane_mut() {
-                pane.scroll_offset = pane.scrollback_len();
-            }
-        }
-        KeyCode::Char('G') => {
-            if let Some(pane) = state.selected_pane_mut() {
+    fn handle_scroll_mode(&mut self, key: KeyEvent) -> EventResult {
+        if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
+            if let Some(pane) = self.selected_pane_mut() {
                 pane.scroll_to_bottom();
             }
+            self.mode = InstanceMode::Focused;
+            return EventResult::Consumed;
         }
-        _ => {}
-    }
-}
 
-fn send_escape_to_instance(state: &mut InstanceState) {
-    if let Some(pane) = state.selected_pane_mut() {
+        let has_ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+
+        match key.code {
+            KeyCode::Char('j') | KeyCode::Down => {
+                if let Some(pane) = self.selected_pane_mut() {
+                    pane.scroll_down(SCROLL_LINES_SINGLE);
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('k') | KeyCode::Up => {
+                if let Some(pane) = self.selected_pane_mut() {
+                    let max_scrollback = pane.scrollback_len();
+                    pane.scroll_up(SCROLL_LINES_SINGLE, max_scrollback);
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('d') if has_ctrl => {
+                if let Some(pane) = self.selected_pane_mut() {
+                    pane.scroll_down(SCROLL_LINES_HALF_PAGE);
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('u') if has_ctrl => {
+                if let Some(pane) = self.selected_pane_mut() {
+                    let max_scrollback = pane.scrollback_len();
+                    pane.scroll_up(SCROLL_LINES_HALF_PAGE, max_scrollback);
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('\x04') => {
+                if let Some(pane) = self.selected_pane_mut() {
+                    pane.scroll_down(SCROLL_LINES_HALF_PAGE);
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('\x15') => {
+                if let Some(pane) = self.selected_pane_mut() {
+                    let max_scrollback = pane.scrollback_len();
+                    pane.scroll_up(SCROLL_LINES_HALF_PAGE, max_scrollback);
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('g') => {
+                if let Some(pane) = self.selected_pane_mut() {
+                    pane.scroll_offset = pane.scrollback_len();
+                }
+                EventResult::Consumed
+            }
+            KeyCode::Char('G') => {
+                if let Some(pane) = self.selected_pane_mut() {
+                    pane.scroll_to_bottom();
+                }
+                EventResult::Consumed
+            }
+            _ => EventResult::Ignored,
+        }
+    }
+
+    fn handle_activity_summary_mode(&mut self, key: KeyEvent) -> EventResult {
+        if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
+            if let Some(pane) = self.selected_pane_mut() {
+                pane.mark_viewed();
+            }
+            self.activity_summary_scroll_offset = 0;
+            self.mode = InstanceMode::Normal;
+            return EventResult::Consumed;
+        }
+
+        match key.code {
+            KeyCode::Char('j') | KeyCode::Down => {
+                self.activity_summary_scroll_offset =
+                    self.activity_summary_scroll_offset.saturating_add(1);
+                EventResult::Consumed
+            }
+            KeyCode::Char('k') | KeyCode::Up => {
+                self.activity_summary_scroll_offset =
+                    self.activity_summary_scroll_offset.saturating_sub(1);
+                EventResult::Consumed
+            }
+            KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                self.activity_summary_scroll_offset = self
+                    .activity_summary_scroll_offset
+                    .saturating_add(SCROLL_LINES_HALF_PAGE);
+                EventResult::Consumed
+            }
+            KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                self.activity_summary_scroll_offset = self
+                    .activity_summary_scroll_offset
+                    .saturating_sub(SCROLL_LINES_HALF_PAGE);
+                EventResult::Consumed
+            }
+            KeyCode::Char('g') => {
+                self.activity_summary_scroll_offset = 0;
+                EventResult::Consumed
+            }
+            _ => EventResult::Ignored,
+        }
+    }
+
+    fn send_escape_to_terminal(&mut self) -> EventResult {
+        let Some(pane) = self.selected_pane_mut() else {
+            return EventResult::Ignored;
+        };
+
         pane.scroll_to_bottom();
-        if let Some(session) = &mut pane.pty_session {
-            let _ = session.write_input(b"\x1b");
-        }
-    }
-}
 
-fn send_input_to_instance(state: &mut InstanceState, key: KeyEvent) {
-    if let Some(pane) = state.selected_pane_mut()
-        && let Some(session) = &mut pane.pty_session
-    {
+        let Some(pane_id) = self.selected_pane_id else {
+            return EventResult::Ignored;
+        };
+
+        EventResult::Action(AppAction::SendToTerminal {
+            instance_id: pane_id,
+            data: b"\x1b".to_vec(),
+        })
+    }
+
+    fn send_input_to_terminal(&self, key: KeyEvent) -> EventResult {
+        let Some(pane_id) = self.selected_pane_id else {
+            return EventResult::Ignored;
+        };
+
         let data = match key.code {
-            KeyCode::Char(c) => {
+            KeyCode::Char(character) => {
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
-                    if c.is_ascii_alphabetic() {
-                        let control_char = (c.to_ascii_lowercase() as u8) - b'a' + 1;
+                    if character.is_ascii_alphabetic() {
+                        let control_char = (character.to_ascii_lowercase() as u8) - b'a' + 1;
                         vec![control_char]
                     } else {
-                        return;
+                        return EventResult::Ignored;
                     }
                 } else {
-                    c.to_string().into_bytes()
+                    character.to_string().into_bytes()
                 }
             }
             KeyCode::Enter => b"\r".to_vec(),
@@ -176,45 +255,12 @@ fn send_input_to_instance(state: &mut InstanceState, key: KeyEvent) {
             KeyCode::Delete => b"\x1b[3~".to_vec(),
             KeyCode::Insert => b"\x1b[2~".to_vec(),
             KeyCode::Esc => b"\x1b".to_vec(),
-            _ => return,
+            _ => return EventResult::Ignored,
         };
 
-        let _ = session.write_input(&data);
-    }
-}
-
-fn handle_activity_summary_mode(state: &mut InstanceState, key: KeyEvent) {
-    if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
-        if let Some(pane) = state.selected_pane_mut() {
-            pane.mark_viewed();
-        }
-        state.activity_summary_scroll_offset = 0;
-        state.mode = InstanceMode::Normal;
-        return;
-    }
-
-    match key.code {
-        KeyCode::Char('j') | KeyCode::Down => {
-            state.activity_summary_scroll_offset =
-                state.activity_summary_scroll_offset.saturating_add(1);
-        }
-        KeyCode::Char('k') | KeyCode::Up => {
-            state.activity_summary_scroll_offset =
-                state.activity_summary_scroll_offset.saturating_sub(1);
-        }
-        KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            state.activity_summary_scroll_offset = state
-                .activity_summary_scroll_offset
-                .saturating_add(SCROLL_LINES_HALF_PAGE);
-        }
-        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            state.activity_summary_scroll_offset = state
-                .activity_summary_scroll_offset
-                .saturating_sub(SCROLL_LINES_HALF_PAGE);
-        }
-        KeyCode::Char('g') => {
-            state.activity_summary_scroll_offset = 0;
-        }
-        _ => {}
+        EventResult::Action(AppAction::SendToTerminal {
+            instance_id: pane_id,
+            data,
+        })
     }
 }

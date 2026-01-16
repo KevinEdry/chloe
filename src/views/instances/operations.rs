@@ -27,17 +27,20 @@ impl InstanceState {
         let working_directory = env::current_dir().unwrap_or_else(|_| PathBuf::from("/"));
 
         let mut pane = InstancePane::new(working_directory.clone(), rows, columns);
-
-        match pty::PtySession::spawn(&working_directory, rows, columns) {
-            Ok(session) => {
-                pane.pty_session = Some(session);
-            }
-            Err(error) => {
-                pane.pty_spawn_error = Some(error.to_string());
-            }
-        }
-
         let pane_id = pane.id;
+
+        if let Some(event_sender) = self.event_sender() {
+            match pty::PtySession::spawn(pane_id, &working_directory, rows, columns, event_sender) {
+                Ok(session) => {
+                    pane.pty_session = Some(session);
+                }
+                Err(error) => {
+                    pane.pty_spawn_error = Some(error.to_string());
+                }
+            }
+        } else {
+            pane.pty_spawn_error = Some("Event sender not initialized".to_string());
+        }
 
         if self.root.is_none() {
             self.root = Some(PaneNode::Leaf(Box::new(pane)));
@@ -86,6 +89,7 @@ impl InstanceState {
             config.columns,
             config.provider,
         );
+        let pane_id = pane.id;
 
         pane.name = config.pane_name;
 
@@ -101,22 +105,30 @@ impl InstanceState {
         let prompt = build_task_prompt(&config.title, &config.description, &config.vcs_command);
         let command = spec.build_command(&prompt);
 
-        let shell_command = build_shell_wrapped_command(&command);
-        let spawn_options = pty::SpawnOptions::new(working_directory, config.rows, config.columns)
+        if let Some(event_sender) = self.event_sender() {
+            let shell_command = build_shell_wrapped_command(&command);
+            let spawn_options = pty::SpawnOptions::new(
+                pane_id,
+                working_directory,
+                config.rows,
+                config.columns,
+                event_sender,
+            )
             .with_command(shell_command.0, shell_command.1)
             .with_environment(command.environment);
 
-        match pty::PtySession::spawn_with_options(spawn_options) {
-            Ok(session) => {
-                pane.claude_state = super::ClaudeState::Running;
-                pane.pty_session = Some(session);
+            match pty::PtySession::spawn_with_options(spawn_options) {
+                Ok(session) => {
+                    pane.claude_state = super::ClaudeState::Running;
+                    pane.pty_session = Some(session);
+                }
+                Err(error) => {
+                    pane.pty_spawn_error = Some(error.to_string());
+                }
             }
-            Err(error) => {
-                pane.pty_spawn_error = Some(error.to_string());
-            }
+        } else {
+            pane.pty_spawn_error = Some("Event sender not initialized".to_string());
         }
-
-        let pane_id = pane.id;
 
         if self.root.is_none() {
             self.root = Some(PaneNode::Leaf(Box::new(pane)));
@@ -217,46 +229,6 @@ impl InstanceState {
 
     fn collect_all_pane_ids(&self) -> Vec<Uuid> {
         self.collect_panes().iter().map(|p| p.id).collect()
-    }
-
-    pub fn poll_pty_output(&mut self) {
-        let Some(root) = &self.root else {
-            return;
-        };
-
-        let pane_ids: Vec<Uuid> = root.collect_panes().iter().map(|p| p.id).collect();
-
-        for pane_id in &pane_ids {
-            if let Some(pane) = self.find_pane_mut(*pane_id)
-                && let Some(session) = &pane.pty_session
-            {
-                let output_chunks = session.read_output();
-
-                for chunk in output_chunks {
-                    if let Ok(text) = String::from_utf8(chunk) {
-                        super::activity::detect_and_log_activity(pane, &text);
-                    }
-                }
-            }
-        }
-
-        for pane_id in pane_ids {
-            if let Some(pane) = self.find_pane_mut(pane_id) {
-                Self::check_process_exit(pane);
-            }
-        }
-    }
-
-    fn check_process_exit(pane: &mut InstancePane) {
-        let process_has_exited = if let Some(session) = &mut pane.pty_session {
-            session.check_process_exit()
-        } else {
-            return;
-        };
-
-        if process_has_exited {
-            pane.claude_state = super::ClaudeState::Done;
-        }
     }
 
     pub fn send_input_to_instance(&mut self, instance_id: Uuid, input: &str) -> bool {

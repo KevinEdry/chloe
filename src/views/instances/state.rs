@@ -1,3 +1,4 @@
+use crate::shared::events::AppEvent;
 use crate::types::AgentProvider;
 use alacritty_terminal::grid::Dimensions;
 use chrono::{DateTime, Utc};
@@ -5,6 +6,7 @@ use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::path::PathBuf;
+use tokio::sync::mpsc;
 use uuid::Uuid;
 
 const MAX_ACTIVITY_EVENTS: usize = 500;
@@ -102,6 +104,8 @@ pub struct InstanceState {
     pub pane_areas: Vec<(Uuid, Rect)>,
     #[serde(skip, default)]
     pub activity_summary_scroll_offset: usize,
+    #[serde(skip)]
+    event_sender: Option<mpsc::UnboundedSender<AppEvent>>,
 }
 
 impl InstanceState {
@@ -114,7 +118,35 @@ impl InstanceState {
             last_render_area: None,
             pane_areas: Vec::new(),
             activity_summary_scroll_offset: 0,
+            event_sender: None,
         }
+    }
+
+    pub fn set_event_sender(&mut self, sender: mpsc::UnboundedSender<AppEvent>) {
+        self.event_sender = Some(sender);
+    }
+
+    #[must_use]
+    pub fn event_sender(&self) -> Option<mpsc::UnboundedSender<AppEvent>> {
+        self.event_sender.clone()
+    }
+
+    pub fn process_pty_output(&mut self, pane_id: Uuid, data: &[u8]) {
+        let Some(pane) = self.find_pane_mut(pane_id) else {
+            return;
+        };
+
+        if let Ok(text) = String::from_utf8(data.to_vec()) {
+            super::activity::detect_and_log_activity(pane, &text);
+        }
+    }
+
+    pub fn handle_pty_exit(&mut self, pane_id: Uuid) {
+        let Some(pane) = self.find_pane_mut(pane_id) else {
+            return;
+        };
+
+        pane.claude_state = ClaudeState::Done;
     }
 
     pub fn selected_pane_mut(&mut self) -> Option<&mut InstancePane> {

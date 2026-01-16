@@ -6,13 +6,13 @@
 
 #![forbid(unsafe_code)]
 
-// Re-export main modules for testing
 pub mod app;
 pub mod cli;
 pub mod events;
 pub mod helpers;
 pub mod persistence;
 pub mod providers;
+pub mod shared;
 pub mod types;
 pub mod views;
 pub mod widgets;

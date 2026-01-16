@@ -14,27 +14,30 @@
 
 mod app;
 mod cli;
+mod event_loop;
 pub mod events;
 mod helpers;
 mod persistence;
 mod polling;
 mod providers;
+mod shared;
 mod types;
 mod views;
 mod widgets;
 
-use app::{App, Tab};
+use app::App;
 use clap::Parser;
 use cli::{Cli, Commands};
 use crossterm::{
-    event::{self, Event, KeyCode},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
+use event_loop::EventLoop;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
-fn main() -> Result<(), io::Error> {
+#[tokio::main]
+async fn main() -> Result<(), io::Error> {
     let cli = Cli::parse();
 
     match cli.command {
@@ -55,11 +58,12 @@ fn main() -> Result<(), io::Error> {
             }
             Ok(())
         }
-        None => run_tui(),
+        None => run_tui().await,
     }
 }
 
-fn run_tui() -> Result<(), io::Error> {
+#[allow(clippy::future_not_send)]
+async fn run_tui() -> Result<(), io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
@@ -68,159 +72,25 @@ fn run_tui() -> Result<(), io::Error> {
 
     let event_listener = events::EventListener::start()?;
     let mut app = App::load_or_default();
-    let res = run_app(&mut terminal, &mut app, &event_listener);
+    let mut event_loop = EventLoop::new();
+
+    app.instances.set_event_sender(event_loop.event_sender());
+
+    let result = event_loop
+        .run(&mut terminal, &mut app, &event_listener)
+        .await;
 
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;
 
-    if let Err(save_err) = app.save() {
-        eprintln!("Warning: Failed to save state: {save_err}");
+    if let Err(save_error) = app.save() {
+        eprintln!("Warning: Failed to save state: {save_error}");
     }
 
-    if let Err(err) = res {
-        println!("Error: {err:?}");
+    if let Err(error) = result {
+        println!("Error: {error:?}");
     }
 
     Ok(())
-}
-
-#[allow(clippy::too_many_lines)]
-fn run_app<B: ratatui::backend::Backend>(
-    terminal: &mut Terminal<B>,
-    app: &mut App,
-    event_listener: &events::EventListener,
-) -> io::Result<()>
-where
-    io::Error: From<B::Error>,
-{
-    loop {
-        terminal.draw(|f| views::render(f, app))?;
-
-        polling::poll_background_tasks(app, event_listener);
-
-        if event::poll(std::time::Duration::from_millis(20))?
-            && let Event::Key(key) = event::read()?
-        {
-            let instances_terminal_focused = app.active_tab == Tab::Instances
-                && matches!(
-                    app.instances.mode,
-                    views::instances::InstanceMode::Focused
-                        | views::instances::InstanceMode::Scroll
-                );
-            let tasks_terminal_focused =
-                app.active_tab == Tab::Tasks && app.tasks.is_terminal_focused();
-            let terminal_is_focused = instances_terminal_focused || tasks_terminal_focused;
-
-            let tasks_is_typing = app.active_tab == Tab::Tasks && app.tasks.is_typing_mode();
-
-            if app.showing_exit_confirmation {
-                match key.code {
-                    KeyCode::Char('y' | 'Y') => {
-                        return Ok(());
-                    }
-                    KeyCode::Char('n' | 'N') | KeyCode::Esc => {
-                        app.showing_exit_confirmation = false;
-                    }
-                    _ => {}
-                }
-                continue;
-            }
-
-            match key.code {
-                KeyCode::Char('q' | 'Q') => {
-                    if !terminal_is_focused && !tasks_is_typing {
-                        app.showing_exit_confirmation = true;
-                    } else if instances_terminal_focused {
-                        views::instances::events::handle_key_event(&mut app.instances, key);
-                    } else {
-                        polling::process_tasks_event(app, key);
-                    }
-                }
-                KeyCode::Char('c') if key.modifiers.contains(event::KeyModifiers::CONTROL) => {
-                    if !terminal_is_focused {
-                        app.showing_exit_confirmation = true;
-                    } else if instances_terminal_focused {
-                        views::instances::events::handle_key_event(&mut app.instances, key);
-                    } else {
-                        polling::process_tasks_event(app, key);
-                    }
-                }
-                KeyCode::Tab | KeyCode::BackTab => {
-                    if !terminal_is_focused {
-                        match key.code {
-                            KeyCode::Tab => app.next_tab(),
-                            KeyCode::BackTab => app.previous_tab(),
-                            _ => {}
-                        }
-                    } else if instances_terminal_focused {
-                        views::instances::events::handle_key_event(&mut app.instances, key);
-                    } else {
-                        polling::process_tasks_event(app, key);
-                    }
-                }
-                KeyCode::Char('1') if !terminal_is_focused && !tasks_is_typing => {
-                    app.switch_tab(Tab::Tasks);
-                }
-                KeyCode::Char('2') if !terminal_is_focused && !tasks_is_typing => {
-                    app.switch_tab(Tab::Instances);
-                }
-                KeyCode::Char('3') if !terminal_is_focused && !tasks_is_typing => {
-                    app.switch_tab(Tab::Roadmap);
-                }
-                KeyCode::Char('4') if !terminal_is_focused && !tasks_is_typing => {
-                    app.switch_tab(Tab::Worktree);
-                }
-                KeyCode::Char('5') if !terminal_is_focused && !tasks_is_typing => {
-                    app.switch_tab(Tab::PullRequests);
-                }
-                KeyCode::Char('6') if !terminal_is_focused && !tasks_is_typing => {
-                    app.switch_tab(Tab::Settings);
-                }
-                _ => match app.active_tab {
-                    Tab::Tasks => {
-                        let is_normal_mode = app.tasks.is_normal_mode();
-                        let is_jump_to_instance_key =
-                            key.code == KeyCode::Char('t') || key.code == KeyCode::Char('T');
-
-                        if is_normal_mode && is_jump_to_instance_key {
-                            app.jump_to_task_instance();
-                        } else {
-                            polling::process_tasks_event(app, key);
-                        }
-                    }
-                    Tab::Instances => {
-                        views::instances::events::handle_key_event(&mut app.instances, key);
-                    }
-                    Tab::Roadmap => {
-                        let action =
-                            views::roadmap::events::handle_key_event(&mut app.roadmap, key);
-                        polling::process_roadmap_action(app, &action);
-                    }
-                    Tab::Worktree => {
-                        let vcs_command = &app.settings.settings.vcs_command;
-                        app.worktree.handle_key_event(key, vcs_command);
-                        polling::process_worktree_pending_actions(app);
-                    }
-                    Tab::PullRequests => {
-                        let action = views::pull_requests::events::handle_key_event(
-                            &mut app.pull_requests,
-                            key,
-                        );
-                        polling::process_pull_requests_action(app, &action);
-                    }
-                    Tab::Settings => {
-                        let action =
-                            views::settings::events::handle_key_event(&mut app.settings, key);
-                        if matches!(
-                            action,
-                            views::settings::events::SettingsAction::SaveSettings
-                        ) {
-                            let _ = app.save_settings();
-                        }
-                    }
-                },
-            }
-        }
-    }
 }

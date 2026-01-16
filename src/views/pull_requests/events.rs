@@ -1,52 +1,53 @@
 use super::state::{PullRequestsMode, PullRequestsState};
+use crate::shared::events::{AppAction, EventHandler, EventResult};
 use crossterm::event::{KeyCode, KeyEvent};
 
-pub enum PullRequestsAction {
-    None,
-    Refresh,
-    OpenInBrowser,
-}
-
-pub fn handle_key_event(state: &mut PullRequestsState, key: KeyEvent) -> PullRequestsAction {
-    match state.mode {
-        PullRequestsMode::Normal => handle_normal_mode(state, key),
-        PullRequestsMode::Viewing => handle_viewing_mode(state, key),
+impl EventHandler for PullRequestsState {
+    fn handle_key(&mut self, key: KeyEvent) -> EventResult {
+        match self.mode {
+            PullRequestsMode::Normal => self.handle_normal_mode_event(key),
+            PullRequestsMode::Viewing => self.handle_viewing_mode_event(key),
+        }
     }
 }
 
-fn handle_normal_mode(state: &mut PullRequestsState, key: KeyEvent) -> PullRequestsAction {
-    match key.code {
-        KeyCode::Char('j') | KeyCode::Down => {
-            state.select_next();
-            PullRequestsAction::None
+impl PullRequestsState {
+    fn handle_normal_mode_event(&mut self, key: KeyEvent) -> EventResult {
+        match key.code {
+            KeyCode::Char('j') | KeyCode::Down => {
+                self.select_next();
+                EventResult::Consumed
+            }
+            KeyCode::Char('k') | KeyCode::Up => {
+                self.select_previous();
+                EventResult::Consumed
+            }
+            KeyCode::Char('g') => {
+                self.select_first();
+                EventResult::Consumed
+            }
+            KeyCode::Char('G') => {
+                self.select_last();
+                EventResult::Consumed
+            }
+            KeyCode::Char('r' | 'R') => {
+                self.mark_needs_refresh();
+                EventResult::Action(AppAction::RefreshPullRequests)
+            }
+            KeyCode::Enter | KeyCode::Char('o') => {
+                EventResult::Action(AppAction::OpenPullRequestInBrowser)
+            }
+            _ => EventResult::Ignored,
         }
-        KeyCode::Char('k') | KeyCode::Up => {
-            state.select_previous();
-            PullRequestsAction::None
-        }
-        KeyCode::Char('g') => {
-            state.select_first();
-            PullRequestsAction::None
-        }
-        KeyCode::Char('G') => {
-            state.select_last();
-            PullRequestsAction::None
-        }
-        KeyCode::Char('r' | 'R') => {
-            state.mark_needs_refresh();
-            PullRequestsAction::Refresh
-        }
-        KeyCode::Enter | KeyCode::Char('o') => PullRequestsAction::OpenInBrowser,
-        _ => PullRequestsAction::None,
     }
-}
 
-const fn handle_viewing_mode(state: &mut PullRequestsState, key: KeyEvent) -> PullRequestsAction {
-    match key.code {
-        KeyCode::Esc | KeyCode::Char('q') => {
-            state.mode = PullRequestsMode::Normal;
-            PullRequestsAction::None
+    const fn handle_viewing_mode_event(&mut self, key: KeyEvent) -> EventResult {
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => {
+                self.mode = PullRequestsMode::Normal;
+                EventResult::Consumed
+            }
+            _ => EventResult::Ignored,
         }
-        _ => PullRequestsAction::None,
     }
 }

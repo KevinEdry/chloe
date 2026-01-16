@@ -57,6 +57,28 @@ pub struct TasksState {
 
 impl TasksState {
     #[must_use]
+    pub fn selected_instance_id(&self) -> Option<Uuid> {
+        use crate::views::tasks::operations::{get_active_tasks, get_done_tasks};
+
+        match self.focus_panel {
+            FocusPanel::ActiveTasks => {
+                let tasks = get_active_tasks(&self.columns);
+                tasks
+                    .into_iter()
+                    .nth(self.focus_active_index)
+                    .and_then(|task_ref| task_ref.task.instance_id)
+            }
+            FocusPanel::DoneTasks => {
+                let tasks = get_done_tasks(&self.columns);
+                tasks
+                    .into_iter()
+                    .nth(self.focus_done_index)
+                    .and_then(|task_ref| task_ref.task.instance_id)
+            }
+        }
+    }
+
+    #[must_use]
     pub fn new() -> Self {
         Self {
             columns: vec![
