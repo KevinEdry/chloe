@@ -155,7 +155,18 @@ pub fn handle_focus_normal_mode(
                 if let Some(task_index) = task_index_in_column {
                     state.kanban_selected_column = task_ref.column_index;
                     state.kanban_selected_task = Some(task_index);
-                    state.move_task_previous();
+
+                    let is_review_column = task_ref.column_index == 2;
+                    let is_in_progress_column = task_ref.column_index == 1;
+                    let needs_confirmation = is_review_column || is_in_progress_column;
+
+                    if needs_confirmation {
+                        state.mode = TasksMode::ConfirmMoveBack {
+                            task_id: task_ref.task.id,
+                        };
+                    } else {
+                        state.move_task_previous();
+                    }
                 }
             }
             TasksAction::None
