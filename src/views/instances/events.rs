@@ -1,6 +1,6 @@
+use super::TerminalAction;
 use super::operations::NavigationDirection;
 use super::state::{InstanceMode, InstanceState};
-use super::TerminalAction;
 use crate::events::{AppAction, EventHandler, EventResult};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 

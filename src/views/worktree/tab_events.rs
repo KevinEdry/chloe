@@ -1,5 +1,5 @@
-use super::tab_state::{WorktreeMode, WorktreeTabState};
 use super::WorktreeAction;
+use super::tab_state::{WorktreeMode, WorktreeTabState};
 use crate::events::{AppAction, EventHandler, EventResult};
 use crate::views::settings::VcsCommand;
 use crossterm::event::{KeyCode, KeyEvent};

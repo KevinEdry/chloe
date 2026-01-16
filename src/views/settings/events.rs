@@ -1,5 +1,5 @@
-use super::state::{SettingsFocus, SettingsMode, SettingsSection, SettingsState};
 use super::SettingsAction as AppSettingsAction;
+use super::state::{SettingsFocus, SettingsMode, SettingsSection, SettingsState};
 use crate::events::{AppAction, EventHandler, EventResult};
 use crate::views::tasks::dialogs::{get_option_count, get_selection_result};
 use crossterm::event::{KeyCode, KeyEvent};

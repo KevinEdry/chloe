@@ -1,5 +1,5 @@
-use super::state::{RoadmapMode, RoadmapPriority, RoadmapState};
 use super::RoadmapAction as AppRoadmapAction;
+use super::state::{RoadmapMode, RoadmapPriority, RoadmapState};
 use crate::events::{AppAction, EventHandler, EventResult, SettingsAction};
 use crossterm::event::{KeyCode, KeyEvent};
 
@@ -27,9 +27,9 @@ impl EventHandler for RoadmapState {
 
         match action {
             RoadmapAction::None => EventResult::Consumed,
-            RoadmapAction::ConvertToTask(index) => EventResult::Action(AppAction::Roadmap(
-                AppRoadmapAction::ConvertToTask(index),
-            )),
+            RoadmapAction::ConvertToTask(index) => {
+                EventResult::Action(AppAction::Roadmap(AppRoadmapAction::ConvertToTask(index)))
+            }
             RoadmapAction::SaveState => {
                 EventResult::Action(AppAction::Settings(SettingsAction::SaveState))
             }

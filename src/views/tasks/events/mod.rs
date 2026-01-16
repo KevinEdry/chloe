@@ -139,4 +139,3 @@ pub fn handle_key_event(
         ),
     }
 }
-
