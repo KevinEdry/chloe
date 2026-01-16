@@ -1,84 +1,14 @@
+pub mod tasks;
+
 use crate::app::{App, Tab};
 use crate::events::{
     AppAction, AppEvent, EventHandler, EventResult, PullRequestAction, RoadmapAction,
     SettingsAction, TerminalAction, WorktreeAction,
 };
-use crate::polling;
 use crate::views;
-use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyModifiers};
-use futures::StreamExt;
-use std::io;
-use std::time::Duration;
-use tokio::sync::mpsc;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-const TICK_INTERVAL_MS: u64 = 100;
-
-pub struct EventLoop {
-    app_event_receiver: mpsc::UnboundedReceiver<AppEvent>,
-    app_event_sender: mpsc::UnboundedSender<AppEvent>,
-}
-
-impl EventLoop {
-    #[must_use]
-    pub fn new() -> Self {
-        let (sender, receiver) = mpsc::unbounded_channel();
-        Self {
-            app_event_receiver: receiver,
-            app_event_sender: sender,
-        }
-    }
-
-    #[must_use]
-    pub fn event_sender(&self) -> mpsc::UnboundedSender<AppEvent> {
-        self.app_event_sender.clone()
-    }
-
-    #[allow(clippy::future_not_send)]
-    pub async fn run<B: ratatui::backend::Backend>(
-        &mut self,
-        terminal: &mut ratatui::Terminal<B>,
-        app: &mut App,
-    ) -> io::Result<()>
-    where
-        io::Error: From<B::Error>,
-    {
-        let mut event_stream = EventStream::new();
-        let mut tick_interval = tokio::time::interval(Duration::from_millis(TICK_INTERVAL_MS));
-
-        loop {
-            terminal.draw(|frame| views::render(frame, app))?;
-
-            tokio::select! {
-                biased;
-
-                maybe_crossterm_event = event_stream.next() => {
-                    if let Some(Ok(Event::Key(key))) = maybe_crossterm_event {
-                        let should_exit = handle_key_event(app, key);
-                        if should_exit {
-                            return Ok(());
-                        }
-                    }
-                }
-
-                Some(app_event) = self.app_event_receiver.recv() => {
-                    handle_app_event(app, app_event);
-                }
-
-                _ = tick_interval.tick() => {
-                    handle_tick(app);
-                }
-            }
-        }
-    }
-}
-
-impl Default for EventLoop {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-fn handle_key_event(app: &mut App, key: KeyEvent) -> bool {
+pub fn handle_key_event(app: &mut App, key: KeyEvent) -> bool {
     if handle_exit_confirmation(app, key) {
         return true;
     }
@@ -203,7 +133,7 @@ fn dispatch_tasks_event(app: &mut App, key: KeyEvent) -> EventResult {
         return EventResult::Consumed;
     }
 
-    polling::process_tasks_event(app, key);
+    tasks::process_event(app, key);
     EventResult::Consumed
 }
 
@@ -271,7 +201,14 @@ fn dispatch_worktree_event(app: &mut App, key: KeyEvent) -> EventResult {
         process_worktree_action(app, action);
     }
 
-    polling::process_worktree_pending_actions(app);
+    if let Some(worktree_index) = app.worktree.pending_ide_open.take() {
+        app.open_worktree_in_ide(worktree_index);
+    }
+
+    if let Some(worktree_index) = app.worktree.pending_terminal_open.take() {
+        app.open_worktree_in_terminal(worktree_index);
+    }
+
     EventResult::Consumed
 }
 
@@ -301,12 +238,12 @@ fn dispatch_pull_requests_event(app: &mut App, key: KeyEvent) -> EventResult {
 fn process_pull_requests_action(app: &mut App, action: &AppAction) {
     match action {
         AppAction::PullRequest(PullRequestAction::Refresh) => {
-            polling::refresh_pull_requests(app);
+            views::pull_requests::refresh(&mut app.pull_requests);
         }
         AppAction::PullRequest(PullRequestAction::OpenInBrowser) => {
             if let Some(pull_request) = app.pull_requests.get_selected_pull_request() {
                 let url = pull_request.url.clone();
-                let _ = polling::open_url_in_browser(&url);
+                let _ = views::pull_requests::open_url_in_browser(&url);
             }
         }
         _ => {}
@@ -327,7 +264,7 @@ fn dispatch_settings_event(app: &mut App, key: KeyEvent) -> EventResult {
     result
 }
 
-fn handle_app_event(app: &mut App, event: AppEvent) {
+pub fn handle_app_event(app: &mut App, event: AppEvent) {
     match event {
         AppEvent::PtyOutput { pane_id, data } => {
             app.instances.process_pty_output(pane_id, &data);
@@ -347,7 +284,7 @@ fn handle_app_event(app: &mut App, event: AppEvent) {
     }
 }
 
-fn handle_tick(app: &mut App) {
+pub fn handle_tick(app: &mut App) {
     if app.active_tab == Tab::Tasks && app.tasks.has_pending_classifications() {
         app.tasks.advance_spinner();
     }
@@ -363,7 +300,7 @@ fn handle_tick(app: &mut App) {
     }
 
     if app.active_tab == Tab::PullRequests && app.pull_requests.should_refresh() {
-        polling::refresh_pull_requests(app);
+        views::pull_requests::refresh(&mut app.pull_requests);
     }
 
     app.auto_transition_completed_tasks();

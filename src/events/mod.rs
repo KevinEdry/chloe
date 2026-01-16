@@ -1,5 +1,7 @@
 pub mod actions;
 mod app_event;
+pub mod dispatch;
+mod event_loop;
 mod hook_event;
 
 pub use actions::{
@@ -7,6 +9,7 @@ pub use actions::{
     WorktreeAction,
 };
 pub use app_event::AppEvent;
+pub use event_loop::EventLoop;
 pub use hook_event::{EventListener, EventType, HookEvent, get_socket_path, send_event};
 
 use crossterm::event::KeyEvent;

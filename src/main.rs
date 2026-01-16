@@ -14,11 +14,9 @@
 
 mod app;
 mod cli;
-mod event_loop;
 pub mod events;
 mod helpers;
 mod persistence;
-mod polling;
 mod providers;
 mod types;
 mod views;
@@ -31,7 +29,7 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use event_loop::EventLoop;
+use events::EventLoop;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
