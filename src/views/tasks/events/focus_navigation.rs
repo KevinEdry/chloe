@@ -72,6 +72,10 @@ pub fn handle_focus_normal_mode(
                 let is_review = task_ref.column_index == 2;
 
                 if is_planning {
+                    let is_task_classifying = task_ref.task.is_classifying;
+                    if is_task_classifying {
+                        return TasksAction::None;
+                    }
                     state.begin_worktree_selection_for_task(task_ref.task.id, vcs_command);
                     TasksAction::None
                 } else if is_in_progress {
@@ -103,7 +107,10 @@ pub fn handle_focus_normal_mode(
             if let Some(task_ref) = selected_task {
                 let is_planning = task_ref.column_index == 0;
                 if is_planning {
-                    state.begin_worktree_selection_for_task(task_ref.task.id, vcs_command);
+                    let is_task_classifying = task_ref.task.is_classifying;
+                    if !is_task_classifying {
+                        state.begin_worktree_selection_for_task(task_ref.task.id, vcs_command);
+                    }
                 }
             }
             TasksAction::None
