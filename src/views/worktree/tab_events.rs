@@ -94,9 +94,9 @@ impl WorktreeTabState {
                 true
             }
             KeyCode::Char('d') => {
-                if self.selected_index.is_some() {
+                if let Some(index) = self.selected_index {
                     self.mode = WorktreeMode::ConfirmDelete {
-                        worktree_index: self.selected_index.unwrap(),
+                        worktree_index: index,
                     };
                 }
                 true
