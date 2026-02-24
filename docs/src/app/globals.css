@@ -18,8 +18,40 @@
 }
 
 @layer base {
+  /* Light mode (default) */
   :root {
+    color-scheme: light;
+    --color-background: #ffffff;
+    --color-surface: #f5f5f7;
+    --color-surface-elevated: #ffffff;
+    --color-border: #e5e7eb;
+    --color-border-light: #d1d5db;
+    --color-text-primary: #111827;
+    --color-text-secondary: #4b5563;
+    --color-text-muted: #6b7280;
+    --color-text-tertiary: #9ca3af;
+    --nextra-bg: 255 255 255;
+    --nextra-content-width: 90rem;
+    --nextra-primary-hue: 270deg;
+    --nextra-primary-saturation: 91%;
+    --nextra-primary-lightness: 65%;
+    --nextra-primary: 168 85 247;
+    --nextra-primary-dark: 147 51 234;
+  }
+
+  /* Dark mode */
+  .dark {
     color-scheme: dark;
+    --color-background: #0a0a0f;
+    --color-surface: #13111c;
+    --color-surface-elevated: #1a1726;
+    --color-border: #2a2438;
+    --color-border-light: #3d3454;
+    --color-text-primary: #fafafa;
+    --color-text-secondary: #a1a1aa;
+    --color-text-muted: #71717a;
+    --color-text-tertiary: #52525b;
+    --nextra-bg: 10 10 15;
   }
 
   html {
@@ -30,35 +62,24 @@
     background-color: var(--color-background);
   }
 
-  /* Nextra theme overrides - scoped to Nextra elements */
-  .dark,
-  :root {
-    --nextra-bg: 10 10 15;
-    --nextra-content-width: 90rem;
-    --nextra-primary-hue: 270deg;
-    --nextra-primary-saturation: 91%;
-    --nextra-primary-lightness: 65%;
-    --nextra-primary: 168 85 247;
-    --nextra-primary-dark: 147 51 234;
-  }
-
-  .nextra-navbar {
+  /* Navbar - transparent in dark mode, subtle in light mode */
+  .dark .nextra-navbar {
     background: transparent !important;
     border-bottom-color: transparent !important;
   }
 
-  .nextra-navbar-blur {
+  .dark .nextra-navbar-blur {
     background: transparent !important;
     box-shadow: none !important;
   }
 
-  /* Remove navbar bottom shadow */
+  /* Remove navbar bottom shadow in dark mode */
   :is(html[class~=dark] .dark\:nx-shadow-\[0_-12px_16px_\#111\]) {
     background: transparent !important;
     box-shadow: none !important;
   }
 
-  /* Remove header inset shadow */
+  /* Remove header inset shadow in dark mode */
   :is(html[class~=dark] .dark\:nx-shadow-\[0_-1px_0_rgba\(255\,255\,255\,\.1\)_inset\]) {
     background: transparent !important;
   }
@@ -81,6 +102,10 @@
 
   /* Nextra content area styles */
   article.nextra-content a {
+    color: var(--color-primary-dark);
+  }
+
+  .dark article.nextra-content a {
     color: var(--color-primary-light);
   }
 
@@ -112,6 +137,10 @@
   article.nextra-content code {
     background-color: var(--color-surface-elevated) !important;
     border-color: var(--color-border) !important;
+    color: var(--color-primary-dark) !important;
+  }
+
+  .dark article.nextra-content code {
     color: var(--color-primary-light) !important;
   }
 
@@ -159,31 +188,58 @@
 
   /* Sidebar navigation - purple accent for active only */
   aside a[aria-current="page"] {
+    color: var(--color-primary-dark) !important;
+    background-color: rgba(168, 85, 247, 0.1) !important;
+  }
+
+  .dark aside a[aria-current="page"] {
     color: var(--color-primary-light) !important;
     background-color: rgba(168, 85, 247, 0.15) !important;
   }
 
   .nextra-sidebar a:hover,
   aside nav a:hover {
+    color: var(--color-primary-dark) !important;
+  }
+
+  .dark .nextra-sidebar a:hover,
+  .dark aside nav a:hover {
     color: var(--color-primary-light) !important;
   }
 
   /* TOC navigation - purple accent */
   .nextra-toc a[data-active="true"],
   .nextra-toc li[data-active="true"] > a {
+    color: var(--color-primary-dark) !important;
+  }
+
+  .dark .nextra-toc a[data-active="true"],
+  .dark .nextra-toc li[data-active="true"] > a {
     color: var(--color-primary-light) !important;
   }
 
   .nextra-toc a:hover {
+    color: var(--color-primary-dark) !important;
+  }
+
+  .dark .nextra-toc a:hover {
     color: var(--color-primary-light) !important;
   }
 
   /* Override Nextra's blue primary color classes */
   .nextra-sidebar [class*="text-primary"] {
+    color: var(--color-primary-dark) !important;
+  }
+
+  .dark .nextra-sidebar [class*="text-primary"] {
     color: var(--color-primary-light) !important;
   }
 
   .nextra-toc [class*="text-primary"] {
+    color: var(--color-primary-dark) !important;
+  }
+
+  .dark .nextra-toc [class*="text-primary"] {
     color: var(--color-primary-light) !important;
   }
 
