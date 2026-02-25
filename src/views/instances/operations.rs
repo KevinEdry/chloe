@@ -314,9 +314,17 @@ fn build_shell_wrapped_command(
         full_command.push_str(&escape_shell_arg(arg));
     }
 
-    let shell_script = format!("{full_command}; exec $SHELL");
+    #[cfg(unix)]
+    {
+        let shell_script = format!("{full_command}; exec $SHELL");
+        ("bash".to_string(), vec!["-c".to_string(), shell_script])
+    }
 
-    ("bash".to_string(), vec!["-c".to_string(), shell_script])
+    #[cfg(windows)]
+    {
+        let shell_script = format!("{full_command} & cmd.exe");
+        ("cmd.exe".to_string(), vec!["/C".to_string(), shell_script])
+    }
 }
 
 fn escape_shell_arg(arg: &str) -> String {

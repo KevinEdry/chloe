@@ -1,7 +1,7 @@
 use super::AppEvent;
 use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader, Write};
-use std::os::unix::net::{UnixListener, UnixStream};
+use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::thread;
 use tokio::sync::mpsc;
@@ -43,8 +43,8 @@ impl HookEvent {
 }
 
 #[must_use]
-pub fn get_socket_path() -> PathBuf {
-    std::env::temp_dir().join("chloe.sock")
+pub fn get_port_file_path() -> PathBuf {
+    std::env::temp_dir().join("chloe.port")
 }
 
 pub struct EventListener {
@@ -53,14 +53,12 @@ pub struct EventListener {
 
 impl EventListener {
     pub fn start(event_sender: Option<mpsc::UnboundedSender<AppEvent>>) -> std::io::Result<Self> {
-        let socket_path = get_socket_path();
-
-        if socket_path.exists() {
-            std::fs::remove_file(&socket_path)?;
-        }
-
-        let listener = UnixListener::bind(&socket_path)?;
+        let listener = TcpListener::bind("127.0.0.1:0")?;
+        let local_port = listener.local_addr()?.port();
         listener.set_nonblocking(true)?;
+
+        let port_file_path = get_port_file_path();
+        std::fs::write(&port_file_path, local_port.to_string())?;
 
         thread::spawn(move || {
             run_listener(&listener, event_sender.as_ref());
@@ -72,12 +70,12 @@ impl EventListener {
 
 impl Drop for EventListener {
     fn drop(&mut self) {
-        let socket_path = get_socket_path();
-        let _ = std::fs::remove_file(socket_path);
+        let port_file_path = get_port_file_path();
+        let _ = std::fs::remove_file(port_file_path);
     }
 }
 
-fn run_listener(listener: &UnixListener, event_sender: Option<&mpsc::UnboundedSender<AppEvent>>) {
+fn run_listener(listener: &TcpListener, event_sender: Option<&mpsc::UnboundedSender<AppEvent>>) {
     loop {
         match listener.accept() {
             Ok((stream, _)) => {
@@ -93,7 +91,7 @@ fn run_listener(listener: &UnixListener, event_sender: Option<&mpsc::UnboundedSe
     }
 }
 
-fn handle_connection(stream: UnixStream, event_sender: Option<&mpsc::UnboundedSender<AppEvent>>) {
+fn handle_connection(stream: TcpStream, event_sender: Option<&mpsc::UnboundedSender<AppEvent>>) {
     let Some(sender) = event_sender else {
         return;
     };
@@ -116,8 +114,14 @@ fn handle_connection(stream: UnixStream, event_sender: Option<&mpsc::UnboundedSe
 }
 
 pub fn send_event(event: &HookEvent) -> std::io::Result<()> {
-    let socket_path = get_socket_path();
-    let mut stream = UnixStream::connect(&socket_path)?;
+    let port_file_path = get_port_file_path();
+    let port_string = std::fs::read_to_string(&port_file_path)?;
+    let port: u16 = port_string
+        .trim()
+        .parse()
+        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+
+    let mut stream = TcpStream::connect(("127.0.0.1", port))?;
 
     let json = serde_json::to_string(event)
         .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;

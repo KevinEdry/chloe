@@ -12,6 +12,9 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
+#[cfg(windows)]
+use alacritty_terminal::tty::{EventedPty, EventedReadWrite};
+
 const DEFAULT_SCROLLBACK_LINES: usize = 10000;
 const READ_BUFFER_BYTES: usize = 4096;
 const READ_POLL_DELAY_MS: u64 = 10;
@@ -43,7 +46,10 @@ impl EventListener for EventProxy {
 
 pub struct PtySession {
     term: Arc<Mutex<Term<EventProxy>>>,
+    #[cfg(unix)]
     pty: Pty,
+    #[cfg(windows)]
+    pty: Arc<Mutex<Pty>>,
 }
 
 pub struct SpawnOptions {
@@ -126,6 +132,8 @@ impl PtySession {
             working_directory: Some(options.working_directory.clone()),
             env: options.environment.clone(),
             drain_on_exit: true,
+            #[cfg(windows)]
+            escape_args: false,
         };
 
         let window_size = WindowSize {
@@ -150,51 +158,27 @@ impl PtySession {
 
         let term = Arc::new(Mutex::new(term));
 
-        let reader = pty.file().try_clone()?;
         let pane_id = options.pane_id;
         let event_sender = options.event_sender;
-
         let term_for_thread = Arc::clone(&term);
 
-        thread::spawn(move || {
-            let mut reader = reader;
-            let mut buffer = [0u8; READ_BUFFER_BYTES];
-            let mut processor: Processor<StdSyncHandler> = Processor::new();
+        #[cfg(unix)]
+        {
+            let reader = pty.file().try_clone()?;
+            spawn_unix_reader_thread(reader, pane_id, event_sender, term_for_thread);
+            Ok(Self { term, pty })
+        }
 
-            loop {
-                match reader.read(&mut buffer) {
-                    Ok(0) => {
-                        let _ = event_sender.send(AppEvent::PtyExit { pane_id });
-                        break;
-                    }
-                    Ok(bytes_read) => {
-                        let data = buffer[..bytes_read].to_vec();
-
-                        if let Ok(mut term) = term_for_thread.lock() {
-                            processor.advance(&mut *term, &data);
-                        }
-
-                        if event_sender
-                            .send(AppEvent::PtyOutput { pane_id, data })
-                            .is_err()
-                        {
-                            break;
-                        }
-                    }
-                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                        thread::sleep(Duration::from_millis(READ_POLL_DELAY_MS));
-                    }
-                    Err(_) => {
-                        let _ = event_sender.send(AppEvent::PtyExit { pane_id });
-                        break;
-                    }
-                }
-            }
-        });
-
-        Ok(Self { term, pty })
+        #[cfg(windows)]
+        {
+            let pty = Arc::new(Mutex::new(pty));
+            let pty_for_thread = Arc::clone(&pty);
+            spawn_windows_reader_thread(pty_for_thread, pane_id, event_sender, term_for_thread);
+            Ok(Self { term, pty })
+        }
     }
 
+    #[allow(clippy::needless_pass_by_ref_mut)]
     pub fn resize(&mut self, rows: u16, columns: u16) {
         let window_size = WindowSize {
             cell_width: 1,
@@ -202,7 +186,14 @@ impl PtySession {
             num_cols: columns,
             num_lines: rows,
         };
+
+        #[cfg(unix)]
         self.pty.on_resize(window_size);
+
+        #[cfg(windows)]
+        if let Ok(mut pty) = self.pty.lock() {
+            pty.on_resize(window_size);
+        }
 
         if let Ok(mut term) = self.term.lock() {
             let term_size = TerminalSize {
@@ -219,11 +210,126 @@ impl PtySession {
     }
 
     pub fn write_input(&self, data: &[u8]) -> anyhow::Result<()> {
-        let mut writer = self.pty.file().try_clone()?;
-        writer.write_all(data)?;
-        writer.flush()?;
+        #[cfg(unix)]
+        {
+            let mut writer = self.pty.file().try_clone()?;
+            writer.write_all(data)?;
+            writer.flush()?;
+        }
+
+        #[cfg(windows)]
+        {
+            let mut pty = self
+                .pty
+                .lock()
+                .map_err(|error| anyhow::anyhow!("PTY lock poisoned: {error}"))?;
+            pty.writer().write_all(data)?;
+            pty.writer().flush()?;
+        }
+
         Ok(())
     }
+}
+
+#[cfg(unix)]
+fn spawn_unix_reader_thread(
+    reader: std::fs::File,
+    pane_id: Uuid,
+    event_sender: mpsc::UnboundedSender<AppEvent>,
+    term: Arc<Mutex<Term<EventProxy>>>,
+) {
+    thread::spawn(move || {
+        let mut reader = reader;
+        let mut buffer = [0u8; READ_BUFFER_BYTES];
+        let mut processor: Processor<StdSyncHandler> = Processor::new();
+
+        loop {
+            match reader.read(&mut buffer) {
+                Ok(0) => {
+                    let _ = event_sender.send(AppEvent::PtyExit { pane_id });
+                    break;
+                }
+                Ok(bytes_read) => {
+                    let data = buffer[..bytes_read].to_vec();
+
+                    if let Ok(mut term) = term.lock() {
+                        processor.advance(&mut *term, &data);
+                    }
+
+                    if event_sender
+                        .send(AppEvent::PtyOutput { pane_id, data })
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    thread::sleep(Duration::from_millis(READ_POLL_DELAY_MS));
+                }
+                Err(_) => {
+                    let _ = event_sender.send(AppEvent::PtyExit { pane_id });
+                    break;
+                }
+            }
+        }
+    });
+}
+
+#[cfg(windows)]
+fn spawn_windows_reader_thread(
+    pty: Arc<Mutex<Pty>>,
+    pane_id: Uuid,
+    event_sender: mpsc::UnboundedSender<AppEvent>,
+    term: Arc<Mutex<Term<EventProxy>>>,
+) {
+    thread::spawn(move || {
+        let mut buffer = [0u8; READ_BUFFER_BYTES];
+        let mut processor: Processor<StdSyncHandler> = Processor::new();
+
+        loop {
+            let read_result = {
+                let Ok(mut pty) = pty.lock() else {
+                    break;
+                };
+
+                if let Some(alacritty_terminal::tty::ChildEvent::Exited(_)) =
+                    pty.next_child_event()
+                {
+                    let _ = event_sender.send(AppEvent::PtyExit { pane_id });
+                    break;
+                }
+
+                pty.reader().read(&mut buffer)
+            };
+
+            match read_result {
+                Ok(0) => {
+                    thread::sleep(Duration::from_millis(READ_POLL_DELAY_MS));
+                }
+                Ok(bytes_read) => {
+                    let data = buffer[..bytes_read].to_vec();
+
+                    if let Ok(mut term) = term.lock() {
+                        processor.advance(&mut *term, &data);
+                    }
+
+                    if event_sender
+                        .send(AppEvent::PtyOutput { pane_id, data })
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    thread::sleep(Duration::from_millis(READ_POLL_DELAY_MS));
+                }
+                Err(_) => {
+                    let _ = event_sender.send(AppEvent::PtyExit { pane_id });
+                    break;
+                }
+            }
+        }
+    });
 }
 
 impl std::fmt::Debug for PtySession {
