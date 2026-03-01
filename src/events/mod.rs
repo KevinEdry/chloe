@@ -10,7 +10,7 @@ pub use crate::views::settings::SettingsAction;
 pub use crate::views::worktree::WorktreeAction;
 pub use app::AppEvent;
 pub use event_loop::EventLoop;
-pub use hook::{EventListener, EventType, HookEvent, get_socket_path, send_event};
+pub use hook::{EventListener, EventType, HookEvent, get_port_file_path, send_event};
 
 use crossterm::event::KeyEvent;
 
