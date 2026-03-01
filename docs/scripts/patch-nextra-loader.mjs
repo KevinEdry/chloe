@@ -3,84 +3,122 @@ import { fileURLToPath } from 'url'
 import { join, dirname } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const loaderPath = join(__dirname, '..', 'node_modules', 'nextra', 'dist', 'server', 'loader.js')
+const loaderJsPath = join(__dirname, '..', 'node_modules', 'nextra', 'dist', 'server', 'loader.js')
+const loaderCjsPath = join(__dirname, '..', 'node_modules', 'nextra', 'loader.cjs')
 
-console.log('[nextra-patch] Target:', loaderPath)
+// ── loader.js patches ────────────────────────────────────────────────────────
 
-let content
+let jsContent
 try {
-  content = readFileSync(loaderPath, 'utf8')
-  console.log('[nextra-patch] File found, size:', content.length)
+  jsContent = readFileSync(loaderJsPath, 'utf8')
+  console.log('[nextra-patch] loader.js found, size:', jsContent.length)
 } catch {
-  console.log('[nextra-patch] File not found — install not complete, skipping')
+  console.log('[nextra-patch] loader.js not found — skipping')
   process.exit(0)
 }
 
-let changed = false
+let jsChanged = false
 
-// Strategy 1: wrap the bare `await import(...)` in try-catch so a failed native
-// addon load doesn't leave `repository` in the temporal dead zone.
+// Strategy 1: wrap the bare `await import(...)` in try-catch so a failed
+// native addon load doesn't crash the module.
 const importBroken = `const { Repository } = await import("@napi-rs/simple-git");`
 const importFixed  = `let Repository; try { ({ Repository } = await import("@napi-rs/simple-git")); } catch { return; }`
 
-if (content.includes(importBroken)) {
-  content = content.replace(importBroken, importFixed)
-  changed = true
+if (jsContent.includes(importBroken)) {
+  jsContent = jsContent.replace(importBroken, importFixed)
+  jsChanged = true
   console.log('[nextra-patch] Strategy 1 applied (import try-catch)')
 } else {
-  console.log('[nextra-patch] Strategy 1 string not found')
-  // Log the context around the package name to help diagnose
-  const index = content.indexOf('@napi-rs/simple-git')
-  if (index !== -1) {
-    const snippet = content.substring(Math.max(0, index - 40), index + 80)
-    console.log('[nextra-patch] Context around @napi-rs/simple-git:', JSON.stringify(snippet))
-  } else {
-    console.log('[nextra-patch] @napi-rs/simple-git not found in file at all')
-  }
+  console.log('[nextra-patch] Strategy 1 already applied or not found')
 }
 
-// Strategy 2: wrap the getLastCommitTime() call in .catch() so a TDZ reference
-// error (when strategy 1 did not apply) becomes a graceful undefined instead of
-// crashing the webpack compilation.
+// Strategy 2: wrap the getLastCommitTime() call in .catch() so any error
+// there becomes a graceful undefined instead of crashing the build.
 const callBroken = `await getLastCommitTime(resourcePath) : NOW;`
 const callFixed  = `await getLastCommitTime(resourcePath).catch(() => void 0) : NOW;`
 
-if (content.includes(callBroken)) {
-  content = content.replace(callBroken, callFixed)
-  changed = true
+if (jsContent.includes(callBroken)) {
+  jsContent = jsContent.replace(callBroken, callFixed)
+  jsChanged = true
   console.log('[nextra-patch] Strategy 2 applied (call-site catch)')
 } else {
-  console.log('[nextra-patch] Strategy 2 string not found (may already be patched)')
+  console.log('[nextra-patch] Strategy 2 already applied or not found')
 }
 
-// Strategy 3: add an initialization-ready guard so concurrent webpack workers
-// that receive the module namespace before the top-level await completes will
-// wait before calling loader(), preventing TDZ on any const declared after the
-// await (e.g. DEFAULT_TRANSFORMERS). We declare the promise before the await
-// (so it's never in TDZ itself), resolve it after all top-level consts are
-// set, and await it at the top of loader().
-const initBroken = `const NOW = Date.now();`
-const initFixed  = `const NOW = Date.now();\nlet __markReady;\nconst __ready = new Promise(resolve => { __markReady = resolve; });`
-const transformerBroken = `  explicitTrigger: true\n});\nasync function loader(source) {`
-const transformerFixed  = `  explicitTrigger: true\n});\n__markReady();\nasync function loader(source) {\n  await __ready;`
-
-if (!content.includes('__ready')) {
-  if (content.includes(initBroken) && content.includes(transformerBroken)) {
-    content = content.replace(initBroken, initFixed)
-    content = content.replace(transformerBroken, transformerFixed)
-    changed = true
-    console.log('[nextra-patch] Strategy 3 applied (initialization guard)')
-  } else {
-    console.log('[nextra-patch] Strategy 3 strings not found')
-  }
-} else {
-  console.log('[nextra-patch] Strategy 3 already applied')
+if (jsChanged) {
+  writeFileSync(loaderJsPath, jsContent)
+  console.log('[nextra-patch] loader.js written')
 }
 
-if (!changed) {
-  console.log('[nextra-patch] Nothing to patch')
+// ── loader.cjs patch ─────────────────────────────────────────────────────────
+//
+// Bun resolves import() before the ESM module's code starts executing, so
+// concurrent webpack workers can call loader() while const bindings in
+// loader.js are still in TDZ. loader.cjs is a CJS module whose variables are
+// always initialized, so we use module-level variables to serialise the import
+// and retry on TDZ ReferenceErrors until the ESM module finishes initializing.
+
+let cjsContent
+try {
+  cjsContent = readFileSync(loaderCjsPath, 'utf8')
+  console.log('[nextra-patch] loader.cjs found, size:', cjsContent.length)
+} catch {
+  console.log('[nextra-patch] loader.cjs not found — skipping')
   process.exit(0)
 }
 
-writeFileSync(loaderPath, content)
-console.log('[nextra-patch] Done')
+const cjsBroken = `module.exports = async function loader(code) {
+  const callback = this.async()
+
+  try {
+    // Note that \`import()\` caches, so this should be fast enough.
+    const { loader } = await import('./dist/server/loader.js')
+    const result = await loader.call(this, code)
+    callback(null, result)
+  } catch (error) {
+    callback(error)
+  }
+}`
+
+const cjsFixed = `let _importPromise = null
+
+module.exports = async function loader(code) {
+  const callback = this.async()
+
+  try {
+    if (!_importPromise) {
+      _importPromise = import('./dist/server/loader.js')
+    }
+    const mod = await _importPromise
+
+    // Bun can resolve import() before the ESM module's synchronous code runs,
+    // leaving const bindings in TDZ. Retry with backoff until the module
+    // finishes initializing.
+    for (let attempt = 0; attempt < 10; attempt++) {
+      try {
+        const result = await mod.loader.call(this, code)
+        callback(null, result)
+        return
+      } catch (err) {
+        if (err instanceof ReferenceError && attempt < 9) {
+          await new Promise(r => setTimeout(r, 10 * (attempt + 1)))
+        } else {
+          throw err
+        }
+      }
+    }
+  } catch (error) {
+    callback(error)
+  }
+}`
+
+if (cjsContent.includes(cjsBroken)) {
+  cjsContent = cjsContent.replace(cjsBroken, cjsFixed)
+  writeFileSync(loaderCjsPath, cjsContent)
+  console.log('[nextra-patch] Strategy 4 applied (loader.cjs retry on TDZ)')
+} else if (cjsContent.includes('_importPromise')) {
+  console.log('[nextra-patch] Strategy 4 already applied')
+} else {
+  console.log('[nextra-patch] Strategy 4: loader.cjs pattern not found')
+  console.log('[nextra-patch] loader.cjs content:', JSON.stringify(cjsContent.slice(0, 300)))
+}
