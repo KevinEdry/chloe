@@ -1,4 +1,8 @@
 {
+  "buildCommand": "node scripts/patch-nextra-loader.mjs && bun --bun next build && next-sitemap",
+  "installCommand": "bun install",
+  "outputDirectory": "out",
+  "framework": null,
   "bunVersion": "1.x",
   "redirects": [
     {
