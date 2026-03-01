@@ -53,6 +53,30 @@ if (content.includes(callBroken)) {
   console.log('[nextra-patch] Strategy 2 string not found (may already be patched)')
 }
 
+// Strategy 3: add an initialization-ready guard so concurrent webpack workers
+// that receive the module namespace before the top-level await completes will
+// wait before calling loader(), preventing TDZ on any const declared after the
+// await (e.g. DEFAULT_TRANSFORMERS). We declare the promise before the await
+// (so it's never in TDZ itself), resolve it after all top-level consts are
+// set, and await it at the top of loader().
+const initBroken = `const NOW = Date.now();`
+const initFixed  = `const NOW = Date.now();\nlet __markReady;\nconst __ready = new Promise(resolve => { __markReady = resolve; });`
+const transformerBroken = `  explicitTrigger: true\n});\nasync function loader(source) {`
+const transformerFixed  = `  explicitTrigger: true\n});\n__markReady();\nasync function loader(source) {\n  await __ready;`
+
+if (!content.includes('__ready')) {
+  if (content.includes(initBroken) && content.includes(transformerBroken)) {
+    content = content.replace(initBroken, initFixed)
+    content = content.replace(transformerBroken, transformerFixed)
+    changed = true
+    console.log('[nextra-patch] Strategy 3 applied (initialization guard)')
+  } else {
+    console.log('[nextra-patch] Strategy 3 strings not found')
+  }
+} else {
+  console.log('[nextra-patch] Strategy 3 already applied')
+}
+
 if (!changed) {
   console.log('[nextra-patch] Nothing to patch')
   process.exit(0)
